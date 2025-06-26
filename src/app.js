@@ -6,6 +6,8 @@ import authenticate from './middleware/auth.js';
 import dotenv from 'dotenv';
 import sign from "./routes/sign/index.js";
 import login from './routes/login/index.js';
+import swaggerUi from 'swagger-ui-express';
+import swaggerSpecs from './config/swagger.js';
 
 dotenv.config();
 
@@ -24,6 +26,9 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 app.use(express.json());
+
+// Swagger Documentation
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 
 // Public routes
 app.use('/signup', sign);

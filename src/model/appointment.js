@@ -148,7 +148,6 @@ const appointmentSchema = new Schema({
     ]
 });
 
-appointmentSchema.index({ appointmentId: 1 });
 appointmentSchema.index({ patientId: 1 });
 appointmentSchema.index({ doctorId: 1 });
 appointmentSchema.index({ hospitalId: 1 }); 
