@@ -2,52 +2,55 @@
 import Hospital from "../../model/hospital/index.js"
 import HsptlFacilities from "../../model/hospital/facility.js"
 import Reviews from "../../model/hospital/review.js"
-import {updateObjectPayload,updateFacilityPayload,updateComment} from './update_controller.js'
-export async function createHospital(req,res) {
-    const data=req.body
-    try{
-      const hospital= await Hospital.create(data)
-      res.status(200).json({message: "Hospita Data is Created SuccussFully"})
-    }catch(e){
-     console.log(e) 
+import Favourite from "../../model/hospital/favourite.js"
+import { updateObjectPayload, updateFacilityPayload, updateComment } from './update_controller.js'
+export async function createHospital(req, res) {
+    const data = req.body
+    try {
+        const hospital = await Hospital.create(data)
+        await Favourite.create({ userId: userId }, { hospitalId: hospital.hospitalId });
+        res.status(200).json({ message: "Hospita Data is Created SuccussFully" })
+    } catch (e) {
+        console.log(e)
     }
-    
+
 }
-export async function hospitalFacility(req,res){
-  const data=req.body
-   try{
-     const hsptl = await Hospital.findOne({hospitalId:data["hospitalId"]})
-      if(!hsptl){
-        res.status(400).json({message:"HospitalId is not found"})
-        return
-      }
-     const facilities=await HsptlFacilities.create(data)
-      res.status(200).json({message: "Data is Saved SuccussFully"})
-   
-   }catch(e){
-     console.log(e) 
-   }
+export async function hospitalFacility(req, res) {
+    const data = req.body
+    try {
+        const hsptl = await Hospital.findOne({ hospitalId: data["hospitalId"] })
+        if (!hsptl) {
+            res.status(400).json({ message: "HospitalId is not found" })
+            return
+        }
+        const facilities = await HsptlFacilities.create(data)
+        res.status(200).json({ message: "Data is Saved SuccussFully" })
+
+    } catch (e) {
+        console.log(e)
+    }
 }
-export async function createReviews(req,res) {
-  const data=req.body
-  try{
-      const hsptl = await Hospital.findOne({hospitalId:data["hospitalId"]})
-      if(!hsptl){
-        res.status(400).json({message:"HospitalId is not found"})
-        return
-      }
-   const reviews=await Reviews.create(data)
-    res.status(200).json({message: "Data is Saved SuccussFully"})
-  }catch(e){
-     console.log(e) 
-  }
-  
+export async function createReviews(req, res) {
+    const data = req.body
+    try {
+        const hsptl = await Hospital.findOne({ hospitalId: data["hospitalId"] })
+        if (!hsptl) {
+            res.status(400).json({ message: "HospitalId is not found" })
+            return
+        }
+        const reviews = await Reviews.create(data)
+        res.status(200).json({ message: "Data is Saved SuccussFully" })
+    } catch (e) {
+        console.log(e)
+    }
+
 }
 
 export const updateHospitalBasicDetails = async (req, res) => {
     const { hospitalId } = req.params;
-    
-    const updateData= updateObjectPayload(req.body)
+
+    const updateData = updateObjectPayload(req.body)
+
     try {
         const updatedHospital = await Hospital.findOneAndUpdate(
             { hospitalId: hospitalId },
@@ -70,12 +73,12 @@ export const updateHospitalBasicDetails = async (req, res) => {
 
     } catch (error) {
         console.error('Error updating hospital basic details:', error);
-       }
-    };
+    }
+};
 
-export async function updateFacility(req,res) {
+export async function updateFacility(req, res) {
     const { hospitalId } = req.params;
-      const updateData=updateFacilityPayload(req.body)
+    const updateData = updateFacilityPayload(req.body)
 
     try {
         const updatedDetails = await HsptlFacilities.findOneAndUpdate(
@@ -92,7 +95,7 @@ export async function updateFacility(req,res) {
         if (updatedDetails.isNew) {
             const hospitalExists = await Hospital.findOne({ hospitalId: hospitalId });
             if (!hospitalExists) {
-                 console.warn(`HospitalDetails document created for non-existent HospitalId: ${hospitalId}`);
+                console.warn(`HospitalDetails document created for non-existent HospitalId: ${hospitalId}`);
             }
         }
 
@@ -103,12 +106,12 @@ export async function updateFacility(req,res) {
 
     } catch (error) {
         console.error('Error updating hospital facilities/details:', error);
-      }
+    }
 }
 
 export async function updateReviewComment(req, res) {
     const { hospitalId } = req.params;
-    const {updateFields,averageRating}=await updateComment(req.body,hospitalId)
+    const { updateFields, averageRating } = await updateComment(req.body, hospitalId)
     try {
         const hospitalExists = await Hospital.findOne({ hospitalId: hospitalId });
         if (!hospitalExists) {
@@ -132,11 +135,11 @@ export async function updateReviewComment(req, res) {
         if (!updatedReview) {
             return res.status(404).json({ message: 'Review not found for this hospital.' });
         }
-            
-         await Hospital.updateOne(
-                { hospitalId: hospitalId },
-                { $set: { averageRating: averageRating } }
-            );
+
+        await Hospital.updateOne(
+            { hospitalId: hospitalId },
+            { $set: { averageRating: averageRating } }
+        );
         res.status(200).json({
             message: 'Review updated successfully',
             review: updatedReview
@@ -144,7 +147,7 @@ export async function updateReviewComment(req, res) {
 
     } catch (error) {
         console.error('Error updating review:', error);
-     }
+    }
 }
 
 
@@ -164,10 +167,10 @@ export async function getAllHospitalDetails(req, res) {
 }
 
 
-export async function getHospitalDetails(req,res) {
-    const {hospitalId}=req.params
-     try {
-        const allHospitals = await Hospital.findOne({hospitalId:hospitalId}); 
+export async function getHospitalDetails(req, res) {
+    const { hospitalId } = req.params
+    try {
+        const allHospitals = await Hospital.findOne({ hospitalId: hospitalId });
         const facilities = await getHsptlFacilities(hospitalId)
         const review = await getHsptlReviews(hospitalId)
         res.status(200).json({
@@ -175,36 +178,36 @@ export async function getHospitalDetails(req,res) {
             count: allHospitals.length,
             hospitals: allHospitals,
             facilities: facilities,
-            review : review
+            review: review
         });
 
     } catch (error) {
         console.error('Error fetching all hospital basic details:', error);
-           }
-    
+    }
+
 }
 
 export async function getHsptlFacilities(hospitalId) {
-   
-     try {
-        const allHospitals = await HsptlFacilities.findOne({hospitalId:hospitalId}); 
-         return allHospitals
+
+    try {
+        const allHospitals = await HsptlFacilities.findOne({ hospitalId: hospitalId });
+        return allHospitals
 
     } catch (error) {
         console.error('Error fetching all hospital facilities details:', error);
-           }
+    }
 }
 
 export async function getHsptlReviews(hospitalId) {
 
-     try {
-        const reviews = await Reviews.findOne({hospitalId:hospitalId}); 
+    try {
+        const reviews = await Reviews.findOne({ hospitalId: hospitalId });
         return reviews
-        
+
 
     } catch (error) {
         console.error('Error fetching all hospital Revies details:', error);
-           }
+    }
 }
 
 export async function deleteHsptl(req, res) {
@@ -233,9 +236,47 @@ export async function deleteHsptl(req, res) {
 
     } catch (error) {
         console.error('Error deleting hospital and associated data:', error);
-            }
+    }
 }
 
+
+export async function getfavourite(req, res) {
+    try {
+        const { userId, hospitalId } = req.params
+        if (!hospitalId) {
+            return res.status(400).json({ message: "hospitalId is required" });
+        }
+        const hospital = await Favourite.findOne(
+            { userId, hospitalId },
+            { isfavourite: 1, _id: 0 }
+        );
+        if (!hospital) {
+            return res.status(404).json({ message: "Hospital not found" });
+        }
+        res.status(200).json({ isfavourite: hospital.isfavourite })
+    } catch (e) {
+        console.log(e)
+    }
+}
+
+export async function postfavourite(req, res) {
+    try {
+        const { userId, hospitalId, favourite } = req.body
+        if (!userId || !hospitalId) {
+            return res.status(400).json({ message: 'userId and hospitalId are required' });
+        }
+        const existing = await Favourite.findOneAndUpdate(
+      { userId, hospitalId },
+      { isfavourite: favourite },
+      { upsert: true, new: true }
+    ); 
+        res.status(200).json({  message: `Favourite status updated to ${favourite}`, })
+    } catch (e) {
+        console.log(e)
+         res.status(500).json({ message: 'Internal server error' });
+    }
+
+}
 
 
 

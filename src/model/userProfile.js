@@ -20,7 +20,10 @@ const userSchema= new Schema({
     passwordHash:{type:String},
     sessionToken:{type:String},
     googleId:{type:String},
-    location:{type:String}
+    location:{type:String},
+    accessToken: { type: String },
+    refreshToken: { type: String }
+
     
 })
 const User=model('User',userSchema)

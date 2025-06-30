@@ -138,7 +138,10 @@ const appointmentSchema = new Schema({
         type: Date,
         default: Date.now
     },
-
+     qrCodeDataUrl: {
+        type: String,
+    },
+    
     statusHistory: [
         {
             status: { type: String },

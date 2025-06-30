@@ -1,7 +1,7 @@
 import express from 'express'
 import { createHospital ,getHospitalDetails,updateFacility,
     updateReviewComment, hospitalFacility, createReviews , 
-    deleteHsptl ,getAllHospitalDetails , updateHospitalBasicDetails} from '../../controller/hopital_controller/hospital.js'
+    deleteHsptl ,getAllHospitalDetails , updateHospitalBasicDetails, getfavourite} from '../../controller/hopital_controller/hospital.js'
 
 const router = express.Router()
 
@@ -162,6 +162,7 @@ router.get('/:hospitalId', getHospitalDetails)
  *         description: Unauthorized
  */
 router.get('/', getAllHospitalDetails)
+router.get('/hospital/getfavourite',getfavourite)
 
 /**
  * @swagger

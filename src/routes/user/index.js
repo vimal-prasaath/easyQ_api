@@ -1,5 +1,5 @@
 import express from 'express';
-import {getAllUser,updateUser,finduser} from "../../controller/user.js"
+import {getAllUser,updateUser,finduser, deleteUser} from "../../controller/user.js"
 const router = express.Router();
 
 /**
@@ -77,5 +77,6 @@ router.put('/:userId', updateUser);
  *         description: User not found
  */
 router.get('/getUser', finduser);
+router.delete('/delete',deleteUser)
 
 export default router;

@@ -5,7 +5,9 @@ import User from '../../model/userProfile.js';
 
 export const createValidation = async (data) => {
    
-    if (!data.patientId || !data.doctorId || !data.hospitalId || !data.appointmentDate || !data.appointmentTime || !data.reasonForAppointment || !data.appointmentType || !data.paymentStatus) {
+    if (!data.patientId || !data.doctorId || !data.hospitalId
+         || !data.appointmentDate || !data.appointmentTime || 
+         !data.reasonForAppointment || !data.appointmentType || !data.paymentStatus) {
         return {
             isValid: false,
             statusCode: 400,
@@ -31,7 +33,6 @@ export const createValidation = async (data) => {
                 message: `Invalid patient ID format: ${data.patientId}.`
             };
         }
-        console.error('Error validating patient existence:', error);
         return {
             isValid: false,
             statusCode: 500,
