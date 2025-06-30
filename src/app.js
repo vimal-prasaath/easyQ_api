@@ -6,7 +6,7 @@ import authenticate from './middleware/auth.js';
 import dotenv from 'dotenv';
 import sign from "./routes/sign/index.js";
 import login from './routes/login/index.js';
-
+import './config/sheduler.js'
 dotenv.config();
 
 const app = express();
@@ -42,9 +42,5 @@ app.get('/auth/google/callback',
 
 // Protected API routes
 app.use('/api', authenticate, apiRoutes);
-
-app.get('/', (req, res) => {
-    res.send('Hello world');
-});
 
 export default app;

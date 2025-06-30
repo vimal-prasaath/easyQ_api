@@ -4,7 +4,6 @@ const router=express.Router()
 
 router.post("/add",createDoctor)
 
-console.log("In Router")
 router.get("/:doctorId",getDoctor)
 
 router.get("/all/:hospitalId",getAllDoctor)

@@ -1,4 +1,3 @@
-import { connect } from "http2";
 import mongoose from "mongoose";
 const MONGO_URL=process.env.MONGO_URI || 'mongodb://localhost:27017'
 export const dbConnect=async()=>{
