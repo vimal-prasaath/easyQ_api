@@ -163,4 +163,5 @@ router.get('/doctor/:doctorId', getAllAppointmentOfDoctor)
  */
 router.get('/hospital/:hospitalId', getAllAppointmentOfHospital)
 
+
 export default router

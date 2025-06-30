@@ -53,6 +53,19 @@ const hospitalSchema = new Schema({
             index: '2dsphere'
         }
     },
+     departments: [
+        {
+            name: {
+                type: String,
+                trim: true,
+                required: true
+            },
+            headOfDepartment: { type: String, trim: true },
+            contactNumber: { type: String },
+            description: { type: String, trim: true },
+            total_number_Doctor: { type: String }
+        }
+    ],
     hospitalType: {
         type: String,
         required: true

@@ -9,7 +9,8 @@ const allowedUpdates = [
         'imageUrl',
         'ambulanceNumber',
         'location',
-        'address'
+        'address',
+        'departments'
     ];
     try{
     const updateData = {};
@@ -25,11 +26,12 @@ const constructObject=(updateData,allowedUpdates,data)=>{
   for (const key of Object.keys(data)) {
      if (allowedUpdates.includes(key)) {
           updateData[key] = data[key];
-          if(key === 'address' || key === 'location' ){
+          if(key === 'address' || key === 'location' || key === 'departments' ){
               constructObject(updateData,allowedUpdates,data[key]) 
             }   
      }
   }
+  console.log(updateData,"UpdateData")
   return updateData
 }
 
@@ -38,8 +40,7 @@ export const updateFacilityPayload=(data)=>{
 
     const allowedUpdates = [
         'facilities',
-        'labs',
-        'departments'
+        'labs'
     ];
 
     const updateData = {};
