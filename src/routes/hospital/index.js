@@ -1,7 +1,7 @@
 import express from 'express'
 import { createHospital ,getHospitalDetails,updateFacility,
     updateReviewComment, hospitalFacility, createReviews , 
-    deleteHsptl ,getAllHospitalDetails , updateHospitalBasicDetails, getfavourite} from '../../controller/hopital_controller/hospital.js'
+    deleteHsptl ,getAllHospitalDetails , updateHospitalBasicDetails} from '../../controller/hopital_controller/hospital.js'
 
 const router = express.Router()
 
@@ -139,7 +139,7 @@ router.post('/review', createReviews)
  *         description: Hospital not found
  */
 router.delete('/:hospitalId', deleteHsptl)
-router.get('/:hospitalId', getHospitalDetails)
+router.get('/:userId/:hospitalId', getHospitalDetails)
 
 /**
  * @swagger
@@ -162,7 +162,6 @@ router.get('/:hospitalId', getHospitalDetails)
  *         description: Unauthorized
  */
 router.get('/', getAllHospitalDetails)
-router.get('/hospital/getfavourite',getfavourite)
 
 /**
  * @swagger

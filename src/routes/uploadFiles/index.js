@@ -1,9 +1,9 @@
 import express from 'express'
-import {uploadRouter} from "../../controller/uploadFile.js"
+import {uploadfile} from "../../controller/uploadFile.js"
 const router = express.Router()
 
-router.post('/',uploadRouter)
+router.post('/',uploadfile)
 
-router.get('/userId',)
+// router.get('/userId',)
 
 export default router

@@ -168,17 +168,37 @@ export async function getAllHospitalDetails(req, res) {
 
 
 export async function getHospitalDetails(req, res) {
-    const { hospitalId } = req.params
+    const {userId, hospitalId } = req.params
     try {
         const allHospitals = await Hospital.findOne({ hospitalId: hospitalId });
         const facilities = await getHsptlFacilities(hospitalId)
         const review = await getHsptlReviews(hospitalId)
+        
+        const favouriteDoc = await Favourite.findOne(
+            {
+                userId: userId,
+                "favouriteHospitals.hospitalId": hospitalId
+            },
+            {
+                "favouriteHospitals.$": 1,
+                _id: 0
+            }
+        );
+
+        let isFavouriteStatus = false;
+
+        if (favouriteDoc && favouriteDoc.favouriteHospitals && favouriteDoc.favouriteHospitals.length > 0) {
+            const matchedHospital = favouriteDoc.favouriteHospitals[0];
+            isFavouriteStatus = matchedHospital.isFavourite;
+        }
+
         res.status(200).json({
             message: 'Successfully retrieved all hospital basic details',
             count: allHospitals.length,
             hospitals: allHospitals,
             facilities: facilities,
-            review: review
+            review: review,
+            isfavourite: isFavouriteStatus
         });
 
     } catch (error) {
@@ -239,44 +259,6 @@ export async function deleteHsptl(req, res) {
     }
 }
 
-
-export async function getfavourite(req, res) {
-    try {
-        const { userId, hospitalId } = req.params
-        if (!hospitalId) {
-            return res.status(400).json({ message: "hospitalId is required" });
-        }
-        const hospital = await Favourite.findOne(
-            { userId, hospitalId },
-            { isfavourite: 1, _id: 0 }
-        );
-        if (!hospital) {
-            return res.status(404).json({ message: "Hospital not found" });
-        }
-        res.status(200).json({ isfavourite: hospital.isfavourite })
-    } catch (e) {
-        console.log(e)
-    }
-}
-
-export async function postfavourite(req, res) {
-    try {
-        const { userId, hospitalId, favourite } = req.body
-        if (!userId || !hospitalId) {
-            return res.status(400).json({ message: 'userId and hospitalId are required' });
-        }
-        const existing = await Favourite.findOneAndUpdate(
-      { userId, hospitalId },
-      { isfavourite: favourite },
-      { upsert: true, new: true }
-    ); 
-        res.status(200).json({  message: `Favourite status updated to ${favourite}`, })
-    } catch (e) {
-        console.log(e)
-         res.status(500).json({ message: 'Internal server error' });
-    }
-
-}
 
 
 

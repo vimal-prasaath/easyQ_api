@@ -1,4 +1,4 @@
-import FileUpload from "../model/file";
+import FileUpload from "../model/file.js";
 export async function uploadfile(req,res){
     try{
     const { userId, fileType , file } = req.body;
