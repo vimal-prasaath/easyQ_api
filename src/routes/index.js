@@ -6,6 +6,7 @@
     import searchRouter from './search/index.js';
     import  qrRouter  from '../routes/qrGenerator/index.js';
     import uploadRouter from '../routes/uploadFiles/index.js'
+    import favouriteRouter from '../routes/favourite/index.js';
     const router = express.Router();
 
     router.use('/user', userRouter);
@@ -21,5 +22,7 @@
     router.use('/qrgenerator' , qrRouter)
 
     router.use('/uploadfile' , uploadRouter)
+
+    router.use('/favourite',favouriteRouter)
 
     export default router;

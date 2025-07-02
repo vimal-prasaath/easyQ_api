@@ -1,12 +1,21 @@
 import mongoose from 'mongoose';
 
 const favouriteSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  hospitalId: { type: String, ref: 'Hospital', required: true },
-    isfavourite:{
-         type: Boolean,
-         default: false
-    },
+  userId: { type: String, ref: 'User', required: true },
+  favouriteHospitals: [ 
+        {
+            hospitalId: {
+                type: String, 
+                required: true
+            },
+            isFavourite: { 
+                type: Boolean,
+                default: false 
+            },
+             _id: false
+           }
+    ],
+
   createdAt: { type: Date, default: Date.now }
 });
 
