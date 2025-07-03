@@ -1,7 +1,7 @@
 import express from 'express'
 import { createHospital ,getHospitalDetails,updateFacility,
     updateReviewComment, hospitalFacility, createReviews , 
-    deleteHsptl ,getAllHospitalDetails , updateHospitalBasicDetails} from '../../controller/hopital_controller/hospital.js'
+    deleteHsptl ,getAllHospitalDetails , updateHospitalBasicDetails , getHospitalDetailsBylocation} from '../../controller/hopital_controller/hospital.js'
 
 const router = express.Router()
 
@@ -141,6 +141,7 @@ router.post('/review', createReviews)
 router.delete('/:hospitalId', deleteHsptl)
 router.get('/:userId/:hospitalId', getHospitalDetails)
 
+router.get('/location',getHospitalDetailsBylocation)
 /**
  * @swagger
  * /api/hospital:
