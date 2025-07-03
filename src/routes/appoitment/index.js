@@ -1,6 +1,6 @@
 import express from 'express'
 import {createAppointment , updateAppointment , deleteAppointment
-    ,getAllAppointmentOfDoctor , getAppointment , getAllAppointmentOfHospital} from "../../controller/appointment/index.js"
+    ,getAllAppointmentOfDoctor , getAppointment , getAllAppointmentOfHospital , getAllAppointmentOfUser} from "../../controller/appointment/index.js"
 const router = express.Router()
 
 /**
@@ -162,6 +162,8 @@ router.get('/doctor/:doctorId', getAllAppointmentOfDoctor)
  *         description: Hospital not found
  */
 router.get('/hospital/:hospitalId', getAllAppointmentOfHospital)
+
+router.get('/userId/:patientId',getAllAppointmentOfUser)
 
 
 export default router

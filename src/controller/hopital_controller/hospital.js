@@ -3,7 +3,7 @@ import Hospital from "../../model/hospital/index.js"
 import HsptlFacilities from "../../model/hospital/facility.js"
 import Reviews from "../../model/hospital/review.js"
 import Favourite from "../../model/hospital/favourite.js"
-import { updateObjectPayload, updateFacilityPayload, updateComment } from './update_controller.js'
+import { updateObjectPayload, updateFacilityPayload, updateComment ,searchBylocation} from './update_controller.js'
 export async function createHospital(req, res) {
     const data = req.body
     try {
@@ -207,6 +207,21 @@ export async function getHospitalDetails(req, res) {
 
 }
 
+export async function getHospitalDetailsBylocation(req, res) {
+  try {
+    const query= searchBylocation(req.body)
+    
+    if (Object.keys(query).length === 0) {
+      return res.status(400).json({ message: "Please provide either address or location for the search." });
+    }
+
+    const allHospitals = await Hospital.find(query);
+    res.status(200).json({ data: allHospitals });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ message: "Error fetching hospital details.", error: e.message });
+  }
+}
 export async function getHsptlFacilities(hospitalId) {
 
     try {
