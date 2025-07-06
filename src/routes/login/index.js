@@ -5,7 +5,7 @@ const router = express.Router()
 /**
  * @swagger
  * /login:
- *   get:
+ *   post:
  *     summary: Login user
  *     tags: [Authentication]
  *     requestBody:
@@ -41,6 +41,6 @@ const router = express.Router()
  *       404:
  *         description: User not found
  */
-router.get('/', login)
+router.post('/', login)
 
 export default router

@@ -7,6 +7,8 @@
     import  qrRouter  from '../routes/qrGenerator/index.js';
     import uploadRouter from '../routes/uploadFiles/index.js'
     import favouriteRouter from '../routes/favourite/index.js';
+    import helpCenter from '../routes/helpCenter/index.js'
+    import getSuggestionRouter from '../routes/getSuggestion/index.js'
     const router = express.Router();
 
     router.use('/user', userRouter);
@@ -24,5 +26,9 @@
     router.use('/uploadfile' , uploadRouter)
 
     router.use('/favourite',favouriteRouter)
+
+    router.use('/qa',helpCenter)
+
+    router.use('/getSuggestion',getSuggestionRouter)
 
     export default router;

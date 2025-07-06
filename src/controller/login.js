@@ -1,29 +1,36 @@
 import { getUserDetails } from '../util/authController.js';
 import { validUser, updateToken, getToken } from '../util/loginHandler.js';
-
-export async function login(req, res) {
+import { EasyQError } from '../config/error.js';
+import { httpStatusCode } from '../util/statusCode.js';
+export async function login(req, res, next) {
   const { email, password } = req.body;
 
   try {
     const userData = await getUserDetails(email);
 
     if (!userData) {
-      return res.status(401).send({ message: 'User not found.' });
+      return next(new EasyQError(
+        'AuthenticationError',
+        httpStatusCode.UNAUTHORIZED,
+        true,
+        'User not found.'
+      ));
     }
 
     const token = await getToken(userData);
+    const valid = await validUser(password, userData.passwordHash)
+
+    if (!valid) {
+      return next(new EasyQError(
+        'AuthenticationError',
+        httpStatusCode.UNAUTHORIZED,
+        true,
+        'Invalid credentials.'
+      ));
+    }
     await updateToken(token, userData.userId);
-   const valid = await validUser(password, userData.passwordHash)
-   
-   if(valid){
-     res.status(200).send({ token: token });
-   }
-
-
-
+    res.status(httpStatusCode.OK).send({ token: token });
   } catch (error) {
-    console.error('Login error:', error); 
-
-
+    next(error);
   }
 }

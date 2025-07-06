@@ -4,56 +4,156 @@ import HsptlFacilities from "../../model/hospital/facility.js"
 import Reviews from "../../model/hospital/review.js"
 import Favourite from "../../model/hospital/favourite.js"
 import { updateObjectPayload, updateFacilityPayload, updateComment ,searchBylocation} from './update_controller.js'
-export async function createHospital(req, res) {
-    const data = req.body
+import { EasyQError } from "../../config/error.js"
+import { httpStatusCode } from "../../util/statusCode.js"
+export async function createHospital(req, res ,next) {
+  
     try {
-        const hospital = await Hospital.create(data)
-        await Favourite.create({ userId: userId }, { hospitalId: hospital.hospitalId });
-        res.status(200).json({ message: "Hospita Data is Created SuccussFully" })
-    } catch (e) {
-        console.log(e)
-    }
-
-}
-export async function hospitalFacility(req, res) {
-    const data = req.body
-    try {
-        const hsptl = await Hospital.findOne({ hospitalId: data["hospitalId"] })
-        if (!hsptl) {
-            res.status(400).json({ message: "HospitalId is not found" })
-            return
+        const data = req.body;
+        if (!data.name || !data.email || !data.phoneNumber) {
+            return next(new EasyQError(
+                'ValidationError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                'Hospital name, email, and phone number are required.'
+            ));
         }
-        const facilities = await HsptlFacilities.create(data)
-        res.status(200).json({ message: "Data is Saved SuccussFully" })
 
-    } catch (e) {
-        console.log(e)
-    }
-}
-export async function createReviews(req, res) {
-    const data = req.body
-    try {
-        const hsptl = await Hospital.findOne({ hospitalId: data["hospitalId"] })
-        if (!hsptl) {
-            res.status(400).json({ message: "HospitalId is not found" })
-            return
+        // Check if hospital with this email already exists to avoid duplicates
+        const existingHospital = await Hospital.findOne({ email: data.email });
+        if (existingHospital) {
+            return next(new EasyQError(
+                'ConflictError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                'Hospital with this email already exists.'
+            ));
         }
-        const reviews = await Reviews.create(data)
-        res.status(200).json({ message: "Data is Saved SuccussFully" })
-    } catch (e) {
-        console.log(e)
+
+        const hospital = await Hospital.create(data);
+        res.status(httpStatusCode.CREATED).json({
+            message: "Hospital Data is Created Successfully",
+            hospitalId: hospital.hospitalId 
+        });
+    } catch (error) {
+        if (error.name === 'ValidationError' && error.errors) {
+            const messages = Object.values(error.errors).map(val => val.message);
+            return next(new EasyQError(
+                'ValidationError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                messages.join('; ')
+            ));
+        }
+        next(new EasyQError(
+            'DatabaseError',
+            httpStatusCode.INTERNAL_SERVER_ERROR,
+            false,
+            `Failed to create hospital: ${error.message}`
+        ));
+    }
+
+}
+export async function hospitalFacility(req, res , next) {
+  
+    try {
+        const data = req.body;
+        if (!data.hospitalId || !data.facilities || !data.labs) {
+            return next(new EasyQError(
+                'ValidationError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                'Hospital ID, facilities, and labs are required.'
+            ));
+        }
+
+        const hsptl = await Hospital.findOne({ hospitalId: data.hospitalId }); // Assuming _id is used
+        if (!hsptl) {
+            return next(new EasyQError(
+                'NotFoundError',
+                httpStatusCode.NOT_FOUND,
+                true,
+                "Hospital not found with the provided ID."
+            ));
+        }
+
+        const facilities = await HsptlFacilities.create(data);
+        res.status(httpStatusCode.CREATED).json({
+            message: "Facilities data saved successfully",
+        });
+    } catch (error) {
+        if (error.name === 'ValidationError' && error.errors) {
+            const messages = Object.values(error.errors).map(val => val.message);
+            return next(new EasyQError(
+                'ValidationError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                messages.join('; ')
+            ));
+        }
+        next(new EasyQError(
+            'DatabaseError',
+            httpStatusCode.INTERNAL_SERVER_ERROR,
+            false,
+            `Failed to save hospital facilities: ${error.message}`
+        ));
+    }
+}
+export async function createReviews(req, res , next) {
+    try {
+   const data = req.body;
+        if (!data.hospitalId || !data.reviewerName || !data.rating || !data.comment) {
+            return next(new EasyQError(
+                'ValidationError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                'Hospital ID, reviewer name, rating, and comment are required.'
+            ));
+        }
+
+        const hsptl = await Hospital.findOne({ hospitalId: data.hospitalId }); 
+        if (!hsptl) {
+            return next(new EasyQError(
+                'NotFoundError',
+                httpStatusCode.NOT_FOUND,
+                true,
+                "Hospital not found with the provided ID."
+            ));
+        }
+
+        const reviews = await Reviews.create(data);
+        res.status(httpStatusCode.CREATED).json({
+            message: "Review saved successfully",
+            reviewId: reviews._id
+        });
+    } catch (error) {
+        if (error.name === 'ValidationError' && error.errors) {
+            const messages = Object.values(error.errors).map(val => val.message);
+            return next(new EasyQError(
+                'ValidationError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                messages.join('; ')
+            ));
+        }
+        next(new EasyQError(
+            'DatabaseError',
+            httpStatusCode.INTERNAL_SERVER_ERROR,
+            false,
+            `Failed to save review: ${error.message}`
+        ));
     }
 
 }
 
-export const updateHospitalBasicDetails = async (req, res) => {
-    const { hospitalId } = req.params;
+export const updateHospitalBasicDetails = async (req, res ,next) => {
 
-    const updateData = updateObjectPayload(req.body)
-
+  const { hospitalId } = req.params;
     try {
+      
+        const updateData = updateObjectPayload(req.body); 
         const updatedHospital = await Hospital.findOneAndUpdate(
-            { hospitalId: hospitalId },
+            { hospitalId: hospitalId }, 
             { $set: updateData },
             {
                 new: true,
@@ -63,26 +163,53 @@ export const updateHospitalBasicDetails = async (req, res) => {
         );
 
         if (!updatedHospital) {
-            return res.status(404).json({ message: 'Hospital not found.' });
+            return next(new EasyQError(
+                'NotFoundError',
+                httpStatusCode.NOT_FOUND,
+                true,
+                'Hospital not found with the provided ID.'
+            ));
         }
 
-        res.status(200).json({
+        res.status(httpStatusCode.OK).json({
             message: 'Hospital basic details updated successfully',
             hospital: updatedHospital
         });
 
     } catch (error) {
-        console.error('Error updating hospital basic details:', error);
+        if (error.name === 'ValidationError' && error.errors) {
+            const messages = Object.values(error.errors).map(val => val.message);
+            return next(new EasyQError(
+                'ValidationError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                messages.join('; ')
+            ));
+        }
+        if (error.name === 'CastError' && error.kind === 'ObjectId') {
+            return next(new EasyQError(
+                'InvalidInputError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                `Invalid Hospital ID format: ${hospitalId}`
+            ));
+        }
+        next(new EasyQError(
+            'DatabaseError',
+            httpStatusCode.INTERNAL_SERVER_ERROR,
+            false,
+            `Error updating hospital basic details: ${error.message}`
+        ));
     }
 };
 
-export async function updateFacility(req, res) {
+export async function updateFacility(req, res , next) {
     const { hospitalId } = req.params;
-    const updateData = updateFacilityPayload(req.body)
+    const updateData = updateFacilityPayload(req.body); 
 
     try {
         const updatedDetails = await HsptlFacilities.findOneAndUpdate(
-            { hospitalId: hospitalId },
+            { hospitalId: hospitalId }, 
             { $set: updateData },
             {
                 new: true,
@@ -95,36 +222,60 @@ export async function updateFacility(req, res) {
         if (updatedDetails.isNew) {
             const hospitalExists = await Hospital.findOne({ hospitalId: hospitalId });
             if (!hospitalExists) {
-                console.warn(`HospitalDetails document created for non-existent HospitalId: ${hospitalId}`);
+                console.warn(`HospitalFacilities document created for non-existent Hospital ID: ${hospitalId}`);
             }
         }
 
-        res.status(200).json({
+        res.status(httpStatusCode.OK).json({
             message: 'Hospital facilities and details updated successfully',
             details: updatedDetails
         });
 
     } catch (error) {
-        console.error('Error updating hospital facilities/details:', error);
+        if (error.name === 'ValidationError' && error.errors) {
+            const messages = Object.values(error.errors).map(val => val.message);
+            return next(new EasyQError(
+                'ValidationError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                messages.join('; ')
+            ));
+        }
+        if (error.name === 'CastError' && error.kind === 'ObjectId') {
+            return next(new EasyQError(
+                'InvalidInputError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                `Invalid Hospital ID format: ${hospitalId}`
+            ));
+        }
+        next(new EasyQError(
+            'DatabaseError',
+            httpStatusCode.INTERNAL_SERVER_ERROR,
+            false,
+            `Error updating hospital facilities/details: ${error.message}`
+        ));
     }
 }
 
-export async function updateReviewComment(req, res) {
-    const { hospitalId } = req.params;
-    const { updateFields, averageRating } = await updateComment(req.body, hospitalId)
+export async function updateReviewComment(req, res ,next) {
+   const { hospitalId } = req.params;
+    const { updateFields, averageRating } = await updateComment(req.body, hospitalId);
+
     try {
-        const hospitalExists = await Hospital.findOne({ hospitalId: hospitalId });
+        const hospitalExists = await Hospital.findOne({ hospitalId: hospitalId }); 
         if (!hospitalExists) {
-            return res.status(404).json({ message: 'Hospital not found.' });
+            return next(new EasyQError(
+                'NotFoundError',
+                httpStatusCode.NOT_FOUND,
+                true,
+                'Hospital not found with the provided ID.'
+            ));
         }
 
         const updatedReview = await Reviews.findOneAndUpdate(
-            {
-                hospitalId: hospitalId
-            },
-            {
-                $set: updateFields
-            },
+            { hospitalId: hospitalId }, 
+            { $set: updateFields },
             {
                 new: true,
                 runValidators: true,
@@ -133,47 +284,99 @@ export async function updateReviewComment(req, res) {
         );
 
         if (!updatedReview) {
-            return res.status(404).json({ message: 'Review not found for this hospital.' });
+            return next(new EasyQError(
+                'NotFoundError',
+                httpStatusCode.NOT_FOUND,
+                true,
+                'Review not found for this hospital or review ID.'
+            ));
         }
 
+        // Update average rating on the Hospital document
         await Hospital.updateOne(
-            { hospitalId: hospitalId },
+            { hospitalId: hospitalId }, 
             { $set: { averageRating: averageRating } }
         );
-        res.status(200).json({
+
+        res.status(httpStatusCode.OK).json({
             message: 'Review updated successfully',
             review: updatedReview
         });
 
     } catch (error) {
-        console.error('Error updating review:', error);
+        if (error.name === 'ValidationError' && error.errors) {
+            const messages = Object.values(error.errors).map(val => val.message);
+            return next(new EasyQError(
+                'ValidationError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                messages.join('; ')
+            ));
+        }
+        if (error.name === 'CastError' && error.kind === 'ObjectId') {
+            return next(new EasyQError(
+                'InvalidInputError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                `Invalid Hospital ID format: ${hospitalId}`
+            ));
+        }
+        next(new EasyQError(
+            'DatabaseError',
+            httpStatusCode.INTERNAL_SERVER_ERROR,
+            false,
+            `Error updating review: ${error.message}`
+        ));
     }
 }
 
 
-export async function getAllHospitalDetails(req, res) {
-    try {
-        const allHospitals = await Hospital.find({}); // Find all documents in the Hospital collection
+export async function getAllHospitalDetails(req, res,next) {
+   try {
+        const allHospitals = await Hospital.find({}); 
 
-        res.status(200).json({
+        res.status(httpStatusCode.OK).json({
             message: 'Successfully retrieved all hospital basic details',
             count: allHospitals.length,
             hospitals: allHospitals
         });
 
     } catch (error) {
-        console.error('Error fetching all hospital basic details:', error);
+        next(new EasyQError(
+            'DatabaseError',
+            httpStatusCode.INTERNAL_SERVER_ERROR,
+            false,
+            `Error fetching all hospital basic details: ${error.message}`
+        ));
     }
 }
 
 
-export async function getHospitalDetails(req, res) {
-    const {userId, hospitalId } = req.params
+export async function getHospitalDetails(req, res , next) {
+     const { userId, hospitalId } = req.params; 
     try {
-        const allHospitals = await Hospital.findOne({ hospitalId: hospitalId });
-        const facilities = await getHsptlFacilities(hospitalId)
-        const review = await getHsptlReviews(hospitalId)
-        
+        if (!hospitalId) {
+            return next(new EasyQError(
+                'ValidationError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                'Hospital ID is required.'
+            ));
+        }
+
+        const hospital = await Hospital.findOne({hospitalId:hospitalId}); 
+        if (!hospital) {
+            return next(new EasyQError(
+                'NotFoundError',
+                httpStatusCode.NOT_FOUND,
+                true,
+                'Hospital not found.'
+            ));
+        }
+
+        const facilities = await getHsptlFacilities(hospitalId);
+        const review = await getHsptlReviews(hospitalId);
+
         const favouriteDoc = await Favourite.findOne(
             {
                 userId: userId,
@@ -186,50 +389,78 @@ export async function getHospitalDetails(req, res) {
         );
 
         let isFavouriteStatus = false;
-
         if (favouriteDoc && favouriteDoc.favouriteHospitals && favouriteDoc.favouriteHospitals.length > 0) {
             const matchedHospital = favouriteDoc.favouriteHospitals[0];
             isFavouriteStatus = matchedHospital.isFavourite;
         }
 
-        res.status(200).json({
-            message: 'Successfully retrieved all hospital basic details',
-            count: allHospitals.length,
-            hospitals: allHospitals,
+        res.status(httpStatusCode.OK).json({
+            message: 'Successfully retrieved hospital details',
+            hospital: hospital, 
             facilities: facilities,
             review: review,
             isfavourite: isFavouriteStatus
         });
 
     } catch (error) {
-        console.error('Error fetching all hospital basic details:', error);
+        if (error.name === 'CastError' && error.kind === 'ObjectId') {
+            return next(new EasyQError(
+                'InvalidInputError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                `Invalid Hospital ID format: ${hospitalId}`
+            ));
+        }
+        next(new EasyQError(
+            'DatabaseError',
+            httpStatusCode.INTERNAL_SERVER_ERROR,
+            false,
+            `Error fetching hospital details: ${error.message}`
+        ));
     }
 
 }
 
-export async function getHospitalDetailsBylocation(req, res) {
-  try {
-    const query= searchBylocation(req.body)
-    
-    if (Object.keys(query).length === 0) {
-      return res.status(400).json({ message: "Please provide either address or location for the search." });
-    }
+export async function getHospitalDetailsBylocation(req, res , next) {
+try {
+        const query = searchBylocation(req.body); 
 
-    const allHospitals = await Hospital.find(query);
-    res.status(200).json({ data: allHospitals });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({ message: "Error fetching hospital details.", error: e.message });
-  }
+        if (Object.keys(query).length === 0) {
+            return next(new EasyQError(
+                'ValidationError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                "Please provide either address or location for the search."
+            ));
+        }
+
+        const allHospitals = await Hospital.find(query);
+        res.status(httpStatusCode.OK).json({
+            message: 'Hospitals found successfully',
+            count: allHospitals.length,
+            data: allHospitals
+        });
+    } catch (error) {
+        next(new EasyQError(
+            'DatabaseError',
+            httpStatusCode.INTERNAL_SERVER_ERROR,
+            false,
+            `Error fetching hospital details by location: ${error.message}`
+        ));
+    }
 }
 export async function getHsptlFacilities(hospitalId) {
 
     try {
-        const allHospitals = await HsptlFacilities.findOne({ hospitalId: hospitalId });
-        return allHospitals
-
+        const facilities = await HsptlFacilities.findOne({ hospitalId: hospitalId }); 
+        return facilities;
     } catch (error) {
-        console.error('Error fetching all hospital facilities details:', error);
+        throw new EasyQError(
+            'DatabaseError',
+            httpStatusCode.INTERNAL_SERVER_ERROR,
+            false,
+            `Failed to retrieve hospital facilities: ${error.message}`
+        );
     }
 }
 
@@ -237,40 +468,69 @@ export async function getHsptlReviews(hospitalId) {
 
     try {
         const reviews = await Reviews.findOne({ hospitalId: hospitalId });
-        return reviews
-
-
+        return reviews;
     } catch (error) {
-        console.error('Error fetching all hospital Revies details:', error);
+        throw new EasyQError(
+            'DatabaseError',
+            httpStatusCode.INTERNAL_SERVER_ERROR,
+            false,
+            `Failed to retrieve hospital reviews: ${error.message}`
+        );
     }
 }
 
-export async function deleteHsptl(req, res) {
+export async function deleteHsptl(req, res,next) {
     const { hospitalId } = req.params;
 
     try {
-        const deletedHospital = await Hospital.findOneAndDelete({ hospitalId: hospitalId });
-
-        if (!deletedHospital) {
-            return res.status(404).json({ message: 'Hospital not found.' });
+        if (!hospitalId) {
+            return next(new EasyQError(
+                'ValidationError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                'Hospital ID is required.'
+            ));
         }
 
-        const deletedDetailsResult = await Hospital.deleteOne({ hospitalId: hospitalId });
+        const deletedHospital = await Hospital.findOneAndDelete({ hospitalId: hospitalId }); 
 
-        const deletedReviewsResult = await Reviews.deleteOne({ hospitalId: hospitalId });
+        if (!deletedHospital) {
+            return next(new EasyQError(
+                'NotFoundError',
+                httpStatusCode.NOT_FOUND,
+                true,
+                'Hospital not found with the provided ID.'
+            ));
+        }
 
-        res.status(200).json({
+        await HsptlFacilities.deleteOne({ hospitalId: hospitalId }); 
+        await Reviews.deleteOne({ hospitalId: hospitalId }); 
+        await Favourite.deleteMany({ 'favouriteHospitals.hospitalId': hospitalId }); 
+
+        res.status(httpStatusCode.OK).json({
             message: `Hospital "${deletedHospital.name}" (ID: ${hospitalId}) and its associated data deleted successfully.`,
             deletedHospital: {
-                hospitalId: deletedHospital.hospitalId,
+                hospitalId: deletedHospital.hospitalId, 
                 name: deletedHospital.name
             },
-            deletedDetailsCount: deletedDetailsResult.deletedCount,
-            deletedReviewsCount: deletedReviewsResult.deletedCount
+          
         });
 
     } catch (error) {
-        console.error('Error deleting hospital and associated data:', error);
+        if (error.name === 'CastError' && error.kind === 'ObjectId') {
+            return next(new EasyQError(
+                'InvalidInputError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                `Invalid Hospital ID format: ${hospitalId}`
+            ));
+        }
+        next(new EasyQError(
+            'DatabaseError',
+            httpStatusCode.INTERNAL_SERVER_ERROR,
+            false,
+            `Error deleting hospital and associated data: ${error.message}`
+        ));
     }
 }
 

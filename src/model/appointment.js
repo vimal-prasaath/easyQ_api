@@ -17,8 +17,6 @@ const appointmentSchema = new Schema({
             });
         }
     },
-
- 
     patientId: { 
         type: String,
         ref: 'User',
@@ -74,8 +72,6 @@ const appointmentSchema = new Schema({
         type: Boolean,
         default: false 
     },
-
-
     patientNotes: {
         type: String,
         trim: true,
