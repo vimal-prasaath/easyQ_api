@@ -9,12 +9,11 @@ import login from './routes/login/index.js';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpecs from './config/swagger.js';
 import './config/sheduler.js'
-import { EasyQError } from "./config/error.js"
+import { EasyQError } from "./config/error.js";
+import { httpStatusCode } from './util/statusCode.js';
 dotenv.config();
 
 const app = express();
-
-
 
 app.use(session({
     secret: process.env.SESSION_SECRET,
@@ -62,10 +61,10 @@ app.use((req, res, next) => {
 
 app.use((err, req, res, next) => {
     if (err.stack) {
-        console.error('Stack Trace:', err.stack);
+        console.error('Stack Trace:', err?.stack);
     }
 
-    if (err instanceof EasyQError && err.isOperational) {
+    if (err instanceof EasyQError && err?.isOperational) {
         return res.status(err.statusCode).json({
             status: 'fail',
             message: err.description,

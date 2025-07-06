@@ -24,7 +24,7 @@ export async function createHospital(req, res ,next) {
         if (existingHospital) {
             return next(new EasyQError(
                 'ConflictError',
-                httpStatusCode.CONFLICT,
+                httpStatusCode.BAD_REQUEST,
                 true,
                 'Hospital with this email already exists.'
             ));
