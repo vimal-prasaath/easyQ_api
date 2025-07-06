@@ -1,41 +1,62 @@
 import mongoose from 'mongoose';
 
-const fileUploadSchema = new mongoose.Schema({
-  userId: {
-    type: String,
-    ref: 'User',
-    required: true
-  },
-  fileName: {
-    type: String,
-    required: true
-  },
-  mimeType: {
-    type: String,
-    required: true
-  },
-  size: {
-    type: Number,
-    required: true
-  },
-  fileType: {
-    type: String, 
-    required: true
-  },
-  fileUrl: {
-    type: String,
-    required: true
-  },
-  fileBuffer: {
-    type: Buffer, 
-    required: false 
-  },
-  uploadedAt: {
-    type: Date,
-    default: Date.now
-  }
+const documentSchema = new mongoose.Schema({
+    fileName: {
+        type: String,
+        required: true
+    },
+    mimeType: {
+        type: String,
+        required: true
+    },
+    size: {
+        type: Number,
+        required: true
+    },
+    fileType: {
+        type: String, 
+        required: true
+    },
+    fileKey:{
+        type: String,
+        required: false
+    },
+    fileUrl: {
+        type: String,
+        required: false
+    },
+      iv: { 
+        type: String,
+        required: false
+    },
+    fileBuffer: {
+        type: String, 
+        required: false 
+    },
+    uploadedAt: {
+        type: Date,
+        default: Date.now
+    }
 });
 
-const FileUpload = mongoose.model('FileUpload', fileUploadSchema);
+const hospitalDocumentsSchema = new mongoose.Schema({
+    hospitalId: {
+        type: String, 
+        ref: 'Hospital'
+    },
+    documents: [documentSchema] 
+});
 
-export default FileUpload;
+const userHospitalFilesSchema = new mongoose.Schema({
+    userId: {
+        type: String, 
+        ref: 'User',
+        required: true,
+        unique: true 
+    },
+    hospitals: [hospitalDocumentsSchema] 
+});
+
+const UserHospitalFiles = mongoose.model('UserHospitalFiles', userHospitalFilesSchema);
+
+export default UserHospitalFiles;

@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 const favouriteSchema = new mongoose.Schema({
-  userId: { type: String, ref: 'User', required: true },
+  userId: { type: String, ref: 'User' },
   favouriteHospitals: [ 
         {
             hospitalId: {

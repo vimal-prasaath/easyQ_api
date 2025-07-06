@@ -1,7 +1,9 @@
 import express from 'express'
-import { createHospital ,getHospitalDetails,updateFacility,
-    updateReviewComment, hospitalFacility, createReviews , 
-    deleteHsptl ,getAllHospitalDetails , updateHospitalBasicDetails , getHospitalDetailsBylocation} from '../../controller/hopital_controller/hospital.js'
+import {
+    createHospital, getHospitalDetails, updateFacility,
+    updateReviewComment, hospitalFacility, createReviews,
+    deleteHsptl, getAllHospitalDetails, updateHospitalBasicDetails, getHospitalDetailsBylocation
+} from '../../controller/hopital_controller/hospital.js'
 
 const router = express.Router()
 
@@ -42,14 +44,7 @@ router.post('/basicDetails', createHospital)
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               hospitalId:
- *                 type: string
- *               facilities:
- *                 type: array
- *                 items:
- *                   type: string
+ *              $ref: '#/components/schemas/HospitalFacility'
  *     responses:
  *       201:
  *         description: Facilities added successfully
@@ -73,16 +68,7 @@ router.post('/facilities', hospitalFacility)
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               hospitalId:
- *                 type: string
- *               rating:
- *                 type: number
- *                 minimum: 1
- *                 maximum: 5
- *               comment:
- *                 type: string
+ *             $ref: '#/components/schemas/HospitalReview'
  *     responses:
  *       201:
  *         description: Review created successfully
@@ -141,7 +127,8 @@ router.post('/review', createReviews)
 router.delete('/:hospitalId', deleteHsptl)
 router.get('/:userId/:hospitalId', getHospitalDetails)
 
-router.get('/location',getHospitalDetailsBylocation)
+
+router.get('/location', getHospitalDetailsBylocation);
 /**
  * @swagger
  * /api/hospital:

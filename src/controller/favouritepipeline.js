@@ -1,4 +1,26 @@
+import { EasyQError } from '../config/error.js'; 
+import { httpStatusCode } from '../util/statusCode.js'; 
+
 export const favpipline = (hospitalId, favourite) => {
+    // Input validation
+    if (!hospitalId || typeof hospitalId !== 'string') {
+        throw new EasyQError(
+            'ValidationError',
+            httpStatusCode.BAD_REQUEST,
+            true,
+            'Invalid hospitalId provided for favourite pipeline. It must be a string.'
+        );
+    }
+
+    if (typeof favourite !== 'boolean') {
+        throw new EasyQError(
+            'ValidationError',
+            httpStatusCode.BAD_REQUEST,
+            true,
+            'Invalid favourite status provided for favourite pipeline. It must be a boolean (true/false).'
+        );
+    }
+
     let pipeline = [
         {
             $set: {
@@ -42,4 +64,4 @@ export const favpipline = (hospitalId, favourite) => {
         }
     ];
     return pipeline;
-}
+};

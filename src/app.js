@@ -8,11 +8,13 @@ import sign from "./routes/sign/index.js";
 import login from './routes/login/index.js';
 import swaggerUi from 'swagger-ui-express';
 import swaggerSpecs from './config/swagger.js';
-
 import './config/sheduler.js'
+import { EasyQError } from "./config/error.js"
 dotenv.config();
 
 const app = express();
+
+
 
 app.use(session({
     secret: process.env.SESSION_SECRET,
@@ -48,5 +50,33 @@ app.get('/auth/google/callback',
 
 // Protected API routes
 app.use('/api', authenticate, apiRoutes);
+
+app.use((req, res, next) => {
+    next(new EasyQError(
+        'NotFoundError',
+        httpStatusCode.NOT_FOUND,
+        true, 
+        `Cannot find ${req.originalUrl} on this server!`
+    ));
+});
+
+app.use((err, req, res, next) => {
+    if (err.stack) {
+        console.error('Stack Trace:', err.stack);
+    }
+
+    if (err instanceof EasyQError && err.isOperational) {
+        return res.status(err.statusCode).json({
+            status: 'fail',
+            message: err.description,
+            name: err.name
+        });
+    } else {
+        return res.status(500).json({
+            status: 'error',
+            message: 'An unexpected internal server error occurred.',
+        });
+    }
+});
 
 export default app;
