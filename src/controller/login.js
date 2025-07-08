@@ -1,11 +1,19 @@
 import { getUserDetails } from '../util/authController.js';
-import { validUser, updateToken, getToken } from '../util/loginHandler.js';
+import { validUser, updateToken, getSessionToken } from '../util/loginHandler.js';
 import { EasyQError } from '../config/error.js';
 import { httpStatusCode } from '../util/statusCode.js';
 export async function login(req, res, next) {
   const { email, password } = req.body;
 
   try {
+     if (!email || !password) {
+            return next(new EasyQError(
+                'ValidationError',
+                httpStatusCode.BAD_REQUEST,
+                true, 
+                'Email and password are required for login.'
+            ));
+        }
     const userData = await getUserDetails(email);
 
     if (!userData) {
@@ -17,7 +25,6 @@ export async function login(req, res, next) {
       ));
     }
 
-    const token = await getToken(userData);
     const valid = await validUser(password, userData.passwordHash)
 
     if (!valid) {
@@ -28,8 +35,19 @@ export async function login(req, res, next) {
         'Invalid credentials.'
       ));
     }
+
+    const token = await getSessionToken(userData);
     await updateToken(token, userData.userId);
-    res.status(httpStatusCode.OK).send({ token: token });
+    res.status(httpStatusCode.OK).json({
+            status: "success",
+            statusCode: httpStatusCode.OK,
+            message: "Login successful",
+            data: {
+                userId: userData.userId,
+                email: userData.email,
+                sessionToken: token
+            }
+        });
   } catch (error) {
     next(error);
   }
