@@ -11,16 +11,23 @@ import swaggerSpecs from './config/swagger.js';
 import './config/sheduler.js'
 import { EasyQError } from "./config/error.js";
 import { httpStatusCode } from './util/statusCode.js';
+import helmet from 'helmet';
+import cors from 'cors';
 dotenv.config();
 
 const app = express();
-
+app.use(helmet());
+app.use(cors());
+app.disable('x-powered-by');
 app.use(session({
     secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
         maxAge: 1000 * 60 * 60 * 24,
+         secure: process.env.NODE_ENV === 'production', 
+        httpOnly: true, 
+        sameSite: 'lax',
     }
 }));
 
@@ -28,6 +35,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 app.use(express.json());
+
 
 // Swagger Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
@@ -66,13 +74,15 @@ app.use((err, req, res, next) => {
 
     if (err instanceof EasyQError && err?.isOperational) {
         return res.status(err.statusCode).json({
-            status: 'fail',
+            status: 'error',
+            statusCode: err.statusCode,
             message: err.description,
             name: err.name
         });
     } else {
-        return res.status(500).json({
+        return res.status(httpStatusCode.INTERNAL_SERVER_ERROR).json({
             status: 'error',
+            statusCode: httpStatusCode.INTERNAL_SERVER_ERROR,
             message: 'An unexpected internal server error occurred.',
         });
     }

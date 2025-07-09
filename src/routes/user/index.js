@@ -77,6 +77,6 @@ router.put('/:userId', updateUser);
  *         description: User not found
  */
 router.get('/getUser', finduser);
-router.delete('/delete',deleteUser)
+router.delete('/delete/:userId',deleteUser)
 
 export default router;
