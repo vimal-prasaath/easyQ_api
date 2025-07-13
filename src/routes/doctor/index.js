@@ -1,6 +1,7 @@
 import { createDoctor, getDoctor, deleteDoctor, getAllDoctor, updateDoctor } from "../../controller/doctor.js";
 import express from "express";
-
+import authorizeOwnerOrAdmin from "../../middleware/adminOwnerOrAdmin.js";
+import authorizeRoles from "../../middleware/authorization.js";
 const router = express.Router();
 
 /**
@@ -25,7 +26,7 @@ const router = express.Router();
  *       401:
  *         description: Unauthorized
  */
-router.post("/add", createDoctor)
+router.post("/add",authorizeRoles, createDoctor)
 
 /**
  * @swagger
@@ -99,10 +100,10 @@ router.post("/add", createDoctor)
  *       404:
  *         description: Doctor not found
  */
-router.get("/:doctorId", getDoctor)
-router.put("/:doctorId", updateDoctor)
-router.delete("/:doctorId", deleteDoctor)
+router.get("/:doctorId",authorizeOwnerOrAdmin, getDoctor)
+router.put("/:doctorId", authorizeRoles,updateDoctor)
+router.delete("/:doctorId",authorizeRoles, deleteDoctor)
 
-router.get("/all/:hospitalId", getAllDoctor)
+router.get("/all/:hospitalId",authorizeOwnerOrAdmin, getAllDoctor)
 
 export default router;

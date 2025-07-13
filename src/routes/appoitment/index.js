@@ -2,7 +2,8 @@ import express from 'express'
 import {createAppointment , updateAppointment , deleteAppointment
     ,getAllAppointmentOfDoctor , getAppointment , getAllAppointmentOfHospital , getAllAppointmentOfUser} from "../../controller/appointment.js"
 const router = express.Router()
-
+import authorizeOwnerOrAdmin from '../../middleware/adminOwnerOrAdmin.js'
+import authorizeRoles from '../../middleware/authorization.js'
 /**
  * @swagger
  * /api/appointment:
@@ -25,7 +26,7 @@ const router = express.Router()
  *       401:
  *         description: Unauthorized
  */
-router.post('/', createAppointment)
+router.post('/',authorizeOwnerOrAdmin, createAppointment)
 
 /**
  * @swagger
@@ -99,9 +100,9 @@ router.post('/', createAppointment)
  *       404:
  *         description: Appointment not found
  */
-router.put('/:appointmentId', updateAppointment)
-router.delete('/:appointmentId', deleteAppointment)
-router.get('/:appointmentId', getAppointment)
+router.put('/:appointmentId',authorizeOwnerOrAdmin, updateAppointment)
+router.delete('/:appointmentId',authorizeOwnerOrAdmin, deleteAppointment)
+router.get('/:appointmentId',authorizeOwnerOrAdmin, getAppointment)
 
 /**
  * @swagger
@@ -131,7 +132,7 @@ router.get('/:appointmentId', getAppointment)
  *       404:
  *         description: Doctor not found
  */
-router.get('/doctor/:doctorId', getAllAppointmentOfDoctor)
+router.get('/doctor/:doctorId',authorizeRoles, getAllAppointmentOfDoctor)
 
 /**
  * @swagger
@@ -161,9 +162,9 @@ router.get('/doctor/:doctorId', getAllAppointmentOfDoctor)
  *       404:
  *         description: Hospital not found
  */
-router.get('/hospital/:hospitalId', getAllAppointmentOfHospital)
+router.get('/hospital/:hospitalId',authorizeRoles, getAllAppointmentOfHospital)
 
-router.get('/userId/:patientId',getAllAppointmentOfUser)
+router.get('/userId/:patientId',authorizeOwnerOrAdmin,getAllAppointmentOfUser)
 
 
 export default router

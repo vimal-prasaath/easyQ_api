@@ -1,5 +1,7 @@
 import express from "express"
 import {searchHospital} from '../../controller/searchController.js'
+import authorizeOwnerOrAdmin from "../../middleware/adminOwnerOrAdmin.js";
+import authorizeRoles from "../../middleware/authorization.js";
 const router=express.Router()
 
 /**
@@ -66,6 +68,6 @@ const router=express.Router()
  *       500:
  *         description: Server error
  */
-router.get('/',searchHospital)
+router.get('/',authorizeOwnerOrAdmin,searchHospital)
 
 export default router

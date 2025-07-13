@@ -1,6 +1,8 @@
 
 import express from 'express'
 import {qrGeneator , getQRCode} from '../../controller/qrgeneratorControllr.js'
+import authorizeOwnerOrAdmin from "../../middleware/adminOwnerOrAdmin.js";
+import authorizeRoles from "../../middleware/authorization.js";
 const router=express.Router()
 
 /**
@@ -50,7 +52,7 @@ const router=express.Router()
  *       500:
  *         description: Server error
  */
-router.post('/',qrGeneator)
+router.post('/',authorizeOwnerOrAdmin,qrGeneator)
 
 /**
  * @swagger
@@ -97,6 +99,6 @@ router.post('/',qrGeneator)
  *       500:
  *         description: Server error
  */
-router.get('/getdetails',getQRCode)
+router.get('/getdetails',authorizeOwnerOrAdmin,getQRCode)
 
 export default router
