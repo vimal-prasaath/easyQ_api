@@ -1,4 +1,3 @@
-
 export const constructPipeLine = (updates) => {
    let pipeline = [];
     let setFields = { updatedAt: new Date() };

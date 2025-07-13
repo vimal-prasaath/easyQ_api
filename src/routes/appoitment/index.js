@@ -1,6 +1,6 @@
 import express from 'express'
 import {createAppointment , updateAppointment , deleteAppointment
-    ,getAllAppointmentOfDoctor , getAppointment , getAllAppointmentOfHospital , getAllAppointmentOfUser} from "../../controller/appointment/index.js"
+    ,getAllAppointmentOfDoctor , getAppointment , getAllAppointmentOfHospital , getAllAppointmentOfUser} from "../../controller/appointment.js"
 const router = express.Router()
 
 /**

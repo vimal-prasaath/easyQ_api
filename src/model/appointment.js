@@ -7,7 +7,7 @@ const appointmentSchema = new Schema({
 
     appointmentId: { 
         type: String,
-        required: true,
+        required: [true, 'Appointment ID is required'],
         unique: true,
         default: () => {
         return generateUniqueId({
@@ -20,34 +20,63 @@ const appointmentSchema = new Schema({
     patientId: { 
         type: String,
         ref: 'User',
-        required: true
+        required: [true, 'Patient ID is required'],
+        validate: {
+            validator: function(v) {
+                return v && v.trim().length > 0;
+            },
+            message: 'Patient ID cannot be empty'
+        }
     },
     doctorId: { 
         type: String,
         ref: 'Doctor', 
-        required: true
+        required: [true, 'Doctor ID is required'],
+        validate: {
+            validator: function(v) {
+                return v && v.trim().length > 0;
+            },
+            message: 'Doctor ID cannot be empty'
+        }
     },
     hospitalId: { 
         type: String,
         ref: 'Hospital', 
-        required: true
+        required: [true, 'Hospital ID is required'],
+        validate: {
+            validator: function(v) {
+                return v && v.trim().length > 0;
+            },
+            message: 'Hospital ID cannot be empty'
+        }
     },
 
     appointmentDate: {
         type: Date,
-        required: true,
-     
+        required: [true, 'Appointment date is required'],
+        validate: {
+            validator: function(v) {
+                return v instanceof Date && v > new Date();
+            },
+            message: 'Appointment date must be in the future'
+        }
     },
     appointmentTime: { 
         type: String,
-        required: true,
-       
+        required: [true, 'Appointment time is required'],
+        trim: true,
+        validate: {
+            validator: function(v) {
+                return /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(v);
+            },
+            message: 'Please provide a valid time in HH:MM format'
+        }
     },
     reasonForAppointment: {
         type: String,
         trim: true,
-        maxlength: 500, 
-        required: true
+        maxlength: [500, 'Reason for appointment cannot exceed 500 characters'],
+        required: [true, 'Reason for appointment is required']
     },
     appointmentType: { 
         type: String,

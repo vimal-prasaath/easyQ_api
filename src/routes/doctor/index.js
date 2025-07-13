@@ -1,6 +1,7 @@
-import { createDoctor , getDoctor ,deleteDoctor, getAllDoctor , updateDoctor} from "../../controller/doctor.js";
+import { createDoctor, getDoctor, deleteDoctor, getAllDoctor, updateDoctor } from "../../controller/doctor.js";
 import express from "express";
-const router = express.Router()
+
+const router = express.Router();
 
 /**
  * @swagger
@@ -98,39 +99,10 @@ router.post("/add", createDoctor)
  *       404:
  *         description: Doctor not found
  */
-console.log("In Router")
 router.get("/:doctorId", getDoctor)
 router.put("/:doctorId", updateDoctor)
 router.delete("/:doctorId", deleteDoctor)
 
-/**
- * @swagger
- * /api/doctor/all/{hospitalId}:
- *   get:
- *     summary: Get all doctors in a hospital
- *     tags: [Doctors]
- *     security:
- *       - BearerAuth: []
- *     parameters:
- *       - in: path
- *         name: hospitalId
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: List of doctors in the hospital
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Doctor'
- *       401:
- *         description: Unauthorized
- *       404:
- *         description: Hospital not found
- */
 router.get("/all/:hospitalId", getAllDoctor)
 
-export default router
+export default router;

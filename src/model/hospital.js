@@ -1,3 +1,4 @@
+
 import mongoose from "mongoose";
 import generateUniqueId from "generate-unique-id";
 
@@ -63,7 +64,11 @@ const hospitalSchema = new Schema({
             headOfDepartment: { type: String, trim: true },
             contactNumber: { type: String },
             description: { type: String, trim: true },
-            total_number_Doctor: { type: String }
+            total_number_Doctor: { type: String },
+            doctorIds: [{
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Doctor'
+            }]
         }
     ],
     hospitalType: {

@@ -1,3 +1,4 @@
+
 import QAEntry from '../model/qaEntry.js';
 import { EasyQError } from '../config/error.js'; 
 import { httpStatusCode } from '../util/statusCode.js'
@@ -171,3 +172,4 @@ export async function deleteQA(req, res ,next) {
         ));
     }
 };
+

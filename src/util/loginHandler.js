@@ -1,45 +1,44 @@
+
  import { isUser } from "./authController.js"
  import {TokenGenerator} from "./tokenGenerator.js"
  import User from "../model/userProfile.js"
- import { EasyQError } from "../config/error.js"
- import { httpStatusCode } from "./statusCode.js"
+ import { authLogger } from "../config/logger.js"
+ 
  export async function validUser(password,hash){
    try{
       const validUser= await isUser(password,hash)
+      authLogger.debug('Password validation performed', { isValid: validUser });
       return validUser
       
    }catch(e){
-        throw new EasyQError(
-            'PasswordComparisonError',
-            httpStatusCode.INTERNAL_SERVER_ERROR, 
-            false, 
-            `An unexpected error occurred during password comparison: ${e.message}`
-        );
+      authLogger.error('Password validation error', {
+        error: e.message,
+        stack: e.stack
+      });
+      throw e;
    }
 }
 
-export async function updateToken(token,userId){
+export async function updateToken(userId,token){
      try{
-        const result= await User.updateOne({userId:userId},{sessionToken:token})
-           if (result.matchedCount === 0) {
-            throw new EasyQError(
-                'UserNotFoundError',
-                httpStatusCode.NOT_FOUND, 
-                true, 
-                `User with ID ${userId} not found.`
-            );
+        const updateResult= await User.updateOne({userId:userId},{sessionToken:token})
+
+          if (updateResult.acknowledged && updateResult.modifiedCount > 0) {
+            authLogger.info('Session token updated successfully', { userId });
+            return { success: true, message: 'Token updated successfully.' };
+        } else if (updateResult.acknowledged && updateResult.matchedCount === 0) {
+            authLogger.warn('Attempted to update token for non-existent user', { userId });
+            return { success: false, error: 'User not found for token update.' };
+        } else {
+            authLogger.debug('Token update acknowledged but no modification made', { userId, token });
+            return { success: true, message: 'Token already up to date or no change needed.' };
         }
       }catch(e){
-           throw new EasyQError(
-            'DatabaseUpdateError',
-            httpStatusCode.INTERNAL_SERVER_ERROR, 
-            false, 
-            `Failed to update session token for user ${userId}: ${e.message}`
-        );
+          throw new Error(e)
       }
 }
 
-export async function getSessionToken(response){
- const token=await TokenGenerator({userId:response.userId,email:response.email})
+export async function getToken(response){
+ const token=await TokenGenerator({userId:response.userId,email:response.email,role:response.role})
  return token
 }

@@ -1,5 +1,6 @@
 import express from "express"
 import { login } from "../../controller/login.js"
+import {resetUserPassword} from "../../controller/user.js"
 const router = express.Router()
 
 /**
@@ -42,5 +43,7 @@ const router = express.Router()
  *         description: User not found
  */
 router.post('/', login)
+
+router.post('/resetPassword',resetUserPassword)
 
 export default router
