@@ -10,7 +10,7 @@ import { logInfo, logError, logWarn } from '../config/logger.js';
 import { constructPipeLine } from '../controller/util.js';
 
 export class AppointmentService {
-    
+
     static async createAppointment(appointmentData) {
         try {
             logInfo('Creating appointment', {
@@ -22,10 +22,10 @@ export class AppointmentService {
 
             // Create appointment with schema validation
             const newAppointment = await Appointment.create(appointmentData);
-            
+
             // Get user for Google Calendar integration
-            const user = await User.findOne({ patientId: appointmentData.patientId });
-            
+            const user = await User.findOne({ userId: appointmentData.patientId });
+
             if (!user) {
                 throw new EasyQError(
                     'NotFoundError',
@@ -68,17 +68,17 @@ export class AppointmentService {
             process.env.GOOGLE_CLIENT_ID,
             process.env.GOOGLE_CLIENT_SECRET
         );
-        
+
         oauth2Client.setCredentials({
             access_token: user.accessToken,
             refresh_token: user.refreshToken
         });
 
         const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
-        
+
         const start = new Date(`${appointmentData.appointmentDate}T${appointmentData.appointmentTime}`);
         const end = new Date(start.getTime() + 30 * 60000); // 30 minutes duration
-        
+
         const event = {
             summary: 'Medical Appointment',
             description: appointmentData.reasonForAppointment,
@@ -98,14 +98,14 @@ export class AppointmentService {
         try {
             const pipeline = constructPipeLine();
             pipeline.unshift({ $match: { patientId } });
-            
+
             const appointments = await Appointment.aggregate(pipeline);
-            
+
             logInfo('Retrieved patient appointments', {
                 patientId,
                 count: appointments.length
             });
-            
+
             return appointments;
         } catch (error) {
             logError('Error retrieving patient appointments', {
@@ -120,14 +120,14 @@ export class AppointmentService {
         try {
             const pipeline = constructPipeLine();
             pipeline.unshift({ $match: { doctorId } });
-            
+
             const appointments = await Appointment.aggregate(pipeline);
-            
+
             logInfo('Retrieved doctor appointments', {
                 doctorId,
                 count: appointments.length
             });
-            
+
             return appointments;
         } catch (error) {
             logError('Error retrieving doctor appointments', {
@@ -142,14 +142,14 @@ export class AppointmentService {
         try {
             const pipeline = constructPipeLine();
             pipeline.unshift({ $match: { hospitalId } });
-            
+
             const appointments = await Appointment.aggregate(pipeline);
-            
+
             logInfo('Retrieved hospital appointments', {
                 hospitalId,
                 count: appointments.length
             });
-            
+
             return appointments;
         } catch (error) {
             logError('Error retrieving hospital appointments', {
@@ -164,11 +164,11 @@ export class AppointmentService {
         try {
             const pipeline = constructPipeLine();
             const appointments = await Appointment.aggregate(pipeline);
-            
+
             logInfo('Retrieved all appointments', {
                 count: appointments.length
             });
-            
+
             return appointments;
         } catch (error) {
             logError('Error retrieving all appointments', {
@@ -256,6 +256,88 @@ export class AppointmentService {
             logError('Error retrieving appointment', {
                 error: error.message,
                 appointmentId
+            });
+            throw error;
+        }
+    }
+
+     static async processAppointment(appointmentId, changedByUserId, paymentDetails) {
+        logInfo('Processing appointment', { appointmentId, changedByUserId, paymentDetails });
+
+        try {
+            const appointment = await Appointment.findOne({ appointmentId });
+
+            if (!appointment) {
+                throw new EasyQError(
+                    'NotFoundError',
+                    httpStatusCode.NOT_FOUND,
+                    true,
+                    `Appointment with ID ${appointmentId} not found.`
+                );
+            }
+
+            // Validate payment status first
+            if (!paymentDetails || !paymentDetails.paymentStatus || paymentDetails.paymentStatus.toLowerCase() !== 'success') {
+                throw new EasyQError(
+                    'ValidationError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    `Payment status must be 'success' to complete the appointment. Current status: ${paymentDetails?.paymentStatus || 'N/A'}.`
+                );
+            }
+
+            // Update payment related fields
+            appointment.paymentStatus = paymentDetails.paymentStatus;
+            if (paymentDetails.paymentAmount !== undefined) {
+                appointment.paymentAmount = paymentDetails.paymentAmount;
+            }
+            if (paymentDetails.currency) {
+                appointment.currency = paymentDetails.currency;
+            }
+            if (paymentDetails.paymentMethod) {
+                appointment.paymentMethod = paymentDetails.paymentMethod;
+            }
+
+            // Handle transaction ID
+            if (paymentDetails.transactionId) {
+                if (appointment.transactionId && appointment.transactionId === paymentDetails.transactionId) {
+                    logInfo('Transaction ID already exists and matches for this appointment; no update needed.', { appointmentId, transactionId: paymentDetails.transactionId });
+                } else if (appointment.transactionId && appointment.transactionId !== paymentDetails.transactionId) {
+                    logWarn('Existing transaction ID found but a new one provided. Updating transaction ID.', {
+                        appointmentId,
+                        oldTransactionId: appointment.transactionId,
+                        newTransactionId: paymentDetails.transactionId
+                    });
+                    appointment.transactionId = paymentDetails.transactionId;
+                } else {
+                    appointment.transactionId = paymentDetails.transactionId;
+                    logInfo('New transaction ID added to appointment.', { appointmentId, transactionId: paymentDetails.transactionId });
+                }
+            } else {
+                logWarn('Payment successful but no transaction ID provided for appointment.', { appointmentId });
+                appointment.status = 'pending';
+            }
+
+            logInfo('Payment details updated for appointment.', { appointmentId });
+            appointment.status = 'completed';
+
+            appointment.statusHistory.push({
+                status: 'completed',
+                timestamp: new Date(),
+                changedBy: changedByUserId || 'System' // Use provided user ID or default to 'System'
+            });
+
+            await appointment.save();
+            logInfo('Appointment status updated to completed and saved.', { appointmentId });
+
+            return appointment;
+        } catch (error) {
+            logError('Error processing appointment', {
+                error: error.message,
+                stack: error.stack,
+                appointmentId,
+                changedByUserId,
+                paymentDetails
             });
             throw error;
         }

@@ -65,7 +65,7 @@ export async function qrGeneator(req, res ,next) {
             ));
         }
 
-        const dataToEncodeObject = { userId: patientData._id.toString(), appointmentId: appointment._id.toString() };
+        const dataToEncodeObject = { userId: patientData.userId.toString(), appointmentId: appointment.appointmentId.toString() };
         const qrCodeDataUrl = await generateQR(dataToEncodeObject);
 
         const updatedAppointment = await Appointment.findOneAndUpdate(
@@ -186,6 +186,8 @@ export async function getQRCode(req,res,next){
         ));
     }
 }
+
+
 
 
 

@@ -26,9 +26,11 @@ export class DoctorService {
                 dep => dep.name.toLowerCase() === specializationName.toLowerCase()
             );
             if (department) {
-                
-                if (!department.doctorIds.some(id => id.equals(doctor._id))) {
-                    department.doctorIds.push(doctor._id);
+                   if (!department.doctorIds) {
+                    department.doctorIds = [];
+                    }
+                if (!department.doctorIds.some(id => id === doctor.doctorId)) {
+                    department.doctorIds.push(doctor.doctorId);
                     if (typeof department.total_number_Doctor === 'string') {
                          department.total_number_Doctor = (parseInt(department.total_number_Doctor || '0', 10) + 1).toString();
                     } else {
@@ -48,10 +50,12 @@ export class DoctorService {
                     description: '',      
                 });
             }
-            await Hospital.save();
+            await hospitalData.save();
+           
             return {
                 doctor: doctor,
-                doctorId: doctor.doctorId
+                doctorId: doctor.doctorId,
+                experience:doctor.experienceYears
             };
         } catch (error) {
             if (error.name === 'ValidationError') {

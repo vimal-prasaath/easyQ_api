@@ -64,11 +64,15 @@ const hospitalSchema = new Schema({
             headOfDepartment: { type: String, trim: true },
             contactNumber: { type: String },
             description: { type: String, trim: true },
-            total_number_Doctor: { type: String },
             doctorIds: [{
-                type: mongoose.Schema.Types.ObjectId,
+                type: String,
                 ref: 'Doctor'
-            }]
+            }],
+                total_number_Doctor: {
+                 type: Number , get: function(){
+                if(this.doctorIds.length === 0) return 0
+                return this.doctorIds.length - 1
+            } },
         }
     ],
     hospitalType: {
@@ -94,7 +98,8 @@ const hospitalSchema = new Schema({
         default: Date.now
     }
 });
-
+hospitalSchema.set('toJSON', { virtuals: true });
+hospitalSchema.set('toObject', { virtuals: true });
 hospitalSchema.pre('save', function(next) {
     this.updatedAt = Date.now();
     next();

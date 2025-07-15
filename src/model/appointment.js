@@ -51,14 +51,51 @@ const appointmentSchema = new Schema({
         }
     },
 
-    appointmentDate: {
+   appointmentDate: {
         type: Date,
         required: [true, 'Appointment date is required'],
         validate: {
             validator: function(v) {
-                return v instanceof Date && v > new Date();
+                if (v instanceof Date) {
+                    return v > new Date();
+                }
+
+                if (typeof v === 'string') {
+                    const dateRegex = /^(0[1-9]|1[0-2])\/(0[1-9]|[1-2][0-9]|3[0-1])\/\d{4}$/;
+                    if (!dateRegex.test(v)) {
+                        this.invalidate('appointmentDate', 'Appointment date must be in MM/DD/YYYY format.', v);
+                        return false;
+                    }
+
+                    const parsedDate = new Date(v);
+                    const [month, day, year] = v.split('/').map(Number);
+                    if (
+                        isNaN(parsedDate.getTime()) || 
+                        parsedDate.getMonth() + 1 !== month ||
+                        parsedDate.getDate() !== day ||
+                        parsedDate.getFullYear() !== year
+                    ) {
+                        this.invalidate('appointmentDate', 'Invalid date provided. Please use a valid MM/DD/YYYY date.', v);
+                        return false;
+                    }
+
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const parsedDateOnly = new Date(parsedDate);
+                    parsedDateOnly.setHours(0, 0, 0, 0);
+
+                    return parsedDateOnly >= today; 
+                }
+
+                this.invalidate('appointmentDate', 'Appointment date must be a valid date string or Date object.', v);
+                return false;
             },
-            message: 'Appointment date must be in the future'
+            message: props => {
+                if (props.reason && props.reason.message) {
+                    return props.reason.message;
+                }
+                return 'Appointment date must be in the future and in MM/DD/YYYY format.';
+            }
         }
     },
     appointmentTime: { 

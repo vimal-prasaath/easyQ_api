@@ -2,7 +2,7 @@ import { AppointmentService } from '../services/appointmentService.js';
 import { EasyQError } from '../config/error.js';
 import { httpStatusCode } from '../util/statusCode.js';
 import { logApiRequest, logApiResponse } from '../config/logger.js';
-import { constructResponse } from '../util/responseFormatter.js';
+import { constructResponse,ResponseFormatter } from '../util/responseFormatter.js';
 
 export async function createAppointment(req, res, next) {
     const data = req.body;
@@ -103,29 +103,29 @@ export async function getAppointmentsByHospital(req, res, next) {
         next(error);
     }
 }
+//not relavent to get all appointments 
+// export async function getAllAppointments(req, res, next) {
+//     // Log API request
+//     logApiRequest(req, { action: 'get_all_appointments' });
 
-export async function getAllAppointments(req, res, next) {
-    // Log API request
-    logApiRequest(req, { action: 'get_all_appointments' });
-
-    try {
-        const appointments = await AppointmentService.getAllAppointments();
+//     try {
+//         const appointments = await AppointmentService.getAllAppointments();
         
-        const response = constructResponse(
-            true,
-            httpStatusCode.OK,
-            'All appointments retrieved successfully',
-            appointments
-        );
+//         const response = constructResponse(
+//             true,
+//             httpStatusCode.OK,
+//             'All appointments retrieved successfully',
+//             appointments
+//         );
 
-        // Log API response
-        logApiResponse(req, response);
+//         // Log API response
+//         logApiResponse(req, response);
         
-        res.status(httpStatusCode.OK).json(response);
-    } catch (error) {
-        next(error);
-    }
-}
+//         res.status(httpStatusCode.OK).json(response);
+//     } catch (error) {
+//         next(error);
+//     }
+// }
 
 export async function updateAppointment(req, res, next) {
     const { appointmentId } = req.params;
@@ -204,153 +204,37 @@ export async function getAppointmentById(req, res, next) {
 }
 
 
-export async function getAppointment(req, res , next) {
-  const { appointmentId } = req.params;
+
+
+export async function processAppointment(req, res, next) {
+    const { appointmentId, paymentDetails } = req.body;
+    const admin = req.headers['x-user-id']; 
+
+    logApiRequest(req, { action: 'process_appointment', appointmentId, admin, paymentDetails });
+
     try {
-        if (!appointmentId) {
+        if (!appointmentId || !paymentDetails || typeof paymentDetails !== 'object' || Object.keys(paymentDetails).length === 0) {
             return next(new EasyQError(
                 'ValidationError',
                 httpStatusCode.BAD_REQUEST,
                 true,
-                'Appointment ID is required.'
+                'Appointment ID and valid payment details are required.'
             ));
         }
-        const appointment = await Appointment.findOne({ appointmentId: appointmentId });
-        if (!appointment) {
-            return next(new EasyQError(
-                'NotFoundError',
-                httpStatusCode.NOT_FOUND,
-                true,
-                'Appointment not found.'
-            ));
-        }
-        res.status(httpStatusCode.OK).json({ message: "Appointment fetched successfully", appointment: appointment });
+
+        const processedAppointment = await AppointmentService.processAppointment(appointmentId, admin, paymentDetails);
+        
+        const response = ResponseFormatter.formatSuccessResponse({
+            message: "Appointment processed and status updated successfully",
+            data: processedAppointment,
+            statusCode: httpStatusCode.OK
+        });
+        logApiResponse(req, response);
+        
+        res.status(httpStatusCode.OK).json(response);
     } catch (error) {
-        if (error instanceof EasyQError) {
-            return next(error);
-        }
-        if (error.name === 'CastError') {
-            return next(new EasyQError(
-                'InvalidInputError',
-                httpStatusCode.BAD_REQUEST,
-                true,
-                `Invalid Appointment ID format: ${appointmentId}`
-            ));
-        }
-        next(new EasyQError(
-            'DatabaseError',
-            httpStatusCode.INTERNAL_SERVER_ERROR,
-            false,
-            `Failed to fetch appointment: ${error.message}`
-        ));
+        next(error);
     }
 }
-
-export async function getAllAppointmentOfDoctor(req, res ,next) {
- const { doctorId } = req.params;
-    try {
-        if (!doctorId) {
-            return next(new EasyQError(
-                'ValidationError',
-                httpStatusCode.BAD_REQUEST,
-                true,
-                'Doctor ID is required.'
-            ));
-        }
-        const appointments = await Appointment.find({ doctorId: doctorId });
-        res.status(httpStatusCode.OK).json({ message: "Appointments fetched successfully", appointments: appointments });
-    } catch (error) {
-        if (error instanceof EasyQError) {
-            return next(error);
-        }
-        if (error.name === 'CastError') {
-            return next(new EasyQError(
-                'InvalidInputError',
-                httpStatusCode.BAD_REQUEST,
-                true,
-                `Invalid Doctor ID format: ${doctorId}`
-            ));
-        }
-        next(new EasyQError(
-            'DatabaseError',
-            httpStatusCode.INTERNAL_SERVER_ERROR,
-            false,
-            `Failed to fetch doctor's appointments: ${error.message}`
-        ));
-    }
-}
-
-export async function getAllAppointmentOfHospital(req, res ,next) {
-  const { hospitalId } = req.params;
-    try {
-        if (!hospitalId) {
-            return next(new EasyQError(
-                'ValidationError',
-                httpStatusCode.BAD_REQUEST,
-                true,
-                'Hospital ID is required.'
-            ));
-        }
-        const appointments = await Appointment.find({ hospitalId: hospitalId });
-        res.status(httpStatusCode.OK).json({ message: "Appointments fetched successfully", appointments: appointments });
-    } catch (error) {
-        if (error instanceof EasyQError) {
-            return next(error);
-        }
-        if (error.name === 'CastError') {
-            return next(new EasyQError(
-                'InvalidInputError',
-                httpStatusCode.BAD_REQUEST,
-                true,
-                `Invalid Hospital ID format: ${hospitalId}`
-            ));
-        }
-        next(new EasyQError(
-            'DatabaseError',
-            httpStatusCode.INTERNAL_SERVER_ERROR,
-            false,
-            `Failed to fetch hospital's appointments: ${error.message}`
-        ));
-    }
-}
-
-
-
-
-
-export async function getAllAppointmentOfUser(req, res ,next) {
-  const { patientId } = req.params;
-    try {
-        if (!patientId) {
-            return next(new EasyQError(
-                'ValidationError',
-                httpStatusCode.BAD_REQUEST,
-                true,
-                'Patient ID is required.'
-            ));
-        }
-        const appointment = await Appointment.find({ patientId: patientId });
-        res.status(httpStatusCode.OK).json({ data: appointment });
-    } catch (error) {
-        if (error instanceof EasyQError) {
-            return next(error);
-        }
-        if (error.name === 'CastError') {
-            return next(new EasyQError(
-                'InvalidInputError',
-                httpStatusCode.BAD_REQUEST,
-                true,
-                `Invalid Patient ID format: ${patientId}`
-            ));
-        }
-        next(new EasyQError(
-            'DatabaseError',
-            httpStatusCode.INTERNAL_SERVER_ERROR,
-            false,
-            `Failed to fetch user's appointments: ${error.message}`
-        ));
-    }
-} 
-
 
 
