@@ -3,8 +3,9 @@ import {
     createHospital, getHospitalDetails, updateFacility,
     updateReviewComment, hospitalFacility, createReviews,
     deleteHsptl, getAllHospitalDetails, updateHospitalBasicDetails, getHospitalDetailsBylocation
-} from '../../controller/hopital_controller/hospital.js'
-
+} from '../../controller/hospital.js'
+import authorizeRoles from "../../middleware/authorization.js"
+import authorizeOwnerOrAdmin from '../../middleware/adminOwnerOrAdmin.js'
 const router = express.Router()
 
 /**
@@ -29,7 +30,7 @@ const router = express.Router()
  *       401:
  *         description: Unauthorized
  */
-router.post('/basicDetails', createHospital)
+router.post('/basicDetails',authorizeRoles, createHospital)
 
 /**
  * @swagger
@@ -53,7 +54,7 @@ router.post('/basicDetails', createHospital)
  *       401:
  *         description: Unauthorized
  */
-router.post('/facilities', hospitalFacility)
+router.post('/facilities', authorizeRoles, hospitalFacility)
 
 /**
  * @swagger
@@ -77,34 +78,11 @@ router.post('/facilities', hospitalFacility)
  *       401:
  *         description: Unauthorized
  */
-router.post('/review', createReviews)
+router.post('/review',authorizeOwnerOrAdmin, createReviews)
 
 /**
  * @swagger
  * /api/hospital/{hospitalId}:
- *   get:
- *     summary: Get hospital details by ID
- *     tags: [Hospitals]
- *     security:
- *       - BearerAuth: []
- *     parameters:
- *       - in: path
- *         name: hospitalId
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Hospital details
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Hospital'
- *       401:
- *         description: Unauthorized
- *       404:
- *         description: Hospital not found
- * 
  *   delete:
  *     summary: Delete a hospital
  *     tags: [Hospitals]
@@ -124,11 +102,74 @@ router.post('/review', createReviews)
  *       404:
  *         description: Hospital not found
  */
-router.delete('/:hospitalId', deleteHsptl)
-router.get('/:userId/:hospitalId', getHospitalDetails)
+router.delete('/:hospitalId',authorizeRoles, deleteHsptl)
+
+/**
+ * @swagger
+ * /api/hospital/{userId}/{hospitalId}:
+ *   get:
+ *     summary: Get hospital details by ID for a specific user
+ *     tags: [Hospitals]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the user requesting hospital details
+ *       - in: path
+ *         name: hospitalId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the hospital to retrieve
+ *     responses:
+ *       200:
+ *         description: Hospital details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Hospital'
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Hospital not found
+ */
+router.get('/:userId/:hospitalId',authorizeOwnerOrAdmin, getHospitalDetails)
 
 
-router.get('/location', getHospitalDetailsBylocation);
+/**
+ * @swagger
+ * /api/hospital/location:
+ *   get:
+ *     summary: Get hospitals by location
+ *     tags: [Hospitals]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/HospitalLocationSearch'
+ *     responses:
+ *       200:
+ *         description: List of hospitals near the specified location
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Hospital'
+ *       400:
+ *         description: Invalid location parameters
+ *       401:
+ *         description: Unauthorized
+ */
+router.get('/location',authorizeOwnerOrAdmin, getHospitalDetailsBylocation);
+
 /**
  * @swagger
  * /api/hospital:
@@ -149,7 +190,7 @@ router.get('/location', getHospitalDetailsBylocation);
  *       401:
  *         description: Unauthorized
  */
-router.get('/', getAllHospitalDetails)
+router.get('/',authorizeOwnerOrAdmin, getAllHospitalDetails)
 
 /**
  * @swagger
@@ -181,7 +222,7 @@ router.get('/', getAllHospitalDetails)
  *       404:
  *         description: Hospital not found
  */
-router.put('/details/:hospitalId', updateHospitalBasicDetails)
+router.put('/details/:hospitalId',authorizeOwnerOrAdmin, updateHospitalBasicDetails)
 
 /**
  * @swagger
@@ -218,7 +259,7 @@ router.put('/details/:hospitalId', updateHospitalBasicDetails)
  *       404:
  *         description: Hospital not found
  */
-router.put('/facilities/:hospitalId', updateFacility)
+router.put('/facilities/:hospitalId',authorizeRoles, updateFacility)
 
 /**
  * @swagger
@@ -259,6 +300,6 @@ router.put('/facilities/:hospitalId', updateFacility)
  *       404:
  *         description: Hospital or review not found
  */
-router.put('/review/:hospitalId', updateReviewComment)
+router.put('/review/:hospitalId',authorizeOwnerOrAdmin, updateReviewComment)
 
-export default router
+export default router   

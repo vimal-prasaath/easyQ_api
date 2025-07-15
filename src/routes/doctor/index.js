@@ -1,6 +1,8 @@
-import { createDoctor , getDoctor ,deleteDoctor, getAllDoctor , updateDoctor} from "../../controller/doctor.js";
+import { createDoctor, getDoctor, deleteDoctor, getAllDoctor, updateDoctor } from "../../controller/doctor.js";
 import express from "express";
-const router = express.Router()
+import authorizeOwnerOrAdmin from "../../middleware/adminOwnerOrAdmin.js";
+import authorizeRoles from "../../middleware/authorization.js";
+const router = express.Router();
 
 /**
  * @swagger
@@ -24,7 +26,7 @@ const router = express.Router()
  *       401:
  *         description: Unauthorized
  */
-router.post("/add", createDoctor)
+router.post("/add",authorizeRoles, createDoctor)
 
 /**
  * @swagger
@@ -98,39 +100,10 @@ router.post("/add", createDoctor)
  *       404:
  *         description: Doctor not found
  */
-console.log("In Router")
-router.get("/:doctorId", getDoctor)
-router.put("/:doctorId", updateDoctor)
-router.delete("/:doctorId", deleteDoctor)
+router.get("/:doctorId",authorizeOwnerOrAdmin, getDoctor)
+router.put("/:doctorId", authorizeRoles,updateDoctor)
+router.delete("/:doctorId",authorizeRoles, deleteDoctor)
 
-/**
- * @swagger
- * /api/doctor/all/{hospitalId}:
- *   get:
- *     summary: Get all doctors in a hospital
- *     tags: [Doctors]
- *     security:
- *       - BearerAuth: []
- *     parameters:
- *       - in: path
- *         name: hospitalId
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: List of doctors in the hospital
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Doctor'
- *       401:
- *         description: Unauthorized
- *       404:
- *         description: Hospital not found
- */
-router.get("/all/:hospitalId", getAllDoctor)
+router.get("/all/:hospitalId",authorizeOwnerOrAdmin, getAllDoctor)
 
-export default router
+export default router;

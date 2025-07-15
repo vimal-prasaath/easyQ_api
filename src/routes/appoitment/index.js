@@ -1,8 +1,9 @@
 import express from 'express'
-import {createAppointment , updateAppointment , deleteAppointment
-    ,getAllAppointmentOfDoctor , getAppointment , getAllAppointmentOfHospital , getAllAppointmentOfUser} from "../../controller/appointment/index.js"
+import {createAppointment , updateAppointment , deleteAppointment,
+   processAppointment ,getAppointmentsByDoctor , getAppointmentById , getAppointmentsByHospital , getAppointmentsByPatient} from "../../controller/appointment.js"
 const router = express.Router()
-
+import authorizeOwnerOrAdmin from '../../middleware/adminOwnerOrAdmin.js'
+import authorizeRoles from '../../middleware/authorization.js'
 /**
  * @swagger
  * /api/appointment:
@@ -25,8 +26,8 @@ const router = express.Router()
  *       401:
  *         description: Unauthorized
  */
-router.post('/', createAppointment)
-
+router.post('/',authorizeOwnerOrAdmin, createAppointment)
+router.post('/process', authorizeRoles, processAppointment);
 /**
  * @swagger
  * /api/appointment/{appointmentId}:
@@ -99,9 +100,9 @@ router.post('/', createAppointment)
  *       404:
  *         description: Appointment not found
  */
-router.put('/:appointmentId', updateAppointment)
-router.delete('/:appointmentId', deleteAppointment)
-router.get('/:appointmentId', getAppointment)
+router.put('/:appointmentId',authorizeOwnerOrAdmin, updateAppointment)
+router.delete('/:appointmentId',authorizeOwnerOrAdmin, deleteAppointment)
+router.get('/:appointmentId',authorizeOwnerOrAdmin, getAppointmentById)
 
 /**
  * @swagger
@@ -131,7 +132,7 @@ router.get('/:appointmentId', getAppointment)
  *       404:
  *         description: Doctor not found
  */
-router.get('/doctor/:doctorId', getAllAppointmentOfDoctor)
+router.get('/doctor/:doctorId',authorizeRoles, getAppointmentsByDoctor)
 
 /**
  * @swagger
@@ -161,9 +162,10 @@ router.get('/doctor/:doctorId', getAllAppointmentOfDoctor)
  *       404:
  *         description: Hospital not found
  */
-router.get('/hospital/:hospitalId', getAllAppointmentOfHospital)
+router.get('/hospital/:hospitalId',authorizeRoles, getAppointmentsByHospital)
 
-router.get('/userId/:patientId',getAllAppointmentOfUser)
+router.get('/userId/:patientId',authorizeOwnerOrAdmin,getAppointmentsByPatient)
+
 
 
 export default router

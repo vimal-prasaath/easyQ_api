@@ -1,6 +1,6 @@
 import Appointment from '../model/appointment.js';
 import Doctor from '../model/doctor.js';
-import Hospital from '../model/hospital/index.js';
+import Hospital from '../model/hospital.js';
 import { EasyQError } from '../config/error.js';
 import { httpStatusCode } from '../util/statusCode.js';
 

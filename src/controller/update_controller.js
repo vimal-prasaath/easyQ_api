@@ -133,3 +133,10 @@ export const searchBylocation = (data) => {
     }
     return query;
 }
+
+
+
+
+
+
+

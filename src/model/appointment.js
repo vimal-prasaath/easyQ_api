@@ -7,7 +7,7 @@ const appointmentSchema = new Schema({
 
     appointmentId: { 
         type: String,
-        required: true,
+        required: [true, 'Appointment ID is required'],
         unique: true,
         default: () => {
         return generateUniqueId({
@@ -20,34 +20,100 @@ const appointmentSchema = new Schema({
     patientId: { 
         type: String,
         ref: 'User',
-        required: true
+        required: [true, 'Patient ID is required'],
+        validate: {
+            validator: function(v) {
+                return v && v.trim().length > 0;
+            },
+            message: 'Patient ID cannot be empty'
+        }
     },
     doctorId: { 
         type: String,
         ref: 'Doctor', 
-        required: true
+        required: [true, 'Doctor ID is required'],
+        validate: {
+            validator: function(v) {
+                return v && v.trim().length > 0;
+            },
+            message: 'Doctor ID cannot be empty'
+        }
     },
     hospitalId: { 
         type: String,
         ref: 'Hospital', 
-        required: true
+        required: [true, 'Hospital ID is required'],
+        validate: {
+            validator: function(v) {
+                return v && v.trim().length > 0;
+            },
+            message: 'Hospital ID cannot be empty'
+        }
     },
 
-    appointmentDate: {
+   appointmentDate: {
         type: Date,
-        required: true,
-     
+        required: [true, 'Appointment date is required'],
+        validate: {
+            validator: function(v) {
+                if (v instanceof Date) {
+                    return v > new Date();
+                }
+
+                if (typeof v === 'string') {
+                    const dateRegex = /^(0[1-9]|1[0-2])\/(0[1-9]|[1-2][0-9]|3[0-1])\/\d{4}$/;
+                    if (!dateRegex.test(v)) {
+                        this.invalidate('appointmentDate', 'Appointment date must be in MM/DD/YYYY format.', v);
+                        return false;
+                    }
+
+                    const parsedDate = new Date(v);
+                    const [month, day, year] = v.split('/').map(Number);
+                    if (
+                        isNaN(parsedDate.getTime()) || 
+                        parsedDate.getMonth() + 1 !== month ||
+                        parsedDate.getDate() !== day ||
+                        parsedDate.getFullYear() !== year
+                    ) {
+                        this.invalidate('appointmentDate', 'Invalid date provided. Please use a valid MM/DD/YYYY date.', v);
+                        return false;
+                    }
+
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const parsedDateOnly = new Date(parsedDate);
+                    parsedDateOnly.setHours(0, 0, 0, 0);
+
+                    return parsedDateOnly >= today; 
+                }
+
+                this.invalidate('appointmentDate', 'Appointment date must be a valid date string or Date object.', v);
+                return false;
+            },
+            message: props => {
+                if (props.reason && props.reason.message) {
+                    return props.reason.message;
+                }
+                return 'Appointment date must be in the future and in MM/DD/YYYY format.';
+            }
+        }
     },
     appointmentTime: { 
         type: String,
-        required: true,
-       
+        required: [true, 'Appointment time is required'],
+        trim: true,
+        validate: {
+            validator: function(v) {
+                return /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(v);
+            },
+            message: 'Please provide a valid time in HH:MM format'
+        }
     },
     reasonForAppointment: {
         type: String,
         trim: true,
-        maxlength: 500, 
-        required: true
+        maxlength: [500, 'Reason for appointment cannot exceed 500 characters'],
+        required: [true, 'Reason for appointment is required']
     },
     appointmentType: { 
         type: String,

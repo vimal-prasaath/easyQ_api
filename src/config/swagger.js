@@ -1,3 +1,4 @@
+import { type } from 'os';
 import swaggerJsdoc from 'swagger-jsdoc';
 
 const options = {
@@ -7,11 +8,20 @@ const options = {
       title: 'EasyQ API Documentation',
       version: '1.0.0',
       description: 'API documentation for EasyQ application',
+      contact: {
+        name: 'EasyQ Support',
+        url: 'https://easyq.com/support',
+        email: 'support@easyq.com',
+      }
     },
     servers: [
       {
-        url: 'http://localhost:3000/api',
+        url: 'http://localhost:3000',
         description: 'Development server',
+      },
+      {
+        url: 'https://api.easyq.com',
+        description: 'Production server',
       },
     ],
     components: {
@@ -26,19 +36,181 @@ const options = {
         User: {
           type: 'object',
           properties: {
-            email: { type: 'string', format: 'email' },
-            password: { type: 'string' },
-            name: { type: 'string' },
+            userId: { 
+              type: 'string', 
+              readOnly: true, 
+              description: 'Unique identifier for the user' 
+            },
+            name: { 
+              type: 'string', 
+              description: 'Full name of the user' 
+            },
+            gender: { 
+              type: 'string',
+              enum: ['male', 'female', 'other'],
+              description: 'Gender of the user'
+            },
+            dateOfBirth: { 
+              type: 'string', 
+              format: 'date',
+              description: 'User\'s date of birth' 
+            },
+            email: { 
+              type: 'string', 
+              format: 'email',
+              description: 'Email address of the user' 
+            },
+            role:{
+              type: 'string',
+               description: 'User roles' 
+            },
+            password: { 
+              type: 'string', 
+              format: 'password',
+              writeOnly: true,
+              description: 'Password for authentication (not stored directly)' 
+            },
+            mobileNumber: { 
+              type: 'string', 
+              description: 'Contact phone number' 
+            },
+            location: { 
+              type: 'string', 
+              description: 'User\'s geographical location' 
+            }
           },
+          required: ['email', 'password', 'name'],
+          example: {
+            name: "John Doe",
+            email: "john.doe@example.com",
+            password: "securePassword123",
+            gender: "male",
+            role : "user",
+            dateOfBirth: "08-01-1990",
+            mobileNumber: "9876543210",
+            location: "Bangalore, Karnataka"
+          }
         },
         Doctor: {
           type: 'object',
           properties: {
-            name: { type: 'string' },
-            specialization: { type: 'string' },
-            experience: { type: 'number' },
-            hospital: { type: 'string' },
+            doctorId: { 
+              type: 'string', 
+              readOnly: true, 
+              description: 'Unique identifier for the doctor' 
+            },
+            name: { 
+              type: 'string',
+              description: 'Full name of the doctor' 
+            },
+            email: { 
+              type: 'string', 
+              format: 'email',
+              description: 'Email address of the doctor' 
+            },
+            mobileNumber: { 
+              type: 'string',
+              description: 'Contact phone number' 
+            },
+            gender: { 
+              type: 'string',
+              enum: ['Male', 'Female', 'Other'],
+              description: 'Gender of the doctor'
+            },
+            isHeadOfDepartment:{
+              type: 'boolean',
+              description: 'Email address of the doctor' 
+            },
+            dateOfBirth: { 
+              type: 'string', 
+              format: 'date',
+              description: 'Doctor\'s date of birth' 
+            },
+            specialization: { 
+              type: 'string',
+              description: 'Medical specialization' 
+            },
+            qualification: { 
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Educational qualifications' 
+            },
+            serviceStartDate: { 
+              type: 'string',
+              format: 'date',
+              description: 'Date when the doctor started practicing' 
+            },
+            experienceYears: { 
+              type: 'number',
+              readOnly: true,
+              description: 'Years of experience (calculated from serviceStartDate)' 
+            },
+            hospitalId: { 
+              type: 'string',
+              description: 'ID of the hospital where the doctor works' 
+            },
+            profileImageUrl: { 
+              type: 'string',
+              format: 'uri',
+              description: 'URL to the doctor\'s profile image' 
+            },
+            status: { 
+              type: 'string',
+              enum: ['Available', 'Unavailable', 'On Leave', 'Emergency Only'],
+              description: 'Current availability status' 
+            },
+            daysAvailable: { 
+              type: 'array',
+              items: { 
+                type: 'string',
+                enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+              },
+              description: 'Days of the week when the doctor is available'
+            },
+            workingHours: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  day: { type: 'string' },
+                  startTime: { type: 'string' },
+                  endTime: { type: 'string' }
+                }
+              },
+              description: 'Working hours for each day'
+            }
           },
+          required: ['name', 'email', 'mobileNumber', 'gender', 'specialization', 'serviceStartDate', 'hospitalId'],
+          example: {
+            name: "Dr. Arun Kumar",
+            email: "arun.kumar@example.com",
+            mobileNumber: "9876543210",
+            gender: "Male",
+            dateOfBirth: "1980-05-15",
+            specialization: "Cardiology",
+            qualification: ["MBBS", "MD - Cardiology", "DNB"],
+            serviceStartDate: "2010-06-01",
+            hospitalId: "1234",
+            status: "Available",
+            daysAvailable: ["Monday", "Wednesday", "Friday"],
+            workingHours: [
+              {
+                day: "Monday",
+                startTime: "09:00",
+                endTime: "17:00"
+              },
+              {
+                day: "Wednesday",
+                startTime: "10:00",
+                endTime: "18:00"
+              },
+              {
+                day: "Friday",
+                startTime: "09:00",
+                endTime: "16:00"
+              }
+            ]
+          }
         },
         Hospital: {
           type: 'object',
@@ -288,14 +460,110 @@ const options = {
         Appointment: {
           type: 'object',
           properties: {
-            doctorId: { type: 'string' },
-            patientId: { type: 'string' },
-            date: { type: 'string', format: 'date-time' },
+            appointmentId: { 
+              type: 'string', 
+              readOnly: true,
+              description: 'Unique identifier for the appointment'
+            },
+            patientId: { 
+              type: 'string',
+              description: 'ID of the patient (references User)'
+            },
+            doctorId: { 
+              type: 'string',
+              description: 'ID of the doctor'
+            },
+            hospitalId: { 
+              type: 'string',
+              description: 'ID of the hospital'
+            },
+            appointmentDate: { 
+              type: 'string', 
+              format: 'date',
+              description: 'Date of the appointment'
+            },
+            appointmentTime: { 
+              type: 'string',
+              description: 'Time of the appointment (HH:MM format)'
+            },
+            reasonForAppointment: { 
+              type: 'string',
+              maxLength: 500,
+              description: 'Reason for booking the appointment'
+            },
+            appointmentType: { 
+              type: 'string',
+              description: 'Type of appointment (e.g., Regular, Follow-up, Emergency)'
+            },
             status: {
               type: 'string',
-              enum: ['scheduled', 'completed', 'cancelled']
+              description: 'Current status of the appointment',
+              enum: ['Scheduled', 'Completed', 'Cancelled', 'No-Show', 'Rescheduled']
             },
+            bookingSource: { 
+              type: 'string',
+              description: 'Source of the booking (e.g., App, Website, Walk-in)'
+            },
+            bookedByID: {
+              type: 'string',
+              description: 'ID of the person who booked the appointment (if different from patient)'
+            },
+            confirmationSent: {
+              type: 'boolean',
+              default: false,
+              description: 'Whether appointment confirmation was sent'
+            },
+            reminderSent: {
+              type: 'boolean',
+              default: false,
+              description: 'Whether appointment reminder was sent'
+            },
+            patientNotes: {
+              type: 'string',
+              maxLength: 1000,
+              description: 'Additional notes provided by the patient'
+            },
+            doctorNotes: {
+              type: 'string',
+              maxLength: 2000,
+              description: 'Medical notes provided by the doctor'
+            },
+            reportUrls: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'URLs to any reports or documents uploaded for this appointment'
+            },
+            meetingPlatform: {
+              type: 'string',
+              description: 'For virtual appointments, the platform to be used'
+            },
+            paymentStatus: {
+              type: 'string',
+              description: 'Status of payment for this appointment',
+              enum: ['Pending', 'Completed', 'Refunded', 'Failed']
+            },
+            paymentAmount: {
+              type: 'number',
+              description: 'Amount paid for this appointment'
+            }
           },
+          required: ['patientId', 'doctorId', 'hospitalId', 'appointmentDate', 'appointmentTime', 'reasonForAppointment', 'appointmentType', 'status', 'paymentStatus'],
+          example: {
+            patientId: "1234",
+            doctorId: "5678",
+            hospitalId: "9101",
+            appointmentDate: "2025-07-15",
+            appointmentTime: "10:30",
+            reasonForAppointment: "Regular check-up for diabetes",
+            appointmentType: "Regular",
+            status: "Scheduled",
+            bookingSource: "App",
+            confirmationSent: true,
+            reminderSent: false,
+            patientNotes: "I've been experiencing increased thirst recently",
+            paymentStatus: "Completed",
+            paymentAmount: 500
+          }
         },
         Document: {
           type: 'object',

@@ -27,33 +27,49 @@ const doctorSchema = new Schema({
     },
     email: {
         type: String,
-        required: true,
-      
+        required: [true, 'Email is required'],
+        trim: true,
+        lowercase: true,
+        match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email address']
     },
     mobileNumber: {
         type: String,
-        trim: true
-       
+        required: [true, 'Mobile number is required'],
+        trim: true,
+        match: [/^[0-9]{10}$/, 'Please enter a valid 10-digit mobile number']
     },
     gender: {
         type: String,
-      
+        enum: ['Male', 'Female', 'Other'],
+        required: [true, 'Gender is required']
     },
     dateOfBirth: {
         type: Date
     },
     specialization: {
         type: String,
-     
+        required: [true, 'Specialization is required'],
+        trim: true
     },
     qualification: {
         type: [String],
         default: []
     },
+    serviceStartDate: {
+        type: Date,
+        required: [true, 'Service start date is required']
+    },
     experienceYears: {
         type: Number,
-        required: true,
-        min: 0
+        virtual: true,
+        get: function() {
+            if (!this.serviceStartDate) return 0;
+            const currentDate = new Date();
+            const startDate = new Date(this.serviceStartDate);
+            const diffInMs = currentDate - startDate;
+            const diffInYears = diffInMs / (1000 * 60 * 60 * 24 * 365.25);
+            return Math.floor(diffInYears);
+        }
     },
 
     hospitalId: {
@@ -66,25 +82,13 @@ const doctorSchema = new Schema({
         default: 'https://example.com/default-doctor.png'
     },
 
-     patientNotes: [{ 
-            patientId: {
-            type: String,
-            required: true
-        },
-        notes: {
-            type: String,
-            trim: true,
-            maxlength: 2000 
-        },
-        createdAt: {
-            type: Date,
-            default: Date.now
-        }
-    }],
+     // Removed patientNotes - moved to separate collection
+ 
  
     status: {
         type: String,
-        default: 'Unavailable', 
+        enum: ['Available', 'Unavailable', 'On Leave', 'Emergency Only'],
+        default: 'Unavailable'
     },
 
     daysAvailable: {
@@ -119,6 +123,9 @@ const doctorSchema = new Schema({
         default: Date.now
     }
 });
+
+doctorSchema.set('toJSON', { virtuals: true });
+doctorSchema.set('toObject', { virtuals: true });
 
 doctorSchema.pre('save', function(next) {
     this.updatedAt = Date.now();

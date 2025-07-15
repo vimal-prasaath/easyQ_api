@@ -1,5 +1,7 @@
 import express from 'express';
-import {getAllUser,updateUser,finduser, deleteUser} from "../../controller/user.js"
+import {getAllUser,updateUser,finduser, deleteUser , resetUserPassword , activateUser, getAllInActiveUser} from "../../controller/user.js"
+import authorizeRoles from '../../middleware/authorization.js';
+import authorizeOwnerOrAdmin from "../../middleware/adminOwnerOrAdmin.js"
 const router = express.Router();
 
 /**
@@ -22,7 +24,8 @@ const router = express.Router();
  *       401:
  *         description: Unauthorized
  */
-router.get('/', getAllUser)
+router.get('/', authorizeRoles, getAllUser)
+router.get('/admins',authorizeRoles,getAllInActiveUser)
 
 /**
  * @swagger
@@ -54,7 +57,9 @@ router.get('/', getAllUser)
  *       404:
  *         description: User not found
  */
-router.put('/:userId', updateUser);
+router.put('/:userId', authorizeOwnerOrAdmin, updateUser);
+router.put('/activate/:userId',authorizeRoles, activateUser);
+router.put('/reset-password', authorizeOwnerOrAdmin, resetUserPassword);
 
 /**
  * @swagger
@@ -76,7 +81,8 @@ router.put('/:userId', updateUser);
  *       404:
  *         description: User not found
  */
-router.get('/getUser', finduser);
-router.delete('/delete',deleteUser)
+router.get('/getUser', authorizeOwnerOrAdmin, finduser);
+router.delete('/delete/:userId',  authorizeOwnerOrAdmin, deleteUser)
+
 
 export default router;

@@ -1,36 +1,32 @@
-import { getUserDetails } from '../util/authController.js';
-import { validUser, updateToken, getToken } from '../util/loginHandler.js';
+
+import { AuthService } from '../services/authService.js';
 import { EasyQError } from '../config/error.js';
 import { httpStatusCode } from '../util/statusCode.js';
+import { logApiRequest, logApiResponse } from '../config/logger.js';
+import { constructResponse } from '../util/responseFormatter.js';
+
 export async function login(req, res, next) {
-  const { email, password } = req.body;
+    const { email, password } = req.body;
+    //input validation 
+    
+    // Log API request
+    logApiRequest(req, { action: 'login_attempt', email });
 
-  try {
-    const userData = await getUserDetails(email);
+    try {
+        const loginResult = await AuthService.login(email, password);
+        
+        const response = constructResponse(
+            true,
+            httpStatusCode.OK,
+            'Login successful',
+            loginResult
+        );
 
-    if (!userData) {
-      return next(new EasyQError(
-        'AuthenticationError',
-        httpStatusCode.UNAUTHORIZED,
-        true,
-        'User not found.'
-      ));
+        // Log API response
+        logApiResponse(req, response);
+        
+        res.status(httpStatusCode.OK).json(response);
+    } catch (error) {
+        next(error);
     }
-
-    const token = await getToken(userData);
-    const valid = await validUser(password, userData.passwordHash)
-
-    if (!valid) {
-      return next(new EasyQError(
-        'AuthenticationError',
-        httpStatusCode.UNAUTHORIZED,
-        true,
-        'Invalid credentials.'
-      ));
-    }
-    await updateToken(token, userData.userId);
-    res.status(httpStatusCode.OK).send({ token: token });
-  } catch (error) {
-    next(error);
-  }
 }

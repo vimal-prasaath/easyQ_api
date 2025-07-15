@@ -50,4 +50,3 @@ export const generateQR=async(dataToEncodeObject)=>{
         );
     }
 }
-

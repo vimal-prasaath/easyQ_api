@@ -1,3 +1,4 @@
+
 import jwt from 'jsonwebtoken'
 export async function TokenGenerator(data){
     try{

@@ -1,4 +1,4 @@
-import Hospital from "../model/hospital/index.js";
+import Hospital from "../model/hospital.js";
 import { buildSearchPipeline, constructLastquery, lastqueryUpdate } from "../util/searchUtil.js";
 import SearchSuggestion from "../model/search.js";
 import { EasyQError } from '../config/error.js';

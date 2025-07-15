@@ -1,153 +1,178 @@
-import express from "express"
-import User from '../model/userProfile.js'
-import { generatePasswordHash } from "../util/authController.js";
-import Appointment from '../model/appointment.js'
-import Favourite from '../model/hospital/favourite.js'
-import UserToken from '../model/fcmModel.js'
-import SearchSuggestion from '../model/search.js'
-import HospitalDetails from "../model/hospital/facility.js";
-import { EasyQError } from '../config/error.js'; 
-import { httpStatusCode } from '../util/statusCode.js'
-export const getAllUser = async (req, res , next) => {
+
+
+import express from "express";
+import { UserService } from '../services/userService.js';
+import { ResponseFormatter } from '../util/responseFormatter.js';
+import { httpStatusCode } from '../util/statusCode.js';
+export const getAllUser = async (req, res, next) => {
   try {
-    const users = await User.find();
-    res.status(httpStatusCode.OK).json(users); 
-  } catch (error) {
-    next(new EasyQError(
-      'DatabaseError',
-      httpStatusCode.INTERNAL_SERVER_ERROR,
-      false,
-      `Failed to retrieve users: ${error.message}`
-    ));
-  }
-}
-
-export const updateUser = async (req, res , next) => {
-   try {
-    const { userId } = req.params;
-    const { name, gender, dateOfBirth, email, mobileNumber, password } = req.body;
-
-    const updateFields = {
-      name,
-      gender,
-      dateOfBirth,
-      email,
-      mobileNumber,
-    };
-
-    if (password) {
-      updateFields.passwordHash = await generatePasswordHash(password); 
-     }
-
-    const updatedUser = await User.findOneAndUpdate(
-      { userId: userId },
-      { $set: updateFields },
-      { new: true, runValidators: true }
-    );
-
-    if (!updatedUser) {
-      return next(new EasyQError(
-        'NotFoundError',
-        httpStatusCode.NOT_FOUND,
-        true, 
-        'User not found.'
-      ));
-    }
-
-    res.status(httpStatusCode.OK).json({ 
-      message: 'User updated successfully'
+    const users = await UserService.getAllUsers();
+    
+    const response = ResponseFormatter.formatSuccessResponse({
+      message: "Users retrieved successfully",
+      data: { users },
+      meta: { count: users.length },
+      statusCode: httpStatusCode.OK
     });
+    
+    res.status(httpStatusCode.OK).json(response);
   } catch (error) {
-    if (error.name === 'ValidationError' && error.errors) {
-      const messages = Object.values(error.errors).map(val => val.message);
-      return next(new EasyQError(
-        'ValidationError',
-        httpStatusCode.BAD_REQUEST, 
-        true,
-        messages.join('; ')
-      ));
-    }
     next(error);
   }
 }
-export const finduser = async (req, res , next) => {
- try {
-    const { userId } = req.body;
-    if (!userId) {
-      return next(new EasyQError(
-        'ValidationError',
-        httpStatusCode.BAD_REQUEST,
-        true,
-        'User ID is required.'
-      ));
-    }
-    const user = await User.findOne({ userId: userId });
 
-    if (!user) {
-      return next(new EasyQError(
-        'NotFoundError',
-        httpStatusCode.NOT_FOUND,
-        true,
-        'User not found.'
-      ));
-    }
+export const updateUser = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    const updateData = req.body;
 
-    res.status(httpStatusCode.OK).json({ 
-      message: 'User found successfully',
-      user: user
+    const updatedUser = await UserService.updateUser(userId, updateData);
+    
+    const response = ResponseFormatter.formatSuccessResponse({
+      message: "User updated successfully",
+      data: { user: updatedUser },
+      statusCode: httpStatusCode.OK
     });
+    
+    res.status(httpStatusCode.OK).json(response);
   } catch (error) {
-    next(new EasyQError(
-      'DatabaseError',
-      httpStatusCode.INTERNAL_SERVER_ERROR,
-      false, 
-      `Failed to find user: ${error.message}`
-    ));
+    next(error);
+  }
+}
+export const finduser = async (req, res, next) => {
+  try {
+    const { userId } = req.body;
+    const user = await UserService.getUserById(userId);
+    
+    const response = ResponseFormatter.formatSuccessResponse({
+      message: "User found successfully",
+      data: { user },
+      statusCode: httpStatusCode.OK
+    });
+    
+    res.status(httpStatusCode.OK).json(response);
+  } catch (error) {
+    next(error);
   }
 }
 
 export const deleteUser = async (req, res, next) => {
- try {
+  try {
     const { userId } = req.params;
-
-    if (!userId) {
-      return next(new EasyQError(
-        'ValidationError',
-        httpStatusCode.BAD_REQUEST,
-        true,
-        "User ID is required."
-      ));
-    }
-
-    const user = await User.findOne({ userId });
-    if (!user) {
-      return next(new EasyQError(
-        'NotFoundError',
-        httpStatusCode.NOT_FOUND,
-        true,
-        "User not found."
-      ));
-    }
-
-    // Perform deletions for related data
-    await Appointment.deleteOne({ patientId: userId });
-    await Favourite.deleteOne({ userId });
-    await UserToken.deleteOne({ userId });
-    await SearchSuggestion.deleteOne({ userId });
-    await HospitalDetails.deleteOne({ userId }); 
-
-    // Finally, delete the user record
-    await User.deleteOne({ userId });
-
-    res.status(httpStatusCode.OK).json({ message: "User and related data deleted successfully" }); 
+    const result = await UserService.deleteUser(userId);
+    
+    const response = ResponseFormatter.formatSuccessResponse({
+      message: result.message,
+      data: { deletedUserId: result.deletedUserId },
+      statusCode: httpStatusCode.OK
+    });
+    
+    res.status(httpStatusCode.OK).json(response);
   } catch (error) {
-    next(new EasyQError(
-      'DatabaseError',
-      httpStatusCode.INTERNAL_SERVER_ERROR,
-      false, // isOperational: false
-      `Failed to delete user and related data: ${error.message}`
-    ));
+    next(error);
+  }
+}
+
+export const createUser = async (req, res, next) => {
+  try {
+    const userData = req.body;
+    const user = await UserService.createUser(userData);
+    
+    const response = ResponseFormatter.formatSuccessResponse({
+      message: "User created successfully",
+      data: { user, userId: user.userId },
+      statusCode: httpStatusCode.CREATED
+    });
+    
+    res.status(httpStatusCode.CREATED).json(response);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export const searchUsers = async (req, res, next) => {
+  try {
+    const { search, page, limit, sortBy, sortOrder } = req.query;
+    const options = { page: Number(page), limit: Number(limit), sortBy, sortOrder };
+    
+    const result = await UserService.searchUsers(search, options);
+    
+    const response = ResponseFormatter.formatSuccessResponse({
+      message: "Users search completed successfully",
+      data: result.users,
+      meta: {
+        pagination: result.pagination,
+        searchQuery: search
+      },
+      statusCode: httpStatusCode.OK
+    });
+    
+    res.status(httpStatusCode.OK).json(response);
+  } catch (error) {
+    next(error);
+  }
+}
+
+export const getUserStats = async (req, res, next) => {
+  try {
+    const stats = await UserService.getUserStats();
+    
+    const response = ResponseFormatter.formatSuccessResponse({
+      message: "User statistics retrieved successfully",
+      data: stats,
+      statusCode: httpStatusCode.OK
+    });
+    
+    res.status(httpStatusCode.OK).json(response);
+  } catch (error) {
+    next(error);
   }
 }
 
 
+export const activateUser = async (req, res, next) => {
+    try {
+        const { userId } = req.params;
+        const activatedUser = await UserService.activateUser(userId);
+        const response = ResponseFormatter.formatSuccessResponse({
+            message: "Admin user activated successfully.",
+            data: { user: activatedUser },
+            statusCode: httpStatusCode.OK
+        });
+        res.status(httpStatusCode.OK).json(response);
+    } catch (error) {
+        next(error);
+    }
+}
+
+export const resetUserPassword = async (req, res, next) => {
+    try {
+        const { userId ,password} = req.body;
+        const updatedUser = await UserService.resetPassword(userId, password);
+        const response = ResponseFormatter.formatSuccessResponse({
+            message: "User password reset successfully",
+            data: { user: updatedUser },
+            statusCode: httpStatusCode.OK
+        });
+        res.status(httpStatusCode.OK).json(response);
+    } catch (error) {
+        next(error);
+    }
+}
+
+export const getAllInActiveUser = async (req, res, next) => {
+    try {
+        const inactiveUsers = await UserService.getAllInActiveUsers(); 
+        
+        const response = ResponseFormatter.formatSuccessResponse({
+            message: "Inactive users retrieved successfully",
+            data: { users: inactiveUsers },
+            meta: { count: inactiveUsers.length },
+            statusCode: httpStatusCode.OK
+        });
+        
+        res.status(httpStatusCode.OK).json(response);
+    } catch (error) {
+        next(error); 
+    }
+}

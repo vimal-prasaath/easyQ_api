@@ -1,13 +1,13 @@
 
-import Hospital from "../../model/hospital/index.js"
-import HsptlFacilities from "../../model/hospital/facility.js"
-import Reviews from "../../model/hospital/review.js"
-import Favourite from "../../model/hospital/favourite.js"
-import { updateObjectPayload, updateFacilityPayload, updateComment ,searchBylocation} from './update_controller.js'
-import { EasyQError } from "../../config/error.js"
-import { httpStatusCode } from "../../util/statusCode.js"
-export async function createHospital(req, res ,next) {
-  
+import Hospital from "../model/hospital.js"
+import HsptlFacilities from "../model/facility.js"
+import Reviews from "../model/hospitalReview.js"
+import Favourite from "../model/hospitalFavourite.js"
+import { updateObjectPayload, updateFacilityPayload, updateComment, searchBylocation } from './update_controller.js'
+import { EasyQError } from "../config/error.js"
+import { httpStatusCode } from "../util/statusCode.js"
+export async function createHospital(req, res, next) {
+
     try {
         const data = req.body;
         if (!data.name || !data.email || !data.phoneNumber) {
@@ -33,7 +33,7 @@ export async function createHospital(req, res ,next) {
         const hospital = await Hospital.create(data);
         res.status(httpStatusCode.CREATED).json({
             message: "Hospital Data is Created Successfully",
-            hospitalId: hospital.hospitalId 
+            hospitalId: hospital.hospitalId
         });
     } catch (error) {
         if (error.name === 'ValidationError' && error.errors) {
@@ -54,8 +54,8 @@ export async function createHospital(req, res ,next) {
     }
 
 }
-export async function hospitalFacility(req, res , next) {
-  
+export async function hospitalFacility(req, res, next) {
+
     try {
         const data = req.body;
         if (!data.hospitalId || !data.facilities || !data.labs) {
@@ -67,7 +67,7 @@ export async function hospitalFacility(req, res , next) {
             ));
         }
 
-        const hsptl = await Hospital.findOne({ hospitalId: data.hospitalId }); // Assuming _id is used
+        const hsptl = await Hospital.findOne({ hospitalId: data.hospitalId });
         if (!hsptl) {
             return next(new EasyQError(
                 'NotFoundError',
@@ -99,19 +99,12 @@ export async function hospitalFacility(req, res , next) {
         ));
     }
 }
-export async function createReviews(req, res , next) {
+export async function createReviews(req, res, next) {
     try {
-   const data = req.body;
-        if (!data.hospitalId || !data.reviewerName || !data.rating || !data.comment) {
-            return next(new EasyQError(
-                'ValidationError',
-                httpStatusCode.BAD_REQUEST,
-                true,
-                'Hospital ID, reviewer name, rating, and comment are required.'
-            ));
-        }
+        const data = req.body;
+       
 
-        const hsptl = await Hospital.findOne({ hospitalId: data.hospitalId }); 
+        const hsptl = await Hospital.findOne({ hospitalId: data.hospitalId });
         if (!hsptl) {
             return next(new EasyQError(
                 'NotFoundError',
@@ -146,14 +139,14 @@ export async function createReviews(req, res , next) {
 
 }
 
-export const updateHospitalBasicDetails = async (req, res ,next) => {
+export const updateHospitalBasicDetails = async (req, res, next) => {
 
-  const { hospitalId } = req.params;
+    const { hospitalId } = req.params;
     try {
-      
-        const updateData = updateObjectPayload(req.body); 
+
+        const updateData = updateObjectPayload(req.body);
         const updatedHospital = await Hospital.findOneAndUpdate(
-            { hospitalId: hospitalId }, 
+            { hospitalId: hospitalId },
             { $set: updateData },
             {
                 new: true,
@@ -203,13 +196,13 @@ export const updateHospitalBasicDetails = async (req, res ,next) => {
     }
 };
 
-export async function updateFacility(req, res , next) {
+export async function updateFacility(req, res, next) {
     const { hospitalId } = req.params;
-    const updateData = updateFacilityPayload(req.body); 
+    const updateData = updateFacilityPayload(req.body);
 
     try {
         const updatedDetails = await HsptlFacilities.findOneAndUpdate(
-            { hospitalId: hospitalId }, 
+            { hospitalId: hospitalId },
             { $set: updateData },
             {
                 new: true,
@@ -258,12 +251,12 @@ export async function updateFacility(req, res , next) {
     }
 }
 
-export async function updateReviewComment(req, res ,next) {
-   const { hospitalId } = req.params;
+export async function updateReviewComment(req, res, next) {
+    const { hospitalId } = req.params;
     const { updateFields, averageRating } = await updateComment(req.body, hospitalId);
 
     try {
-        const hospitalExists = await Hospital.findOne({ hospitalId: hospitalId }); 
+        const hospitalExists = await Hospital.findOne({ hospitalId: hospitalId });
         if (!hospitalExists) {
             return next(new EasyQError(
                 'NotFoundError',
@@ -274,7 +267,7 @@ export async function updateReviewComment(req, res ,next) {
         }
 
         const updatedReview = await Reviews.findOneAndUpdate(
-            { hospitalId: hospitalId }, 
+            { hospitalId: hospitalId },
             { $set: updateFields },
             {
                 new: true,
@@ -294,7 +287,7 @@ export async function updateReviewComment(req, res ,next) {
 
         // Update average rating on the Hospital document
         await Hospital.updateOne(
-            { hospitalId: hospitalId }, 
+            { hospitalId: hospitalId },
             { $set: { averageRating: averageRating } }
         );
 
@@ -331,9 +324,9 @@ export async function updateReviewComment(req, res ,next) {
 }
 
 
-export async function getAllHospitalDetails(req, res,next) {
-   try {
-        const allHospitals = await Hospital.find({}); 
+export async function getAllHospitalDetails(req, res, next) {
+    try {
+        const allHospitals = await Hospital.find({});
 
         res.status(httpStatusCode.OK).json({
             message: 'Successfully retrieved all hospital basic details',
@@ -352,8 +345,8 @@ export async function getAllHospitalDetails(req, res,next) {
 }
 
 
-export async function getHospitalDetails(req, res , next) {
-     const { userId, hospitalId } = req.params; 
+export async function getHospitalDetails(req, res, next) {
+    const { userId, hospitalId } = req.params;
     try {
         if (!hospitalId) {
             return next(new EasyQError(
@@ -364,7 +357,7 @@ export async function getHospitalDetails(req, res , next) {
             ));
         }
 
-        const hospital = await Hospital.findOne({hospitalId:hospitalId}); 
+        const hospital = await Hospital.findOne({ hospitalId: hospitalId });
         if (!hospital) {
             return next(new EasyQError(
                 'NotFoundError',
@@ -396,7 +389,7 @@ export async function getHospitalDetails(req, res , next) {
 
         res.status(httpStatusCode.OK).json({
             message: 'Successfully retrieved hospital details',
-            hospital: hospital, 
+            hospital: hospital,
             facilities: facilities,
             review: review,
             isfavourite: isFavouriteStatus
@@ -421,9 +414,9 @@ export async function getHospitalDetails(req, res , next) {
 
 }
 
-export async function getHospitalDetailsBylocation(req, res , next) {
-try {
-        const query = searchBylocation(req.body); 
+export async function getHospitalDetailsBylocation(req, res, next) {
+    try {
+        const query = searchBylocation(req.body);
 
         if (Object.keys(query).length === 0) {
             return next(new EasyQError(
@@ -452,7 +445,7 @@ try {
 export async function getHsptlFacilities(hospitalId) {
 
     try {
-        const facilities = await HsptlFacilities.findOne({ hospitalId: hospitalId }); 
+        const facilities = await HsptlFacilities.findOne({ hospitalId: hospitalId });
         return facilities;
     } catch (error) {
         throw new EasyQError(
@@ -479,7 +472,7 @@ export async function getHsptlReviews(hospitalId) {
     }
 }
 
-export async function deleteHsptl(req, res,next) {
+export async function deleteHsptl(req, res, next) {
     const { hospitalId } = req.params;
 
     try {
@@ -492,7 +485,7 @@ export async function deleteHsptl(req, res,next) {
             ));
         }
 
-        const deletedHospital = await Hospital.findOneAndDelete({ hospitalId: hospitalId }); 
+        const deletedHospital = await Hospital.findOneAndDelete({ hospitalId: hospitalId });
 
         if (!deletedHospital) {
             return next(new EasyQError(
@@ -503,17 +496,17 @@ export async function deleteHsptl(req, res,next) {
             ));
         }
 
-        await HsptlFacilities.deleteOne({ hospitalId: hospitalId }); 
-        await Reviews.deleteOne({ hospitalId: hospitalId }); 
-        await Favourite.deleteMany({ 'favouriteHospitals.hospitalId': hospitalId }); 
+        await HsptlFacilities.deleteOne({ hospitalId: hospitalId });
+        await Reviews.deleteOne({ hospitalId: hospitalId });
+        await Favourite.deleteMany({ 'favouriteHospitals.hospitalId': hospitalId });
 
         res.status(httpStatusCode.OK).json({
             message: `Hospital "${deletedHospital.name}" (ID: ${hospitalId}) and its associated data deleted successfully.`,
             deletedHospital: {
-                hospitalId: deletedHospital.hospitalId, 
+                hospitalId: deletedHospital.hospitalId,
                 name: deletedHospital.name
             },
-          
+
         });
 
     } catch (error) {
@@ -533,7 +526,6 @@ export async function deleteHsptl(req, res,next) {
         ));
     }
 }
-
 
 
 
