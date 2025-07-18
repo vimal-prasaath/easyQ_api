@@ -7,6 +7,7 @@ import dotenv from "dotenv";
 import functions from "firebase-functions";
 
 const APP_PORT = process.env.APP_PORT || 3000;
+const NODE_ENV = process.env.NODE_ENV || "development";
 
 dotenv.config();
 
