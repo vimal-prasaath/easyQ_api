@@ -6,15 +6,20 @@ import { logInfo, logError } from './config/logger.js';
 import dotenv from 'dotenv';
 
 const PORT = process.env.PORT || 3000;
-
+const NODE_ENV = process.env.NODE_ENV || 'development';
 dotenv.config();
 
 dbConnect().then(() => {
   app.listen(PORT, () => {
+
+    const serverUrl = NODE_ENV === 'production' 
+      ? `https://api2-cd3vrfxtha-uc.a.run.app` // Use your actual production URL
+      : `http://localhost:${PORT}`;
+
     logInfo(`🚀 EasyQ API Server started successfully`, {
       port: PORT,
       environment: process.env.NODE_ENV || 'development',
-      url: `http://localhost:${PORT}`,
+      url: serverUrl,
       apiDocs: `http://localhost:${PORT}/api-docs`
     });
   });
