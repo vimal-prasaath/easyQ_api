@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/  
 
-collection
-logs
+# Ignore log files and directories
+logs/
+*.log

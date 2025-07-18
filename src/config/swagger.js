@@ -16,7 +16,7 @@ const options = {
     },
     servers: [
       {
-        url: 'http://localhost:3000',
+        url: 'https://api2-cd3vrfxtha-uc.a.run.app:3000',
         description: 'Development server',
       },
       {

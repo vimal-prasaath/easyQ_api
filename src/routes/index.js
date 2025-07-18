@@ -26,7 +26,7 @@ router.use('/qrgenerator', authenticate, qrRouter);
 router.use('/uploadfile', authenticate, uploadRouter);
 router.use('/favourite', authenticate, favouriteRouter);
 router.use('/qa', authenticate, helpCenter);
-router.use('/getSuggestion', authenticate, getSuggestionRouter);
+// router.use('/getSuggestion', authenticate, getSuggestionRouter);
 router.use('/patient-notes', authenticate, patientNotesRouter);
 router.use('/reviews', authenticate, reviewRouter);
 
