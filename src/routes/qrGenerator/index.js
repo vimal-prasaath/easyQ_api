@@ -99,6 +99,6 @@ router.post('/',authorizeOwnerOrAdmin,qrGeneator)
  *       500:
  *         description: Server error
  */
-router.get('/getdetails',authorizeOwnerOrAdmin,getQRCode)
+router.get('/getdetails',authorizeRoles,getQRCode)
 
 export default router

@@ -18,7 +18,7 @@ export async function searchHospital(req, res , next) {
             ));
         }
 
-        const lastquery = constructLastquery(searchParams);
+        const lastquery = await constructLastquery(searchParams);
         let lastSearchDoc = null;
 
         const existing = await SearchSuggestion.findOne({ userId: userId });
@@ -35,6 +35,7 @@ export async function searchHospital(req, res , next) {
                 lastquery: lastquery
             });
         }
+        console.log(lastSearchDoc,existing,"LLL")
 
         const pipeline = buildSearchPipeline(searchParams);
         const searchData = await Hospital.aggregate(pipeline);
