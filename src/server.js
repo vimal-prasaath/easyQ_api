@@ -13,6 +13,10 @@ dotenv.config();
 dbConnect()
   .then(() => {
     app.listen(APP_PORT, () => {
+      const serverUrl =
+        NODE_ENV === "production"
+          ? `https://api2-cd3vrfxtha-uc.a.run.app` // Use your actual production URL
+          : `http://localhost:${APP_PORT}`;
       logInfo(`🚀 EasyQ API Server started successfully`, {
         port: APP_PORT,
         environment: process.env.NODE_ENV || "development",
