@@ -1,19 +1,19 @@
 import mongoose from "mongoose";
 import { dbLogger, logInfo, logError } from './logger.js';
 
-const MONGO_URL = process.env.MONGO_URI || 'mongodb://localhost:27017';
+const MONGO_URL = process.env.MONGO_URI;
 
 export const dbConnect = async () => {
     try {
         await mongoose.connect(MONGO_URL, {
-            dbName: "my_app",
+            dbName: "easyQ",
             useNewUrlParser: true,
             useUnifiedTopology: true,
         });
         
         dbLogger.info("✅ Database connected successfully!", {
             url: MONGO_URL,
-            database: "my_app"
+            database: "easyQ"
         });
 
         // Log database connection events
