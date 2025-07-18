@@ -19,6 +19,9 @@ import { EasyQError } from "./config/error.js";
 import { httpStatusCode } from './util/statusCode.js';
 import { logError, logInfo } from './config/logger.js';
 import  {resetUserPassword} from "./controller/user.js"
+// import { setupProtectedRoutes } from './utils/routeProtector.js'; // New utility
+// import protectedRoutesConfig from './routesConfig.js'
+
 dotenv.config();
 
 const app = express();
@@ -39,12 +42,9 @@ app.use(helmet({
 
 // 2. CORS configuration
 app.use(cors({
-    origin: process.env.NODE_ENV === 'production' 
-        ? ['https://yourdomain.com'] 
-        : ['http://localhost:3000', 'http://localhost:3001'],
-    credentials: true
+    credentials: true,
+    origin: true // This allows any origin when credentials are sent
 }));
-
 // 3. HTTP request logging (early in stack)
 app.use(httpLogger);
 
@@ -96,9 +96,13 @@ app.get('/auth/google/callback',
             email: req.user?.email,
             ip: req.ip
         });
-        res.redirect(process.env.CLIENT_URL || 'http://localhost:3000/dashboard');
+        res.redirect(process.env.BASE_FRONTEND_URL);
     }
 );
+
+// const protectedRoutes= express.Router()
+// Setup all protected routes on the apiRouter
+// setupProtectedRoutes(protectedRoutes, protectedRoutesConfig);
 
 // 12. API routes (authentication will be applied per route basis)
 app.use('/api', apiRoutes);
