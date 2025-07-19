@@ -1,12 +1,19 @@
-import express from 'express'
+import express from "express";
 import {
-    createHospital, getHospitalDetails, updateFacility,
-    updateReviewComment, hospitalFacility, createReviews,
-    deleteHsptl, getAllHospitalDetails, updateHospitalBasicDetails, getHospitalDetailsBylocation
-} from '../../controller/hospital.js'
-import authorizeRoles from "../../middleware/authorization.js"
-import authorizeOwnerOrAdmin from '../../middleware/adminOwnerOrAdmin.js'
-const router = express.Router()
+  createHospital,
+  getHospitalDetails,
+  updateFacility,
+  updateReviewComment,
+  hospitalFacility,
+  createReviews,
+  deleteHsptl,
+  getAllHospitalDetails,
+  updateHospitalBasicDetails,
+  getHospitalDetailsBylocation,
+} from "../../controller/hospital.js";
+import authorizeRoles from "../../middleware/authorization.js";
+import authorizeOwnerOrAdmin from "../../middleware/adminOwnerOrAdmin.js";
+const router = express.Router();
 
 /**
  * @swagger
@@ -30,7 +37,7 @@ const router = express.Router()
  *       401:
  *         description: Unauthorized
  */
-router.post('/basicDetails',authorizeRoles, createHospital)
+router.post("/basicDetails", authorizeRoles, createHospital);
 
 /**
  * @swagger
@@ -54,7 +61,7 @@ router.post('/basicDetails',authorizeRoles, createHospital)
  *       401:
  *         description: Unauthorized
  */
-router.post('/facilities', authorizeRoles, hospitalFacility)
+router.post("/facilities", authorizeRoles, hospitalFacility);
 
 /**
  * @swagger
@@ -78,7 +85,7 @@ router.post('/facilities', authorizeRoles, hospitalFacility)
  *       401:
  *         description: Unauthorized
  */
-router.post('/review',authorizeOwnerOrAdmin, createReviews)
+router.post("/review", authorizeOwnerOrAdmin, createReviews);
 
 /**
  * @swagger
@@ -102,7 +109,7 @@ router.post('/review',authorizeOwnerOrAdmin, createReviews)
  *       404:
  *         description: Hospital not found
  */
-router.delete('/:hospitalId',authorizeRoles, deleteHsptl)
+router.delete("/:hospitalId", authorizeRoles, deleteHsptl);
 
 /**
  * @swagger
@@ -137,8 +144,7 @@ router.delete('/:hospitalId',authorizeRoles, deleteHsptl)
  *       404:
  *         description: Hospital not found
  */
-router.get('/:userId/:hospitalId',authorizeOwnerOrAdmin, getHospitalDetails)
-
+router.get("/:userId/:hospitalId", authorizeOwnerOrAdmin, getHospitalDetails);
 
 /**
  * @swagger
@@ -168,7 +174,7 @@ router.get('/:userId/:hospitalId',authorizeOwnerOrAdmin, getHospitalDetails)
  *       401:
  *         description: Unauthorized
  */
-router.get('/location',authorizeOwnerOrAdmin, getHospitalDetailsBylocation);
+router.post("/location", authorizeOwnerOrAdmin, getHospitalDetailsBylocation);
 
 /**
  * @swagger
@@ -190,7 +196,7 @@ router.get('/location',authorizeOwnerOrAdmin, getHospitalDetailsBylocation);
  *       401:
  *         description: Unauthorized
  */
-router.get('/',authorizeOwnerOrAdmin, getAllHospitalDetails)
+router.get("/", authorizeOwnerOrAdmin, getAllHospitalDetails);
 
 /**
  * @swagger
@@ -222,7 +228,11 @@ router.get('/',authorizeOwnerOrAdmin, getAllHospitalDetails)
  *       404:
  *         description: Hospital not found
  */
-router.put('/details/:hospitalId',authorizeOwnerOrAdmin, updateHospitalBasicDetails)
+router.put(
+  "/details/:hospitalId",
+  authorizeOwnerOrAdmin,
+  updateHospitalBasicDetails
+);
 
 /**
  * @swagger
@@ -259,7 +269,7 @@ router.put('/details/:hospitalId',authorizeOwnerOrAdmin, updateHospitalBasicDeta
  *       404:
  *         description: Hospital not found
  */
-router.put('/facilities/:hospitalId',authorizeRoles, updateFacility)
+router.put("/facilities/:hospitalId", authorizeRoles, updateFacility);
 
 /**
  * @swagger
@@ -300,6 +310,6 @@ router.put('/facilities/:hospitalId',authorizeRoles, updateFacility)
  *       404:
  *         description: Hospital or review not found
  */
-router.put('/review/:hospitalId',authorizeOwnerOrAdmin, updateReviewComment)
+router.put("/review/:hospitalId", authorizeOwnerOrAdmin, updateReviewComment);
 
-export default router   
+export default router;
