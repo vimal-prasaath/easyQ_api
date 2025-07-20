@@ -128,7 +128,7 @@ const hospitalReviewSchema = new Schema({
             message: 'Visit type must be one of: Emergency, Inpatient, Outpatient, Diagnostic, Surgery, Consultation, Maternity'
         }
     },
-    visitDate: {
+   visitDate: {
         type: Date,
         required: [true, 'Visit date is required'],
         validate: {
@@ -137,7 +137,7 @@ const hospitalReviewSchema = new Schema({
                 const currentDate = new Date();
                 const maxPastDate = new Date();
                 maxPastDate.setFullYear(currentDate.getFullYear() - 2);
-                
+
                 return visitDate <= currentDate && visitDate >= maxPastDate;
             },
             message: 'Visit date must be within the last 2 years and not in the future'
@@ -310,7 +310,6 @@ hospitalReviewSchema.virtual('reviewAge').get(function() {
 
 hospitalReviewSchema.pre('save', function(next) {
     this.updatedAt = Date.now();
-    
     if (this.isModified('reviewText')) {
         this.reviewText = this.reviewText.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
         this.reviewText = this.reviewText.replace(/<[^>]*>/g, '');

@@ -68,7 +68,6 @@ export class AuthService {
     }
 
     static async createUser(userData) {
-        console.log(userData,"lll")
         try {
             if (!userData.email || !userData.password) {
                 throw new EasyQError(

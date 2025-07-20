@@ -45,7 +45,7 @@ const userSchema = new Schema({
    role: {
     type: String, 
     enum: {
-      values: ['user', 'admin'], 
+      values: ['user', 'admin',"doctor"], 
       message: 'Role must be either user or admin'
     },
     required: true, 
@@ -126,7 +126,6 @@ const userSchema = new Schema({
         },
     },
 });
-
 
 userSchema.pre('save', async function(next) {
     const doc = this;

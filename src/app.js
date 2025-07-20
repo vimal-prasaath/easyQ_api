@@ -16,10 +16,9 @@ import swaggerUi from "swagger-ui-express";
 import swaggerSpecs from "./config/swagger.js";
 import "./config/sheduler.js";
 import { EasyQError } from "./config/error.js";
-import { httpStatusCode } from "./util/statusCode.js";
-import { logError, logInfo } from "./config/logger.js";
-import { resetUserPassword } from "./controller/user.js";
-import functions from "firebase-functions";
+import { httpStatusCode } from './util/statusCode.js';
+import { logError, logInfo } from './config/logger.js';
+
 dotenv.config();
 
 const app = express();
@@ -41,16 +40,10 @@ app.use(
 );
 
 // 2. CORS configuration
-app.use(
-  cors({
-    origin:
-      process.env.NODE_ENV === "production"
-        ? ["https://yourdomain.com"]
-        : ["http://localhost:3000", "http://localhost:3001"],
+app.use(cors({
     credentials: true,
-  })
-);
-
+    origin: true // This allows any origin when credentials are sent
+}));
 // 3. HTTP request logging (early in stack)
 app.use(httpLogger);
 
@@ -72,7 +65,7 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      maxAge: 1000 * 60 * 60 * 24, // 24 hours
+      maxAge: 1000 * 60 * 60 * 24, 
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
     },
@@ -99,18 +92,18 @@ app.get(
   })
 );
 
-app.get(
-  "/auth/google/callback",
-  passport.authenticate("google", { failureRedirect: "/login" }),
-  (req, res) => {
-    logInfo("Google OAuth success", {
-      userId: req.user?.userId,
-      email: req.user?.email,
-      ip: req.ip,
-    });
-    res.redirect(process.env.CLIENT_URL || "http://localhost:3000/dashboard");
-  }
+app.get('/auth/google/callback',
+    passport.authenticate('google', { failureRedirect: '/login' }),
+    (req, res) => {
+        logInfo('Google OAuth success', {
+            userId: req.user?.userId,
+            email: req.user?.email,
+            ip: req.ip
+        });
+        res.redirect(process.env.BASE_URL);
+    }
 );
+
 
 // 12. API routes (authentication will be applied per route basis)
 app.use("/api", apiRoutes);
