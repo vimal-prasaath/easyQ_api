@@ -3,6 +3,7 @@ import { EasyQError } from "../config/error.js"
 import { httpStatusCode } from "../util/statusCode.js";
 import { authLogger } from "../config/logger.js";
 import User from "../model/userProfile.js"
+import admin from '../config/firebaseAdmin.js'
 async function authenticate(req, res, next) {
 
     const authHeader = req.headers.authorization;
@@ -27,7 +28,7 @@ async function authenticate(req, res, next) {
             path: req.path,
             method: req.method,
             ip: req.ip,
-            authHeader: authHeader.substring(0, 20) + '...' 
+            authHeader: authHeader.substring(0, 20) + '...'
         });
         return next(new EasyQError(
             'AuthenticationError',
@@ -38,21 +39,50 @@ async function authenticate(req, res, next) {
     }
 
     const token = tokenParts[1];
+    let decodedPayload = null;
 
- 
+    try {
+        // --- Attempt Firebase ID Token verification first ---
+        decodedPayload = await admin.auth().verifyIdToken(token);
+
+        let userFromDb = await User.findOne({ userId: decodedPayload.email, }).select('isActive');
+        if (!userFromDb) {
+            authLogger.error('Authorization failed: Authenticated user not found in DB.', { userId: authenticatedUserId, path: req.path });
+            return next(new EasyQError('AuthenticationError', httpStatusCode.UNAUTHORIZED, true, 'Authenticated user not found.'));
+        }
+        req.user = decodedPayload;
+        req.isActive = userFromDb.isActive;
+
+        authLogger.info('Token verified successfully by Firebase Admin SDK', {
+            userId: decodedPayload.uid,
+            email: decodedPayload.email,
+            path: req.path
+        });
+        next()
+    } catch (firebaseError) {
+        authLogger.warn('Firebase ID Token verification failed, attempting custom JWT verification.', {
+            errorName: firebaseError.name,
+            errorMessage: firebaseError.message,
+            errorCode: firebaseError.code,
+            path: req.path,
+            tokenPreview: token.substring(0, 20) + '...'
+        });
+    }
+
+
 
     try {
         const decodedPayload = await compareToken(token);
-       
-          let userFromDb = await  User.findOne({ userId:  decodedPayload.data.userId, }).select('isActive');
-            if (!userFromDb) {
-                authLogger.error('Authorization failed: Authenticated user not found in DB.', { userId: authenticatedUserId, path: req.path });
-                return next(new EasyQError('AuthenticationError', httpStatusCode.UNAUTHORIZED, true, 'Authenticated user not found.'));
-            }
+
+        let userFromDb = await User.findOne({ userId: decodedPayload.data.userId, }).select('isActive');
+        if (!userFromDb) {
+            authLogger.error('Authorization failed: Authenticated user not found in DB.', { userId: authenticatedUserId, path: req.path });
+            return next(new EasyQError('AuthenticationError', httpStatusCode.UNAUTHORIZED, true, 'Authenticated user not found.'));
+        }
 
         req.user = decodedPayload;
-        req.isActive=userFromDb.isActive;
-        
+        req.isActive = userFromDb.isActive;
+
         authLogger.info('User authenticated successfully', {
             userId: decodedPayload.data.userId,
             email: decodedPayload.data.email,
@@ -61,7 +91,6 @@ async function authenticate(req, res, next) {
             method: req.method,
             ip: req.ip
         });
-        
         next();
     } catch (error) {
         authLogger.error('Authentication failed: Token validation error', {
@@ -70,7 +99,7 @@ async function authenticate(req, res, next) {
             path: req.path,
             method: req.method,
             ip: req.ip,
-            tokenPreview: token.substring(0, 20) + '...' 
+            tokenPreview: token.substring(0, 20) + '...'
         });
 
         if (error.name === 'TokenExpiredError') {

@@ -3,7 +3,6 @@ import mongoose from "mongoose";
 import generateUniqueId from "generate-unique-id";
 
 const { Schema, model } = mongoose;
-
 const hospitalSchema = new Schema({
     hospitalId: {
         type: String,
@@ -83,6 +82,10 @@ const hospitalSchema = new Schema({
         type: String,
         default: 'https://example.com/default-hospital.png'
     },
+     patientIds: [{
+        type: String,
+        ref: 'User' 
+    }],
     averageRating: {
         type: Number,
         default: 0,

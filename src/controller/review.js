@@ -38,7 +38,7 @@ function checkRateLimit(patientId) {
     return true;
 }
 
-// Create a new review
+// Create a new review for doctor
 export async function createReview(req, res, next) {
     const data = req.body;
     try {
@@ -104,6 +104,7 @@ export async function getReviewsByDoctor(req, res, next) {
     const { doctorId } = req.params;
     const { page = 1, limit = 10, status = 'Approved', sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
 
+    
     try {
         if (!doctorId) {
             return next(new EasyQError(

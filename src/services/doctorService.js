@@ -103,7 +103,6 @@ export class DoctorService {
             throw error;
         }
     }
-
     static async updateDoctor(doctorId, updates) {
         try {
             if (Object.keys(updates).length === 0) {
@@ -383,6 +382,33 @@ export class DoctorService {
                 httpStatusCode.INTERNAL_SERVER_ERROR,
                 false,
                 `Failed to fetch doctors by specialization: ${error.message}`
+            );
+        }
+    }
+
+    static async removePatientFromDoctor(doctorId, patientId) {
+        try {
+            const updatedDoctor = await Doctor.findOneAndUpdate(
+                { doctorId: doctorId },
+                { $pull: { patientIds: patientId } }, 
+                { new: true, runValidators: true }
+            );
+
+            if (!updatedDoctor) {
+                throw new EasyQError(
+                    'NotFoundError',
+                    httpStatusCode.NOT_FOUND,
+                    true,
+                    `Doctor with ID ${doctorId} not found.`
+                );
+            }
+            return updatedDoctor;
+        } catch (error) {
+            throw new EasyQError(
+                'DatabaseError',
+                httpStatusCode.INTERNAL_SERVER_ERROR,
+                true,
+                `Failed to remove patient from doctor: ${error.message}`
             );
         }
     }

@@ -47,6 +47,12 @@ export class AppointmentService {
                 }
             }
 
+              await this.updateDoctorAndHospitalWithPatient(
+                appointmentData.doctorId,
+                appointmentData.patientId,
+                appointmentData.hospitalId
+            );
+
             logInfo('Appointment created successfully', {
                 appointmentId: newAppointment.appointmentId,
                 patientId: appointmentData.patientId
@@ -340,6 +346,54 @@ export class AppointmentService {
                 paymentDetails
             });
             throw error;
+        }
+    }
+     static async updateDoctorAndHospitalWithPatient(doctorId, patientId, hospitalId) {
+        try {
+            logInfo('Attempting to update Doctor and Hospital models with patient ID', { doctorId, patientId, hospitalId });
+
+            if (doctorId) {
+                const doctor = await Doctor.findOne({ doctorId: doctorId });
+                if (doctor) {
+                    if (!doctor.patientIds.includes(patientId)) {
+                        doctor.patientIds.push(patientId);
+                        await doctor.save();
+                        logInfo('Patient ID added to doctor model successfully', { doctorId, patientId });
+                    } else {
+                        logInfo('Patient ID already exists in doctor model, no update needed', { doctorId, patientId });
+                    }
+                } else {
+                    logWarn('Doctor not found for updating patientIds', { doctorId });
+                }
+            } else {
+                logInfo('No doctorId provided, skipping doctor model update');
+            }
+
+            if (hospitalId) {
+                const hospital = await Hospital.findOne({ hospitalId: hospitalId });
+                if (hospital) {
+                    if (!hospital.patientIds.includes(patientId)) {
+                        hospital.patientIds.push(patientId);
+                        await hospital.save();
+                        logInfo('Patient ID added to hospital model successfully', { hospitalId, patientId });
+                    } else {
+                        logInfo('Patient ID already exists in hospital model, no update needed', { hospitalId, patientId });
+                    }
+                } else {
+                    logWarn('Hospital not found for updating patientIds', { hospitalId });
+                }
+            } else {
+                logInfo('No hospitalId provided, skipping hospital model update');
+            }
+
+        } catch (error) {
+            logError('Error updating Doctor or Hospital models with patient ID', {
+                doctorId,
+                patientId,
+                hospitalId,
+                error: error.message,
+                stack: error.stack
+            });
         }
     }
 }
