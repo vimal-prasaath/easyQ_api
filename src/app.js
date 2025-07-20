@@ -19,7 +19,6 @@ import { EasyQError } from "./config/error.js";
 import { httpStatusCode } from './util/statusCode.js';
 import { logError, logInfo } from './config/logger.js';
 
-
 dotenv.config();
 
 const app = express();

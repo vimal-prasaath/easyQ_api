@@ -103,7 +103,6 @@ export class DoctorService {
             throw error;
         }
     }
-
     static async updateDoctor(doctorId, updates) {
         try {
             if (Object.keys(updates).length === 0) {

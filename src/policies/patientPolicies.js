@@ -125,7 +125,6 @@ const patientPolicies = {
     }
 
 
-
 };
 
 export default patientPolicies;

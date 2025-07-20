@@ -187,3 +187,4 @@ const doctorPolicies = {
 };
 
 export default doctorPolicies;
+

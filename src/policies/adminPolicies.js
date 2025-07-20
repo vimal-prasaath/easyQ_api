@@ -12,5 +12,4 @@ const adminPolicies = {
         'process_payment': true
     }
 };
-
 export default adminPolicies;

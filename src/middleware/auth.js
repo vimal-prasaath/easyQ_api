@@ -91,7 +91,6 @@ async function authenticate(req, res, next) {
             method: req.method,
             ip: req.ip
         });
-
         next();
     } catch (error) {
         authLogger.error('Authentication failed: Token validation error', {

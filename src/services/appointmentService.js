@@ -348,7 +348,6 @@ export class AppointmentService {
             throw error;
         }
     }
-
      static async updateDoctorAndHospitalWithPatient(doctorId, patientId, hospitalId) {
         try {
             logInfo('Attempting to update Doctor and Hospital models with patient ID', { doctorId, patientId, hospitalId });

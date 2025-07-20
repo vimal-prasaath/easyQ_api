@@ -86,11 +86,9 @@
 
 // export default authorizeRoles;
 
-
 import { EasyQError } from "../config/error.js";
 import { httpStatusCode } from "../util/statusCode.js";
 import { authLogger } from "../config/logger.js";
-
 async function authorizeRoles(req, res, next) {
     if (!req.user) {
         authLogger.error('Broad authorization failed: User data missing in req.user. Ensure authenticate middleware runs first.', { path: req.path });

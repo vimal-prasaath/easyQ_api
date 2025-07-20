@@ -31,7 +31,6 @@ const documentSchema = new mongoose.Schema({
         default: Date.now
     }
 });
-
 const hospitalDocumentsSchema = new mongoose.Schema({
     hospitalId: {
         type: String, 

@@ -25,7 +25,6 @@ export const generateQR=async(dataToEncodeObject)=>{
                 'BASE_URL is not configured in environment variables.'
             );
         }
-
         const url = new URL(baseUrl);
         url.searchParams.append('userId', userId);
         url.searchParams.append('appointmentId', appointmentId);

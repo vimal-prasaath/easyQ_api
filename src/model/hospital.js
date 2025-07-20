@@ -3,7 +3,6 @@ import mongoose from "mongoose";
 import generateUniqueId from "generate-unique-id";
 
 const { Schema, model } = mongoose;
-
 const hospitalSchema = new Schema({
     hospitalId: {
         type: String,

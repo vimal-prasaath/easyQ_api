@@ -106,3 +106,4 @@ const hospitalAdminPolicies = {
 };
 
 export default hospitalAdminPolicies;
+

@@ -392,7 +392,6 @@ export async function updateReviewComment(req, res, next) {
     }
 }
 
-
 export async function getAllHospitalDetails(req, res, next) {
     try {
         const allHospitals = await Hospital.find({});

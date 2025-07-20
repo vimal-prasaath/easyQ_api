@@ -73,6 +73,7 @@ import { uploadFile, getFiles, deleteFile , downloadFile } from "../controller/u
 import {uploadMiddleware , multerErrorHandler} from './fileConfig.js'; 
 import { searchRateLimit } from '../middleware/rateLimiter.js';
 
+
 const protectedRoutesConfig = [
     //admin
     // { path: '/user', method: 'get', resourceType: 'admin', action: 'read_all', handlers: [getAllUser] },

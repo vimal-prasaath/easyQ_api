@@ -64,3 +64,4 @@ export const deleteFileFromFirebase = async (filePath) => {
         throw error;
     }
 };
+

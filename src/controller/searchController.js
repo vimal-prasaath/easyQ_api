@@ -36,6 +36,7 @@ export async function searchHospital(req, res , next) {
             });
         }
 
+        
         const pipeline = buildSearchPipeline(searchParams);
         const searchData = await Hospital.aggregate(pipeline);
 

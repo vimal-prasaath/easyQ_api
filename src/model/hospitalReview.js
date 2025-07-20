@@ -310,7 +310,6 @@ hospitalReviewSchema.virtual('reviewAge').get(function() {
 
 hospitalReviewSchema.pre('save', function(next) {
     this.updatedAt = Date.now();
-    
     if (this.isModified('reviewText')) {
         this.reviewText = this.reviewText.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
         this.reviewText = this.reviewText.replace(/<[^>]*>/g, '');

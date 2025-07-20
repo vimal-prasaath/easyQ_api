@@ -90,7 +90,6 @@ const doctorSchema = new Schema({
         enum: ['Available', 'Unavailable', 'On Leave', 'Emergency Only'],
         default: 'Unavailable'
     },
-
     daysAvailable: {
         type: [String], 
         enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],

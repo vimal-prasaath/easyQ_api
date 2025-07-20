@@ -32,3 +32,4 @@ export const setupProtectedRoutes = (router, routesConfig) => {
         );
     });
 };
+
