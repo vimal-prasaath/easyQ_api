@@ -1,7 +1,7 @@
 import cron from 'node-cron';
 import appointments from "../model/appointment.js"
 import UserToken from "../model/fcmModel.js"
-import admin from './firebase.js';
+import admin from './firebaseAdmin.js';
 cron.schedule('*/1 * * * *', async () => {
     const now = new Date()
     const targetTime = new Date(now.getTime() + 30 * 60 * 1000);

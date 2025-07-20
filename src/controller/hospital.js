@@ -1,11 +1,13 @@
 
 import Hospital from "../model/hospital.js"
 import HsptlFacilities from "../model/facility.js"
-import Reviews from "../model/hospitalReview.js"
+import HospitalReview from "../model/hospitalReview.js"
 import Favourite from "../model/hospitalFavourite.js"
 import { updateObjectPayload, updateFacilityPayload, updateComment, searchBylocation } from './update_controller.js'
 import { EasyQError } from "../config/error.js"
 import { httpStatusCode } from "../util/statusCode.js"
+import {logInfo, logError} from "../config/logger.js"
+
 export async function createHospital(req, res, next) {
 
     try {
@@ -114,7 +116,42 @@ export async function createReviews(req, res, next) {
             ));
         }
 
-        const reviews = await Reviews.create(data);
+        const reviews = await HospitalReview.create(data);
+        
+         const hospitalId = data.hospitalId;
+
+         const hospitalRatingStats = await HospitalReview.aggregate([
+            {
+                $match: {
+                    hospitalId: hospitalId,
+                    status: { $in: ['Pending', 'Approved'] }
+                }
+            },
+            {
+                $group: {
+                    _id: '$hospitalId',
+                    averageRating: { $avg: '$overallRating' }
+                }
+            }
+        ]);
+
+        let newHospitalAverageRating = 0;
+        if (hospitalRatingStats.length > 0) {
+            newHospitalAverageRating = hospitalRatingStats[0].averageRating;
+        }
+
+        const updatedHospital = await Hospital.findOneAndUpdate(
+            { hospitalId: hospitalId },
+            { $set: { averageRating: newHospitalAverageRating } },
+            { new: true, runValidators: true }
+        );
+
+        if (updatedHospital) {
+            logInfo(`Hospital ${hospitalId} average rating updated to ${newHospitalAverageRating}.`);
+        } else {
+            logError(`Failed to update average rating for hospital ${hospitalId}. Hospital not found during update.`);
+        }
+
         res.status(httpStatusCode.CREATED).json({
             message: "Review saved successfully",
             reviewId: reviews._id
@@ -266,7 +303,7 @@ export async function updateReviewComment(req, res, next) {
             ));
         }
 
-        const updatedReview = await Reviews.findOneAndUpdate(
+        const updatedReview = await HospitalReview.findOneAndUpdate(
             { hospitalId: hospitalId },
             { $set: updateFields },
             {
@@ -283,6 +320,38 @@ export async function updateReviewComment(req, res, next) {
                 true,
                 'Review not found for this hospital or review ID.'
             ));
+        }
+
+        const hospitalRatingStats = await HospitalReview.aggregate([
+            {
+                $match: {
+                    hospitalId: hospitalId,
+                    status: { $in: ['Pending', 'Approved'] }
+                }
+            },
+            {
+                $group: {
+                    _id: '$hospitalId',
+                    averageRating: { $avg: '$overallRating' }
+                }
+            }
+        ]);
+
+        let newHospitalAverageRating = 0;
+        if (hospitalRatingStats.length > 0) {
+            newHospitalAverageRating = hospitalRatingStats[0].averageRating;
+        }
+
+        const updatedHospital = await Hospital.findOneAndUpdate(
+            { hospitalId: hospitalId },
+            { $set: { averageRating: newHospitalAverageRating } },
+            { new: true, runValidators: true }
+        );
+
+        if (updatedHospital) {
+            logInfo(`Hospital ${hospitalId} average rating updated to ${newHospitalAverageRating}.`);
+        } else {
+            logError(`Failed to update average rating for hospital ${hospitalId}. Hospital not found during update.`);
         }
 
         // Update average rating on the Hospital document
@@ -429,7 +498,7 @@ export async function getHospitalDetailsBylocation(req, res, next) {
 
         const allHospitals = await Hospital.find(query);
         res.status(httpStatusCode.OK).json({
-            message: 'Hospitals found successfully',
+            message: 'Hospitals fetch successfully',
             count: allHospitals.length,
             data: allHospitals
         });
@@ -460,7 +529,7 @@ export async function getHsptlFacilities(hospitalId) {
 export async function getHsptlReviews(hospitalId) {
 
     try {
-        const reviews = await Reviews.findOne({ hospitalId: hospitalId });
+        const reviews = await HospitalReview.findOne({ hospitalId: hospitalId });
         return reviews;
     } catch (error) {
         throw new EasyQError(
@@ -497,7 +566,7 @@ export async function deleteHsptl(req, res, next) {
         }
 
         await HsptlFacilities.deleteOne({ hospitalId: hospitalId });
-        await Reviews.deleteOne({ hospitalId: hospitalId });
+        await HospitalReview.deleteOne({ hospitalId: hospitalId });
         await Favourite.deleteMany({ 'favouriteHospitals.hospitalId': hospitalId });
 
         res.status(httpStatusCode.OK).json({

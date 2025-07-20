@@ -7,7 +7,6 @@ import dotenv from 'dotenv';
 const secretKeyHex = process.env.ENCRYPTION_KEY_FORGE || "aa748821e840054a19d3ced7ef0d3f13eae83b3309b6ee9eaa14e5e53048cb38";
 dotenv.config()
 if (!secretKeyHex || secretKeyHex.length !== 64) {
-    console.error('CRITICAL ERROR: ENCRYPTION_KEY_FORGE is missing or not a 32-byte (64-character hex) key.');
 }
 let secretKey = null;
 try {

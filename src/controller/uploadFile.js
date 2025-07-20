@@ -1,28 +1,11 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 import UserHospitalFiles from "../model/file.js";
-import { uploadFileToS3 , getPresignedUrlForDownload } from '../config/awsS3.js';
 import { encryptBufferForge, decryptBufferForge } from '../util/fileCrypto.js';
 import { EasyQError } from '../config/error.js';
 import { httpStatusCode } from '../util/statusCode.js';
+import { uploadFileToFirebase, getPresignedUrlForDownload, deleteFileFromFirebase } from '../config/fireBaseStorage.js';
 
-export async function uploadFile(req, res ,next) {
-  try {
+export async function uploadFile(req, res, next) {
+    try {
         const { userId, hospitalId, fileType } = req.body;
         const file = req.file;
 
@@ -44,24 +27,20 @@ export async function uploadFile(req, res ,next) {
             ));
         }
 
-        let fileS3Info = '';
-        let storedIn = 'S3';
-        let s3UploadAttempted = false;
+        let fileStorageInfo;
+        let storedIn = 'Firebase Storage'; 
 
         try {
-            s3UploadAttempted = true;
-            fileS3Info = await uploadFileToS3(file.buffer, file.originalname, file.mimetype, userId);
-        } catch (s3Error) {
-            console.warn('S3 upload failed, attempting fallback to direct DB storage.', s3Error.message);
-            storedIn = 'Database';
-            if (file.size > (16 * 1024 * 1024)) { // MongoDB document size limit
-                return next(new EasyQError(
-                    'FileSizeExceeded',
-                    httpStatusCode.PAYLOAD_TOO_LARGE,
-                    true,
-                    'File too large to store in database (exceeds 16MB limit) after S3 fallback failed.'
-                ));
-            }
+            // Upload file to Firebase Storage
+            fileStorageInfo = await uploadFileToFirebase(file.buffer, file.originalname, file.mimetype, userId);
+        } catch (storageError) {
+            console.error('Firebase Storage upload failed:', storageError.message);
+            return next(new EasyQError(
+                'UploadError',
+                httpStatusCode.INTERNAL_SERVER_ERROR,
+                false,
+                `Failed to upload file to Firebase Storage: ${storageError.message}`
+            ));
         }
 
         const newDocument = {
@@ -69,29 +48,10 @@ export async function uploadFile(req, res ,next) {
             mimeType: file.mimetype,
             size: file.size,
             fileType: fileType,
-            uploadedAt: new Date()
+            uploadedAt: new Date(),
+            fileUrl: fileStorageInfo.url, 
+            fileKey: fileStorageInfo.path, 
         };
-
-        if (storedIn === 'Database') {
-            try {
-                const { iv, encryptedData } = encryptBufferForge(file.buffer);
-                newDocument.fileBuffer = encryptedData;
-                newDocument.iv = iv;
-                newDocument.fileUrl = '';
-            } catch (encryptionError) {
-                return next(new EasyQError(
-                    'EncryptionError',
-                    httpStatusCode.INTERNAL_SERVER_ERROR,
-                    false,
-                    `Failed to encrypt file for database storage: ${encryptionError.message}`
-                ));
-            }
-        } else {
-            newDocument.fileUrl = fileS3Info.url;
-            newDocument.fileKey = fileS3Info.key;
-            newDocument.fileBuffer = undefined;
-            newDocument.iv = undefined;
-        }
 
         let userFiles = await UserHospitalFiles.findOne({ userId });
 
@@ -116,15 +76,13 @@ export async function uploadFile(req, res ,next) {
         await userFiles.save();
 
         res.status(httpStatusCode.CREATED).json({
-            message: storedIn === 'Database'
-                ? 'File uploaded to DB (encrypted) due to S3 unavailability.'
-                : 'File uploaded successfully to S3 and database entry created.',
+            message: 'File uploaded successfully to Firebase Storage and database entry created.',
             document: {
                 fileName: newDocument.fileName,
                 mimeType: newDocument.mimeType,
                 size: newDocument.size,
                 fileType: newDocument.fileType,
-                fileUrl: newDocument.fileUrl || 'Stored in DB (encrypted)',
+                fileUrl: newDocument.fileUrl,
                 storedLocation: storedIn
             }
         });
@@ -185,8 +143,8 @@ export async function getFiles(req, res , next) {
                     size: doc.size,
                     fileType: doc.fileType,
                     uploadedAt: doc.uploadedAt,
-                    fileUrl: doc.fileUrl || (doc.fileBuffer ? 'Stored in DB (encrypted)' : 'N/A'),
-                    storedLocation: doc.fileUrl ? 'S3' : (doc.fileBuffer ? 'Database' : 'Unknown'),
+                    fileUrl: doc.fileUrl ,
+                    storedLocation: doc.fileUrl ,
                     documentId: doc._id
                 }));
             } else {
@@ -207,8 +165,8 @@ export async function getFiles(req, res , next) {
                         size: doc.size,
                         fileType: doc.fileType,
                         uploadedAt: doc.uploadedAt,
-                        fileUrl: doc.fileUrl || (doc.fileBuffer ? 'Stored in DB (encrypted)' : 'N/A'),
-                        storedLocation: doc.fileUrl ? 'S3' : (doc.fileBuffer ? 'Database' : 'Unknown'),
+                        fileUrl: doc.fileUrl ,
+                        storedLocation: doc.fileUrl ,
                         hospitalId: hosp.hospitalId,
                         documentId: doc._id
                     });
@@ -350,6 +308,15 @@ export async function deleteFile(req, res ,next) {
             ));
         }
 
+        // Delete from Firebase Storage if fileKey exists
+        if (documentToDelete.fileKey) {
+            try {
+                await deleteFileFromFirebase(documentToDelete.fileKey);
+            } catch (firebaseDeleteError) {
+                console.error(`Failed to delete file from Firebase Storage: ${firebaseDeleteError.message}`);
+            }
+        }
+
         hospitalEntry.documents = hospitalEntry.documents.filter(
             doc => doc._id.toString() !== documentId
         );
@@ -358,7 +325,6 @@ export async function deleteFile(req, res ,next) {
             userFiles.hospitals = userFiles.hospitals.filter(h => h.hospitalId.toString() !== hospitalId);
         }
 
-       
         await userFiles.save();
 
         res.status(httpStatusCode.OK).json({ message: 'Document deleted successfully.' });
@@ -384,9 +350,8 @@ export async function deleteFile(req, res ,next) {
     }
 }
 
-
 export async function downloadFile(req, res ,next) {
-  try {
+    try {
         const { userId, hospitalId, documentId } = req.body;
 
         if (!userId || !hospitalId || !documentId) {
@@ -428,42 +393,27 @@ export async function downloadFile(req, res ,next) {
             ));
         }
 
+        // Only proceed if fileKey exists, indicating it's stored in Firebase Storage
         if (document.fileKey) {
             try {
-                const presignedUrl = getPresignedUrlForDownload(document.fileKey);
-                return res.status(httpStatusCode.OK).json({ downloadUrl: presignedUrl, message: 'Presigned URL generated for S3 download.' });
-            } catch (s3PresignError) {
+                const presignedUrl = await getPresignedUrlForDownload(document.fileKey);
+                return res.status(httpStatusCode.OK).json({ downloadUrl: presignedUrl, message: 'Presigned URL generated for Firebase Storage download.' });
+            } catch (firebasePresignError) {
                 return next(new EasyQError(
-                    'S3Error',
+                    'FirebaseError',
                     httpStatusCode.INTERNAL_SERVER_ERROR,
                     false,
-                    `Error generating secure download link for S3 file: ${s3PresignError.message}`
-                ));
-            }
-        } else if (document.fileBuffer && document.iv) {
-            try {
-                const decryptedBuffer = decryptBufferForge(document.fileBuffer, document.iv);
-
-                res.set({
-                    'Content-Type': document.mimeType,
-                    'Content-Length': decryptedBuffer.length,
-                    'Content-Disposition': `attachment; filename="${document.fileName}"`
-                });
-                return res.status(httpStatusCode.OK).send(decryptedBuffer); 
-            } catch (decryptionError) {
-                return next(new EasyQError(
-                    'DecryptionError',
-                    httpStatusCode.INTERNAL_SERVER_ERROR,
-                    false,
-                    `Error decrypting file from DB for download: ${decryptionError.message}`
+                    `Error generating secure download link for Firebase Storage file: ${firebasePresignError.message}`
                 ));
             }
         } else {
+            // If fileKey is not present, it means the file is not in Firebase Storage
+            // and we are explicitly not supporting database-stored files for download here.
             return next(new EasyQError(
                 'FileContentError',
                 httpStatusCode.NOT_FOUND,
                 true,
-                'File content not available for this document (neither S3 key nor DB buffer found).'
+                'File content not available for this document via Firebase Storage.'
             ));
         }
 

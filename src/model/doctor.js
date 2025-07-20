@@ -113,6 +113,10 @@ const doctorSchema = new Schema({
             
          
         }],
+  patientIds: [{
+        type: String,
+        ref: 'User' 
+    }],
 
     createdAt: {
         type: Date,
