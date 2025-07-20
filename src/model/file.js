@@ -26,6 +26,14 @@ const documentSchema = new mongoose.Schema({
         type: String,
         required: false
     },
+      iv: { 
+        type: String,
+        required: false
+    },
+    fileBuffer: {
+        type: String, 
+        required: false 
+    },
     uploadedAt: {
         type: Date,
         default: Date.now

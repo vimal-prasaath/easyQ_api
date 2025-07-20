@@ -83,10 +83,6 @@ const hospitalSchema = new Schema({
         type: String,
         default: 'https://example.com/default-hospital.png'
     },
-     patientIds: [{
-        type: String,
-        ref: 'User' 
-    }],
     averageRating: {
         type: Number,
         default: 0,

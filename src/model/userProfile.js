@@ -45,7 +45,7 @@ const userSchema = new Schema({
    role: {
     type: String, 
     enum: {
-      values: ['user', 'admin',"doctor"], 
+      values: ['user', 'admin'], 
       message: 'Role must be either user or admin'
     },
     required: true, 

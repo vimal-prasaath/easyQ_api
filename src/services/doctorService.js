@@ -386,31 +386,4 @@ export class DoctorService {
             );
         }
     }
-
-    static async removePatientFromDoctor(doctorId, patientId) {
-        try {
-            const updatedDoctor = await Doctor.findOneAndUpdate(
-                { doctorId: doctorId },
-                { $pull: { patientIds: patientId } }, 
-                { new: true, runValidators: true }
-            );
-
-            if (!updatedDoctor) {
-                throw new EasyQError(
-                    'NotFoundError',
-                    httpStatusCode.NOT_FOUND,
-                    true,
-                    `Doctor with ID ${doctorId} not found.`
-                );
-            }
-            return updatedDoctor;
-        } catch (error) {
-            throw new EasyQError(
-                'DatabaseError',
-                httpStatusCode.INTERNAL_SERVER_ERROR,
-                true,
-                `Failed to remove patient from doctor: ${error.message}`
-            );
-        }
-    }
 }

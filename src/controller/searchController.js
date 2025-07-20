@@ -35,6 +35,7 @@ export async function searchHospital(req, res , next) {
                 lastquery: lastquery
             });
         }
+        console.log(lastSearchDoc,existing,"LLL")
 
         const pipeline = buildSearchPipeline(searchParams);
         const searchData = await Hospital.aggregate(pipeline);

@@ -15,14 +15,14 @@ export const generateQR=async(dataToEncodeObject)=>{
             );
         }
 
-        const baseUrl = process.env.BASE_URL+'/api/qrgenerator/getdetails';
+        const baseUrl = process.env.BASE_FRONTEND_URL;
 
         if (!baseUrl) {
             throw new EasyQError(
                 'ConfigurationError',
                 httpStatusCode.INTERNAL_SERVER_ERROR,
                 false,
-                'BASE_URL is not configured in environment variables.'
+                'BASE_FRONTEND_URL is not configured in environment variables.'
             );
         }
 

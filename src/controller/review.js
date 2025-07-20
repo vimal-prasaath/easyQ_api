@@ -38,7 +38,7 @@ function checkRateLimit(patientId) {
     return true;
 }
 
-// Create a new review for doctor
+// Create a new review
 export async function createReview(req, res, next) {
     const data = req.body;
     try {
