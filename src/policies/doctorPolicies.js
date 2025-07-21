@@ -47,7 +47,7 @@ const doctorPolicies = {
         },
         'delete': false
     },
-    'appointments': {
+    'appointment': {
         'create': true,
         'update': async (req, decodedToken, appointmentId) => {
             const doctorUserId = decodedToken.uid || decodedToken.data.userId;
