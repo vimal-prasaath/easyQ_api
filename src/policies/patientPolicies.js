@@ -40,7 +40,7 @@ const patientPolicies = {
         'update': true,
     },
     //appointments policy 
-    'appointments': {
+    'appointment': {
         'create': true,
         'update': async (req, decodedToken, appointmentId) => {
             const appointment = await Appointment.findById(appointmentId);
