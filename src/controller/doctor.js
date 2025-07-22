@@ -20,7 +20,6 @@ export async function createDoctor(req, res, next) {
         });
 
         const result = await DoctorService.createDoctor(doctorData);
-        console.log(result)
         const response = ResponseFormatter.formatSuccessResponse({
             message: "Doctor created successfully",
             data: result,

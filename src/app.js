@@ -42,7 +42,7 @@ app.use(
 // 2. CORS configuration
 app.use(cors({
     credentials: true,
-    origin: true // This allows any origin when credentials are sent
+    origin: true 
 }));
 // 3. HTTP request logging (early in stack)
 app.use(httpLogger);
@@ -80,9 +80,10 @@ app.use(passport.session());
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 
 // 10. Public routes with specific rate limiting
-app.use("/signup", authRateLimit, sign);
-app.use("/login", authRateLimit, login);
-app.use("/user", authRateLimit, login);
+
+app.use("/api/signup", authRateLimit, sign);
+app.use("/api/login", authRateLimit, login);
+app.use("/api/user", authRateLimit, login);
 
 // 11. Google OAuth routes
 app.get(

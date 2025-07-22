@@ -2,9 +2,9 @@ import User from "../model/userProfile.js"
 import bcrypt from 'bcrypt'
 import { EasyQError } from '../config/error.js';
 import { httpStatusCode } from '../util/statusCode.js';
-export async function getUserDetails(email) {
+export async function getUserDetails(email,phoneNumber) {
   try {
-    const user = await User.findOne({ email: email })
+    const user = await User.findOne({ phoneNumber:phoneNumber })
     return user
   } catch (error) {
     throw new EasyQError(
@@ -46,4 +46,19 @@ export async function generatePasswordHash(plainPassword) {
       `Password hashing failed unexpectedly: ${error.message}`
     );
   }
+}
+
+export async function createUser(phoneNumber) {
+  try{
+    const user = await User.create({ phoneNumber:phoneNumber })
+    return user
+  }catch(error){
+     throw new EasyQError(
+      'DatabaseError',
+      httpStatusCode.INTERNAL_SERVER_ERROR,
+      false,
+      `Failed to create user in database: ${error.message}`
+    );
+  }
+  
 }

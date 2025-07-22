@@ -11,7 +11,6 @@ const userSchema = new Schema({
     },
     name: {
         type: String,
-        required: [true, 'Name is required'],
         trim: true,
         minlength: [2, 'Name must be at least 2 characters long'],
         maxlength: [50, 'Name cannot exceed 50 characters'],
@@ -48,12 +47,10 @@ const userSchema = new Schema({
       values: ['user', 'admin',"doctor"], 
       message: 'Role must be either user or admin'
     },
-    required: true, 
     default: 'user' 
   },
     email: {
         type: String,
-        required: [true, 'Email is required'],
         unique: true,
         lowercase: true,
         trim: true,
@@ -64,8 +61,9 @@ const userSchema = new Schema({
             message: 'Please provide a valid email address'
         }
     },
-    mobileNumber: {
+    phoneNumber: {
         type: String,
+        require:true,
         trim: true,
         validate: {
             validator: function(value) {
@@ -106,7 +104,7 @@ const userSchema = new Schema({
         type: Boolean,
         default: true
     },
-    emailVerified: {
+    profileUpadate: {
         type: Boolean,
         default: false
     },

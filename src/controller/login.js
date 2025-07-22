@@ -6,14 +6,14 @@ import { logApiRequest, logApiResponse } from '../config/logger.js';
 import { constructResponse } from '../util/responseFormatter.js';
 
 export async function login(req, res, next) {
-    const { email, password } = req.body;
+    const { email, password,phoneNumber } = req.body;
     //input validation 
     
     // Log API request
     logApiRequest(req, { action: 'login_attempt', email });
 
     try {
-        const loginResult = await AuthService.login(email, password);
+        const loginResult = await AuthService.login(email, password,phoneNumber);
         
         const response = constructResponse(
             true,
