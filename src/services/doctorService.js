@@ -103,58 +103,83 @@ export class DoctorService {
             throw error;
         }
     }
-    static async updateDoctor(doctorId, updates) {
-        try {
-            if (Object.keys(updates).length === 0) {
-                throw new EasyQError(
-                    'ValidationError',
-                    httpStatusCode.BAD_REQUEST,
-                    true,
-                    'No update fields provided.'
-                );
-            }
-
-            const updatedDoctor = await Doctor.findOneAndUpdate(
-                { doctorId: doctorId },
-                { $set: updates },
-                {
-                    new: true,
-                    runValidators: true,
-                    context: 'query'
-                }
-            ).select('-_id -__v');
-
-            if (!updatedDoctor) {
-                throw new EasyQError(
-                    'NotFoundError',
-                    httpStatusCode.NOT_FOUND,
-                    true,
-                    'Doctor not found.'
-                );
-            }
-
-            return updatedDoctor;
-        } catch (error) {
-            if (error.name === 'ValidationError') {
-                const messages = Object.values(error.errors).map(val => val.message);
-                throw new EasyQError(
-                    'ValidationError',
-                    httpStatusCode.BAD_REQUEST,
-                    true,
-                    messages.join('; ')
-                );
-            }
-            if (error.name === 'CastError') {
-                throw new EasyQError(
-                    'InvalidInputError',
-                    httpStatusCode.BAD_REQUEST,
-                    true,
-                    `Invalid Doctor ID format: ${doctorId}`
-                );
-            }
-            throw error;
+   static async updateDoctor(doctorId, updates) {
+    try {
+        if (Object.keys(updates).length === 0) {
+            throw new EasyQError(
+                'ValidationError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                'No update fields provided.'
+            );
         }
+
+        const doctor = await Doctor.findOne({ doctorId });
+
+        if (!doctor) {
+            throw new EasyQError(
+                'NotFoundError',
+                httpStatusCode.NOT_FOUND,
+                true,
+                'Doctor not found.'
+            );
+        }
+
+        // ✅ Handle workingHours separately
+        if (updates.workingHours && Array.isArray(updates.workingHours)) {
+            for (const updateSlot of updates.workingHours) {
+                const { day, timeSlots } = updateSlot;
+                const existingIndex = doctor.workingHours.findIndex(entry => entry.day === day);
+
+                if (existingIndex !== -1) {
+                    // Overwrite existing timeSlots for that day
+                    doctor.workingHours[existingIndex].timeSlots = timeSlots;
+                } else {
+                    // Add new entry
+                    doctor.workingHours.push({ day, timeSlots });
+                }
+            }
+
+            // Remove workingHours from update payload to avoid overwrite
+            delete updates.workingHours;
+        }
+
+        // ✅ Apply all other general updates like name, email, status, etc.
+        Object.assign(doctor, updates);
+
+        await doctor.save();
+
+        // Return cleaned object
+        return doctor.toObject({
+            versionKey: false,
+            transform: (_, ret) => {
+                delete ret._id;
+                return ret;
+            }
+        });
+
+    } catch (error) {
+        if (error.name === 'ValidationError') {
+            const messages = Object.values(error.errors).map(val => val.message);
+            throw new EasyQError(
+                'ValidationError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                messages.join('; ')
+            );
+        }
+        if (error.name === 'CastError') {
+            throw new EasyQError(
+                'InvalidInputError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                `Invalid Doctor ID format: ${doctorId}`
+            );
+        }
+        throw error;
     }
+    }
+
 
     static async deleteDoctor(doctorId) {
         try {

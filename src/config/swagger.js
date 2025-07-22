@@ -15,8 +15,12 @@ const options = {
       }
     },
     servers: [
-      {
-        url: 'https://api2-cd3vrfxtha-uc.a.run.app:3000',
+      // {
+      //   url: 'https://api2-cd3vrfxtha-uc.a.run.app',
+      //   description: 'Development server',
+      // },
+       {
+        url: 'http://localhost:3000',
         description: 'Development server',
       },
       {
@@ -696,7 +700,7 @@ const options = {
       },
     },
   },
-  apis: ['./src/routes/**/*.js'],
+  apis: ['./src/routes/**/*.js','./src/app.js'],
 };
 
 const specs = swaggerJsdoc(options);

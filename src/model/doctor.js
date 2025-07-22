@@ -10,12 +10,12 @@ const doctorSchema = new Schema({
         required: true,
         unique: true,
         default: () => {
-         return  generateUniqueId({
+            return generateUniqueId({
                 length: 4,
                 useNumbers: true,
                 useLetters: false,
             });
-           
+
         }
     },
 
@@ -23,7 +23,7 @@ const doctorSchema = new Schema({
         type: String,
         required: true,
         trim: true,
-       
+
     },
     email: {
         type: String,
@@ -62,7 +62,7 @@ const doctorSchema = new Schema({
     experienceYears: {
         type: Number,
         virtual: true,
-        get: function() {
+        get: function () {
             if (!this.serviceStartDate) return 0;
             const currentDate = new Date();
             const startDate = new Date(this.serviceStartDate);
@@ -82,16 +82,19 @@ const doctorSchema = new Schema({
         default: 'https://example.com/default-doctor.png'
     },
 
-     // Removed patientNotes - moved to separate collection
- 
- 
+    // Removed patientNotes - moved to separate collection
+    consultantFee: {
+        type: Number,
+        required: [true, 'Consultant fee is required'],
+        min: [0, 'Consultant fee cannot be negative']
+    },
     status: {
         type: String,
         enum: ['Available', 'Unavailable', 'On Leave', 'Emergency Only'],
         default: 'Unavailable'
     },
     daysAvailable: {
-        type: [String], 
+        type: [String],
         enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
         default: [],
     },
@@ -99,22 +102,27 @@ const doctorSchema = new Schema({
         {
             day: {
                 type: String,
-             
+                required: true,
+                match: [/^\d{2}\/\d{2}\/\d{4}$/, 'Date must be in MM/DD/YYYY format']
             },
-            startTime: {
-                type: String, 
-               
-            },
-            endTime: {
-                type: String, 
-               
-            },
-            
-         
-        }],
-  patientIds: [{
+            timeSlots: [
+                {
+                    startTime: {
+                        type: String,
+                        required: true
+                    },
+                    endTime: {
+                        type: String,
+                        required: true
+                    }
+                }
+            ]
+        }
+    ],
+
+    patientIds: [{
         type: String,
-        ref: 'User' 
+        ref: 'User'
     }],
 
     createdAt: {
@@ -130,7 +138,7 @@ const doctorSchema = new Schema({
 doctorSchema.set('toJSON', { virtuals: true });
 doctorSchema.set('toObject', { virtuals: true });
 
-doctorSchema.pre('save', function(next) {
+doctorSchema.pre('save', function (next) {
     this.updatedAt = Date.now();
     next();
 });

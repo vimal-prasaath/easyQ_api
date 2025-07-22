@@ -8,50 +8,43 @@ import { httpStatusCode } from '../util/statusCode.js';
 
 export class AuthService {
     
-    static async login(email, password) {
+    static async login(email, password,phoneNumber) {
         try {
-            const userData = await getUserDetails(email);
+            const userData = await getUserDetails(phoneNumber);
 
             if (!userData) {
-                throw new EasyQError(
-                    'AuthenticationError',
-                    httpStatusCode.UNAUTHORIZED,
-                    true,
-                    'User not found.'
-                );
+                await getUserDetails.createUser(phoneNumber)
             }
-            const token = await getToken(userData);
-            const valid = await validUser(password, userData.passwordHash);
+            // const token = await getToken(userData);
+            // const valid = await validUser(password, userData.passwordHash);
 
-            if (!valid) {
-                throw new EasyQError(
-                    'AuthenticationError',
-                    httpStatusCode.UNAUTHORIZED,
-                    true,
-                    'Invalid credentials.'
-                );
-            }
+            // if (!valid) {
+            //     throw new EasyQError(
+            //         'AuthenticationError',
+            //         httpStatusCode.UNAUTHORIZED,
+            //         true,
+            //         'Invalid credentials.'
+            //     );
+            // }
 
-            if (token) {
-                const tokenUpdateResult = await updateToken(userData.userId, token);
-                if (!tokenUpdateResult.success) {
-                    throw new EasyQError(
-                        'AuthenticationError',
-                        httpStatusCode.INTERNAL_SERVER_ERROR,
-                        false,
-                        `Failed to update token: ${tokenUpdateResult.error}`
-                    );
-                }
-            }
+            // if (token) {
+            //     const tokenUpdateResult = await updateToken(userData.userId, token);
+            //     if (!tokenUpdateResult.success) {
+            //         throw new EasyQError(
+            //             'AuthenticationError',
+            //             httpStatusCode.INTERNAL_SERVER_ERROR,
+            //             false,
+            //             `Failed to update token: ${tokenUpdateResult.error}`
+            //         );
+            //     }
+            // }
 
             return {
                 message: 'Login successful',
                 user: {
                     userId: userData.userId,
-                    email: userData.email,
-                    name: userData.name
-                },
-                token: token
+                    profileUpadate: userData.profileUpadate,
+                }
             };
         } catch (error) {
             console.log(error)
@@ -69,12 +62,12 @@ export class AuthService {
 
     static async createUser(userData) {
         try {
-            if (!userData.email || !userData.password) {
+            if (!userData.email || !userData.phoneNumber) {
                 throw new EasyQError(
                     'ValidationError',
                     httpStatusCode.BAD_REQUEST,
                     true,
-                    'Email and password are required for registration.'
+                    'Email and phoneNumber are required for registration.'
                 );
             }
 
@@ -87,13 +80,18 @@ export class AuthService {
                     'User with this email already exists.'
                 );
             }
+            //password
+            // const hashedPassword = await generatePasswordHash(userData.password);
+            // const newUserData = {
+            //     ...userData,
+            //     passwordHash: hashedPassword
+            // };
+            // delete newUserData.password;
 
-            const hashedPassword = await generatePasswordHash(userData.password);
             const newUserData = {
                 ...userData,
-                passwordHash: hashedPassword
+                profileUpadate: true
             };
-            delete newUserData.password;
 
             const newUser = await User.create(newUserData);
 
@@ -101,8 +99,7 @@ export class AuthService {
                 message: 'User registered successfully!',
                 user: {
                     userId: newUser.userId,
-                    email: newUser.email,
-                    name: newUser.name
+                    email: newUser.email
                 }
             };
         } catch (error) {
