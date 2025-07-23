@@ -1,39 +1,63 @@
-import express from "express"
-import { signUp } from "../../controller/signup.js"
+// src/routes/sign/index.js
+import express from "express";
+import { signUp } from "../../controller/signup.js"; // Assuming controller path is correct
 
-const router = express.Router()
+const router = express.Router();
+
 
 /**
  * @swagger
- * /signup:
+ * /api/signup:
  *   post:
- *     summary: Register a new user
- *     tags: [Authentication]
+ *     summary:  Authenticate user and generate token
+ *     tags: [Users]
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/User'
+ *             type: object
+ *             required:
+*               - email
+ *               - password
+ *               - name
+ *               - gender
+ *               - dateOfBirth
+ *               - mobileNumber
+ *               - role
+ *               - location
+ *             properties:
+ *               name:
+ *                 type: string
+ *               gender:
+ *                 type: string
+ *                 enum: [Male, Female, Other]
+ *               dateOfBirth:
+ *                 type: string
+ *                 format: date
+ *               email:
+ *                 type: string
+ *               mobileNumber:
+ *                 type: string
+ *               password:
+ *                 type: string
+ *               role:
+ *                 type: string
+ *                 enum: [admin, user, doctor]  
+ *               location:
+ *                 type: string
  *     responses:
- *       201:
- *         description: User successfully registered
+ *       200:
+ *         description: List of all users
  *         content:
  *           application/json:
  *             schema:
  *               type: object
- *               properties:
- *                 message:
- *                   type: string
- *                   example: User registered successfully
- *                 token:
- *                   type: string
- *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
- *       400:
- *         description: Invalid input data
- *       409:
- *         description: User already exists
+ *               items:
+ *                 $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Unauthorized
  */
-router.post('/', signUp)
+router.post('/', signUp); // This endpoint will be accessed at /api/signup due to app.use in app.js
 
-export default router
+export default router;

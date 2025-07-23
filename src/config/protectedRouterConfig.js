@@ -75,7 +75,7 @@ import { searchRateLimit } from '../middleware/rateLimiter.js';
 
 const protectedRoutesConfig = [
     //admin
-    // { path: '/user', method: 'get', resourceType: 'admin', action: 'read_all', handlers: [getAllUser] },
+    { path: '/user', method: 'get', resourceType: 'admin', action: 'read_all', handlers: [getAllUser] },
     { path: '/user/activate/:userId', method: 'put', resourceType: 'admin', action: 'activate', resourceIdParamName: 'userId', handlers: [activateUser] },
     { path: '/user/admins', method: 'get', resourceType: 'admin', action: 'read_inactive_users', handlers: [getAllInActiveUser] },
     //user

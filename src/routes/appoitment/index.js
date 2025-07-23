@@ -27,6 +27,35 @@ import authorizeRoles from '../../middleware/authorization.js'
  *         description: Unauthorized
  */
 router.post('/',authorizeOwnerOrAdmin, createAppointment)
+
+/**
+ * @swagger
+ * /api/process:
+ *   post:
+ *     summary: Get all appointments for a doctor
+ *     tags: [Appointments]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: doctorId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Appointment'
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Doctor not found
+ */
 router.post('/process', authorizeRoles, processAppointment);
 /**
  * @swagger
@@ -163,6 +192,35 @@ router.get('/doctor/:doctorId',authorizeRoles, getAppointmentsByDoctor)
  *         description: Hospital not found
  */
 router.get('/hospital/:hospitalId',authorizeRoles, getAppointmentsByHospital)
+
+/**
+ * @swagger
+ * /api/userId/{patientId}:
+ *   get:
+ *     summary: Get all appointments for a doctor
+ *     tags: [Appointments]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: patientId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Success
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Appointment'
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Doctor not found
+ */
 
 router.get('/userId/:patientId',authorizeOwnerOrAdmin,getAppointmentsByPatient)
 
