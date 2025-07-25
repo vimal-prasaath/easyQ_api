@@ -16,8 +16,8 @@ import swaggerUi from "swagger-ui-express";
 import swaggerSpecs from "./config/swagger.js";
 import "./config/sheduler.js";
 import { EasyQError } from "./config/error.js";
-import { httpStatusCode } from './util/statusCode.js';
-import { logError, logInfo } from './config/logger.js';
+import { httpStatusCode } from "./util/statusCode.js";
+import { logError, logInfo } from "./config/logger.js";
 
 dotenv.config();
 
@@ -33,6 +33,11 @@ app.use(
         fontSrc: ["'self'", "https://fonts.gstatic.com"],
         scriptSrc: ["'self'"],
         imgSrc: ["'self'", "data:", "https:"],
+        connectSrc: [
+          "'self'",
+          "https://api2-cd3vrfxtha-uc.a.run.app",
+          "http://localhost:3000",
+        ],
       },
     },
     crossOriginEmbedderPolicy: false,
@@ -40,10 +45,25 @@ app.use(
 );
 
 // 2. CORS configuration
-app.use(cors({
+app.use(
+  cors({
     credentials: true,
-    origin: true 
-}));
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps, curl, etc.)
+      if (!origin) return callback(null, true);
+      // Allow localhost, all subdomains, and any origin
+      const allowed = [
+        /^http:\/\/localhost(:\d+)?$/,
+        /^http:\/\/127\.0\.0\.1(:\d+)?$/,
+        /^https?:\/\/.+$/, // Allow all http/https origins
+      ];
+      if (allowed.some((re) => re.test(origin))) {
+        return callback(null, true);
+      }
+      return callback(null, true); // fallback: allow all
+    },
+  })
+);
 // 3. HTTP request logging (early in stack)
 app.use(httpLogger);
 
@@ -65,7 +85,7 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      maxAge: 1000 * 60 * 60 * 24, 
+      maxAge: 1000 * 60 * 60 * 24,
       secure: process.env.NODE_ENV === "production",
       httpOnly: true,
     },
@@ -93,18 +113,18 @@ app.get(
   })
 );
 
-app.get('/auth/google/callback',
-    passport.authenticate('google', { failureRedirect: '/login' }),
-    (req, res) => {
-        logInfo('Google OAuth success', {
-            userId: req.user?.userId,
-            email: req.user?.email,
-            ip: req.ip
-        });
-        res.redirect(process.env.BASE_URL);
-    }
+app.get(
+  "/auth/google/callback",
+  passport.authenticate("google", { failureRedirect: "/login" }),
+  (req, res) => {
+    logInfo("Google OAuth success", {
+      userId: req.user?.userId,
+      email: req.user?.email,
+      ip: req.ip,
+    });
+    res.redirect(process.env.BASE_URL);
+  }
 );
-
 
 // 12. API routes (authentication will be applied per route basis)
 app.use("/api", apiRoutes);
