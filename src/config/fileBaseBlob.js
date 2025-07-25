@@ -4,7 +4,7 @@ import path from "path";
 
 // Replace with your Firebase service account key path or object
 // Make sure this file is not publicly accessible!
-const serviceAccount = require("/path/to/your/serviceAccountKey.json");
+const serviceAccount = process.env.SERVICE_ACCOUNT_PATH;
 
 initializeApp({
   credential: cert(serviceAccount),
