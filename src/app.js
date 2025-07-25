@@ -96,14 +96,16 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-// 9. Swagger Documentation (public)
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
+
 
 // 10. Public routes with specific rate limiting
 
 app.use("/api/signup", authRateLimit, sign);
 app.use("/api/login", authRateLimit, login);
 app.use("/api/user", authRateLimit, login);
+
+// 9. Swagger Documentation (public)
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 
 // 11. Google OAuth routes
 app.get(

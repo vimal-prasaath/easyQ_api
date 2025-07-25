@@ -1,14 +1,17 @@
-import express from "express"
-import { login } from "../../controller/login.js"
-import {resetUserPassword} from "../../controller/user.js"
-const router = express.Router()
+// src/routes/login/index.js
+import express from "express";
+import { login } from "../../controller/login.js"; // Assuming controller path is correct
+import { resetUserPassword } from "../../controller/user.js"; // Assuming controller path is correct
+
+const router = express.Router();
+
 
 /**
  * @swagger
- * /login:
+ * /api/login:
  *   post:
- *     summary: Login user
- *     tags: [Authentication]
+ *     summary:  Authenticate user and generate token
+ *     tags: [Users]
  *     requestBody:
  *       required: true
  *       content:
@@ -16,34 +19,58 @@ const router = express.Router()
  *           schema:
  *             type: object
  *             required:
- *               - email
- *               - password
+ *               - phoneNumber
  *             properties:
- *               email:
- *                 type: string
- *                 format: email
- *               password:
+ *               phoneNumber:
  *                 type: string
  *     responses:
  *       200:
- *         description: Login successful
+ *         description: List of all users
  *         content:
  *           application/json:
  *             schema:
  *               type: object
- *               properties:
- *                 token:
- *                   type: string
- *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
- *                 user:
- *                   $ref: '#/components/schemas/User'
+ *               items:
+ *                 $ref: '#/components/schemas/User'
  *       401:
- *         description: Invalid credentials
- *       404:
- *         description: User not found
+ *         description: Unauthorized
  */
-router.post('/', login)
+router.post('/', login); // This endpoint will be accessed at /api/login due to app.use in app.js
 
-router.post('/resetPassword',resetUserPassword)
+/**
+ * @swagger
+ * /api/resetPassword:
+ *   post:
+ *     summary: Request to reset user password
+ *     tags: [Users]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - password
+ *               - email
+ *             properties:
+ *               email:
+ *                  type: string
+ *               password:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: List of all users
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               items:
+ *                 $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Unauthorized
+ */
+router.post('/resetPassword', resetUserPassword); // This endpoint will be accessed at /api/user/resetPassword due to app.use in app.js
 
-export default router
+export default router;

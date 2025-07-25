@@ -103,7 +103,33 @@ router.post("/add",authorizeRoles, createDoctor)
 router.get("/:doctorId",authorizeOwnerOrAdmin, getDoctor)
 router.put("/:doctorId", authorizeRoles,updateDoctor)
 router.delete("/:doctorId",authorizeRoles, deleteDoctor)
-
+/**
+ * @swagger
+ * /api/doctor/all/{hospitalId}:
+ *   get:
+ *     summary: Get all doctors in a hospital
+ *     tags: [Doctors]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: hospitalId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the hospital
+ *     responses:
+ *       200:
+ *         description: List of doctors
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Doctor'
+ *       401:
+ *         description: Unauthorized
+ */
 router.get("/all/:hospitalId",authorizeOwnerOrAdmin, getAllDoctor)
 
 export default router;

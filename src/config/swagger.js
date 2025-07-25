@@ -1,5 +1,4 @@
-import { type } from "os";
-import swaggerJsdoc from "swagger-jsdoc";
+import swaggerJsdoc from 'swagger-jsdoc';
 
 const options = {
   definition: {
@@ -820,7 +819,7 @@ const options = {
       },
     },
   },
-  apis: ["./src/routes/**/*.js", "./src/app.js"],
+  apis: [  './src/app.js','./src/routes/**/*.js'],
 };
 
 const specs = swaggerJsdoc(options);
