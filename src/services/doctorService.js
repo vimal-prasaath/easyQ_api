@@ -29,6 +29,7 @@ export class DoctorService {
                    if (!department.doctorIds) {
                     department.doctorIds = [];
                     }
+                    
                 if (!department.doctorIds.some(id => id === doctor.doctorId)) {
                     department.doctorIds.push(doctor.doctorId);
                     if (typeof department.total_number_Doctor === 'string') {
@@ -39,6 +40,7 @@ export class DoctorService {
                 }
                  if (shouldBeHead) {
                     department.headOfDepartment = doctor.name; 
+                    department.departmentHeadDoctorId = doctor.doctorId
                 }
             } else {
                 hospitalData.departments.push({
@@ -46,6 +48,7 @@ export class DoctorService {
                     doctorIds: [doctor.doctorId], 
                     total_number_Doctor: '1', 
                     headOfDepartment: shouldBeHead ? doctor.name : '',
+                    departmentHeadDoctorId: doctor.doctorId,
                     contactNumber: '',    
                     description: '',      
                 });
@@ -251,6 +254,74 @@ export class DoctorService {
             throw error;
         }
     }
+
+ static async meetDoctor(hospitalId, date, options = {}) {
+    try {
+        const { page = 1, limit = 10, specialization } = options;
+        const skip = (page - 1) * limit;
+
+        // Validate date format MM/DD/YYYY
+        const dateRegex = /^(0[1-9]|1[0-2])\/(0[1-9]|[1-2][0-9]|3[0-1])\/\d{4}$/;
+        if (!dateRegex.test(date)) {
+            throw new EasyQError(
+                'ValidationError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                'Date must be in MM/DD/YYYY format.'
+            );
+        }
+
+        const [month, day, year] = date.split('/');
+        const targetDate = new Date(`${year}-${month}-${day}`);
+        const startOfDay = new Date(targetDate.setHours(0, 0, 0, 0));
+        const endOfDay = new Date(targetDate.setHours(23, 59, 59, 999));
+
+        // Build doctor query filter
+        const doctorQuery = {
+            hospitalId,
+            workingHours: {
+                $elemMatch: {
+                    date: { $gte: startOfDay, $lte: endOfDay }
+                }
+            }
+        };
+
+        if (specialization) {
+            doctorQuery.specialization = new RegExp(specialization, 'i');
+        }
+
+        const doctors = await Doctor.find(doctorQuery)
+            .sort({ createdAt: -1 })
+            .skip(Number(skip))
+            .limit(Number(limit))
+            .select('-_id -__v')
+            .lean(); // to allow workingHours manipulation below
+
+        // Filter each doctor’s workingHours array to only include entries for the target date
+        const filteredDoctors = doctors.map((doctor) => {
+            const filteredWorkingHours = doctor.workingHours.filter(wh => {
+                const whDate = new Date(wh.date);
+                return whDate >= startOfDay && whDate <= endOfDay;
+            });
+
+            return {
+                ...doctor,
+                workingHours: filteredWorkingHours
+            };
+        });
+
+        return filteredDoctors;
+    } catch (error) {
+        throw new EasyQError(
+            error.name || 'ServerError',
+            httpStatusCode.INTERNAL_SERVER_ERROR,
+            true,
+            error.message || 'Failed to fetch doctors'
+        );
+    }
+}
+
+
 
     static async searchDoctors(searchParams) {
         try {

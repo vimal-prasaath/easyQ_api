@@ -50,7 +50,14 @@ const appointmentSchema = new Schema({
             message: 'Hospital ID cannot be empty'
         }
     },
-
+    hospitalName: {
+       type: String,
+       required: true
+    },
+    doctorName:{
+       type: String,
+       required: true
+    },
    appointmentDate: {
         type: Date,
         required: [true, 'Appointment date is required'],

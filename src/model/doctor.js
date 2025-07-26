@@ -71,7 +71,10 @@ const doctorSchema = new Schema({
             return Math.floor(diffInYears);
         }
     },
-
+    isHeadOfDepartment:{
+        type: Boolean,
+        default: false
+    },
     hospitalId: {
         type: String,
         required: true
@@ -82,7 +85,6 @@ const doctorSchema = new Schema({
         default: 'https://example.com/default-doctor.png'
     },
 
-    // Removed patientNotes - moved to separate collection
     consultantFee: {
         type: Number,
         required: [true, 'Consultant fee is required'],
@@ -93,17 +95,33 @@ const doctorSchema = new Schema({
         enum: ['Available', 'Unavailable', 'On Leave', 'Emergency Only'],
         default: 'Unavailable'
     },
-    daysAvailable: {
-        type: [String],
-        enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
-        default: [],
-    },
     workingHours: [
         {
             day: {
                 type: String,
-                required: true,
-                match: [/^\d{2}\/\d{2}\/\d{4}$/, 'Date must be in MM/DD/YYYY format']
+                enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+            },
+        date:{
+        type: Date,
+        required: [true, 'date is required'],
+        validate: {
+            validator: function(v) {
+                if (v instanceof Date) {
+                    return v > new Date();
+                }
+                if (typeof v === 'string') {
+                    const dateRegex = /^(0[1-9]|1[0-2])\/(0[1-9]|[1-2][0-9]|3[0-1])\/\d{4}$/;
+                    if (!dateRegex.test(v)) {
+                        this.invalidate('appointmentDate', 'Appointment date must be in MM/DD/YYYY format.', v);
+                        return false;
+                    }
+                }
+            }
+            }
+        },
+            available:{
+                type: String,
+                enum: ['earyMorning', 'morning', 'afternoon', 'night']
             },
             timeSlots: [
                 {

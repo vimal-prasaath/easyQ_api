@@ -73,11 +73,11 @@ const userSchema = new Schema({
             message: 'Please provide a valid mobile number'
         }
     },
-    passwordHash: {
-        type: String,
-        required: [true, 'Password is required'],
-        minlength: [8, 'Password must be at least 8 characters long']
-    },
+    // passwordHash: {
+    //     type: String,
+    //     required: [true, 'Password is required'],
+    //     minlength: [8, 'Password must be at least 8 characters long']
+    // },
     sessionToken: {
         type: String,
         select: false 

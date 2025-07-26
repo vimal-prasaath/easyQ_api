@@ -25,7 +25,8 @@ import {
     getDoctor,
     deleteDoctor,
     getAllDoctor,
-    updateDoctor
+    updateDoctor,
+    meetDoctor
 } from "../controller/doctor.js";
 
 import {
@@ -104,6 +105,7 @@ const protectedRoutesConfig = [
     { path: '/doctor/:doctorId', method: 'put', resourceType: 'profile', action: 'update', resourceIdParamName: 'doctorId', handlers: [updateDoctor] },
     { path: '/doctor/:doctorId', method: 'delete', resourceType: 'doctor', action: 'delete', resourceIdParamName: 'doctorId', handlers: [deleteDoctor] },
     { path: '/doctor/all/:hospitalId', method: 'get', resourceType: 'doctor', action: 'read_all_in_hospital', resourceIdParamName: 'hospitalId', handlers: [getAllDoctor] },
+    { path: '/doctor/meet', method: 'post', resourceType: 'doctor', action: 'read_all_in_hospital', resourceIdParamName: 'hospitalId', handlers: [meetDoctor] },
     // --- Appoitment ROUTES ---
     { path: '/appoitment', method: 'post', resourceType: 'appointment', action: 'create', handlers: [createAppointment] },
     { path: '/appoitment/process', method: 'post', resourceType: 'appointment', action: 'process_payment', handlers: [processAppointment] },
