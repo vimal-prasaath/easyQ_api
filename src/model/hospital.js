@@ -61,6 +61,7 @@ const hospitalSchema = new Schema({
                 required: true
             },
             headOfDepartment: { type: String, trim: true },
+            departmentHeadDoctorId: {type: String},
             contactNumber: { type: String },
             description: { type: String, trim: true },
             doctorIds: [{

@@ -195,4 +195,20 @@ export async function getAllDoctor(req, res, next) {
     }
 }
 
+export async function meetDoctor(req,res,next){
+    try{
+     const {hospitalId,date} = req.body;
+        const result = await DoctorService.meetDoctor(hospitalId,date);
+        const response = ResponseFormatter.formatSuccessResponse({
+            message: "Doctors retrieved successfully",
+            data: result,
+            statusCode: httpStatusCode.OK
+        });
+        res.status(httpStatusCode.OK).json(response);
+
+    }catch(error){
+        next(error)
+    }
+}
+
 
