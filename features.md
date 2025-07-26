@@ -12,29 +12,42 @@
 
 ---
 
-## Summary Table
+## Summary Tables
 
-| Feature / Section                        | UI           | API           | Integration   | Notes / Clarifications                |
-|------------------------------------------|--------------|---------------|---------------|---------------------------------------|
-| Login                                    | ✅ Done      | ✅ Done       | ❌ Not Done   |                                       |
-| First Time User                          | ✅ Done      | ✅ Done       | ⚠️ Needs Check| Registration: email & phone required? |
-| User Profile                             | ✅ Done      | ⚠️ Need Details| ❌ Not Done   | API details needed                    |
-| User Profile / All Appointments          | ⚠️ Needs Tuning| ⚠️ Needs Changes| ✅ Done      | Remove reschedule button              |
-| User Profile / Followup                  | ⚠️ Needs Tuning| ❌ Not Available| ❌ Not Done | Functionality unclear                 |
-| User Profile / Documents                 | ⚠️ Needs Check| ❓ Unclear    | ⚠️ Needs Check| Is API: get files for user?           |
-| User Profile / Favourites                | ⚠️ Needs Check| ❌ Not Available| ❌ Not Done |                                       |
-| User Profile / Support/About/Terms/Priv. | ⚠️ Needs Popup| ✅ Available  | ❌ Not Done   | Popup UI needed                       |
-| User Profile / Settings                  | ✅ Done      | ✅ Done       | ⚠️ Needs Check|                                       |
-| Dashboard                               | ✅ Done      | ✅ Done       | ✅ Done       | Enhancements needed                   |
-| Dashboard / Search                       | ✅ Done      | ✅ Done       | ❌ Error      | Needs enhancements                    |
-| Dashboard / All Treatments               | ✅ Done      | ✅ Done       | ⚠️ Needs Check| Using filter API?                     |
-| Dashboard / Top Rated                    | ✅ Done      | ✅ Done       | ✅ Done       |                                       |
-| Dashboard / Hospital / Details           | ✅ Done      | ✅ Done       | ✅ Done       | Enhancements, check favourites        |
-| Dashboard / Hospital / Highlighted Docs  | ✅ Done      | ✅ Done       | ✅ Done       | Enhancements needed                   |
-| Dashboard / Hospital / Highlighted Docs  | ❌ Not Done  | ❌ Not Done   | ❌ Not Done   | Duplicate? Clarify                    |
-| Dashboard / Hospital / Book Appointment  | ✅ Done      | ❓ Unclear    | ⚠️ Needs Check| Is available slot dynamic/API?        |
-| Dashboard / Hospital / Book Appt Review  | ✅ Done      | ✅ Done       | ✅ Done       | Enhancements needed                   |
-| Dashboard / Hospital / Booking Confirm   | ✅ Done      | ✅ Done       | ✅ Done       | Enhancements needed                   |
+### Authentication
+| Feature        | UI           | API           | Integration   | Notes / Clarifications                |
+|----------------|--------------|---------------|---------------|---------------------------------------|
+| Login          | ✅ Done      | ✅ Done       | ❌ Not Done   |                                       |
+| First Time User| ✅ Done      | ✅ Done       | ⚠️ Needs Check| Registration: email & phone required? |
+
+### User Profile
+| Feature        | UI           | API           | Integration   | Notes / Clarifications                |
+|----------------|--------------|---------------|---------------|---------------------------------------|
+| Main Profile   | ✅ Done      | ⚠️ Need Details| ❌ Not Done   | API details needed                    |
+| All Appointments| ⚠️ Needs Tuning| ⚠️ Needs Changes| ✅ Done      | Remove reschedule button              |
+| Followup       | ⚠️ Needs Tuning| ❌ Not Available| ❌ Not Done | Functionality unclear                 |
+| Documents      | ⚠️ Needs Check| ❓ Unclear    | ⚠️ Needs Check| Is API: get files for user?           |
+| Favourites     | ⚠️ Needs Check| ❌ Not Available| ❌ Not Done |                                       |
+| Support/About/Terms/Priv.| ⚠️ Needs Popup| ✅ Available  | ❌ Not Done   | Popup UI needed                       |
+| Settings       | ✅ Done      | ✅ Done       | ⚠️ Needs Check|                                       |
+
+### Dashboard
+| Feature        | UI           | API           | Integration   | Notes / Clarifications                |
+|----------------|--------------|---------------|---------------|---------------------------------------|
+| Main Dashboard | ✅ Done      | ✅ Done       | ✅ Done       | Enhancements needed                   |
+| Search         | ✅ Done      | ✅ Done       | ❌ Error      | Needs enhancements                    |
+| All Treatments | ✅ Done      | ✅ Done       | ⚠️ Needs Check| Using filter API?                     |
+| Top Rated      | ✅ Done      | ✅ Done       | ✅ Done       |                                       |
+
+### Hospital Features
+| Feature        | UI           | API           | Integration   | Notes / Clarifications                |
+|----------------|--------------|---------------|---------------|---------------------------------------|
+| Hospital Details| ✅ Done      | ✅ Done       | ✅ Done       | Enhancements, check favourites        |
+| Highlighted Doctors| ✅ Done      | ✅ Done       | ✅ Done       | Enhancements needed                   |
+| Highlighted Doctors| ❌ Not Done  | ❌ Not Done   | ❌ Not Done   | Duplicate? Clarify                    |
+| Book Appointment| ✅ Done      | ❓ Unclear    | ⚠️ Needs Check| Is available slot dynamic/API?        |
+| Book Appt Review| ✅ Done      | ✅ Done       | ✅ Done       | Enhancements needed                   |
+| Booking Confirm| ✅ Done      | ✅ Done       | ✅ Done       | Enhancements needed                   |
 
 ---
 
