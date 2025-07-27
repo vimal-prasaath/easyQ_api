@@ -100,7 +100,7 @@ async function authorizeRoles(req, res, next) {
         ));
     }
 
-    const authenticatedUserId = req.user.data.userId || req.user.uid;
+    const authenticatedUserId =  req.user.user_id;
     const isActive = req.isActive;
     if (!isActive) {
         authLogger.warn('Broad authorization denied: Inactive user attempting to access resource.', {

@@ -22,8 +22,8 @@ class AuthorizationManager {
                 ));
             }
 
-            const userRole = req.user.role || (req.user.data ? req.user.data.role : undefined);
-            const authenticatedUserId =  req.user.data.userId || req.user.uid;
+            const userRole = req.user?.role || (req.user?.data ? req.user?.data?.role : undefined);
+            const authenticatedUserId =  req.user?.data?.userId || req.user?.user_id;
             const isActive = req.isActive;
 
             if (!userRole) {

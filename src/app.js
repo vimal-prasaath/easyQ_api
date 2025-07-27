@@ -102,7 +102,7 @@ app.use(passport.session());
 
 app.use("/api/signup", authRateLimit, sign);
 app.use("/api/login", authRateLimit, login);
-app.use("/api/user", authRateLimit, login);
+// app.use("/api/user", authRateLimit, login);
 
 // 9. Swagger Documentation (public)
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpecs));

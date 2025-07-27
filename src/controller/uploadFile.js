@@ -132,49 +132,49 @@ export async function getFiles(req, res , next) {
             ));
         }
 
-        let filesToReturn = [];
-        if (hospitalId) {
-            const hospitalEntry = userFiles.hospitals.find(h => h.hospitalId.toString() === hospitalId);
-            if (hospitalEntry) {
-                filesToReturn = hospitalEntry.documents.map(doc => ({
-                    _id: doc._id,
-                    fileName: doc.fileName,
-                    mimeType: doc.mimeType,
-                    size: doc.size,
-                    fileType: doc.fileType,
-                    uploadedAt: doc.uploadedAt,
-                    fileUrl: doc.fileUrl ,
-                    storedLocation: doc.fileUrl ,
-                    documentId: doc._id
-                }));
-            } else {
-                return next(new EasyQError(
-                    'NotFoundError',
-                    httpStatusCode.NOT_FOUND,
-                    true,
-                    'No files found for this hospital under the specified user.'
-                ));
-            }
-        } else {
-            userFiles.hospitals.forEach(hosp => {
-                hosp.documents.forEach(doc => {
-                    filesToReturn.push({
-                        _id: doc._id,
-                        fileName: doc.fileName,
-                        mimeType: doc.mimeType,
-                        size: doc.size,
-                        fileType: doc.fileType,
-                        uploadedAt: doc.uploadedAt,
-                        fileUrl: doc.fileUrl ,
-                        storedLocation: doc.fileUrl ,
-                        hospitalId: hosp.hospitalId,
-                        documentId: doc._id
-                    });
-                });
-            });
-        }
+        // let filesToReturn = [];
+        // if (hospitalId) {
+        //     const hospitalEntry = userFiles.hospitals.find(h => h.hospitalId.toString() === hospitalId);
+        //     if (hospitalEntry) {
+        //         filesToReturn = hospitalEntry.documents.map(doc => ({
+        //             _id: doc._id,
+        //             fileName: doc.fileName,
+        //             mimeType: doc.mimeType,
+        //             size: doc.size,
+        //             fileType: doc.fileType,
+        //             uploadedAt: doc.uploadedAt,
+        //             fileUrl: doc.fileUrl ,
+        //             storedLocation: doc.fileUrl ,
+        //             documentId: doc._id
+        //         }));
+        //     } else {
+        //         return next(new EasyQError(
+        //             'NotFoundError',
+        //             httpStatusCode.NOT_FOUND,
+        //             true,
+        //             'No files found for this hospital under the specified user.'
+        //         ));
+        //     }
+        // } else {
+        //     userFiles.hospitals.forEach(hosp => {
+        //         hosp.documents.forEach(doc => {
+        //             filesToReturn.push({
+        //                 _id: doc._id,
+        //                 fileName: doc.fileName,
+        //                 mimeType: doc.mimeType,
+        //                 size: doc.size,
+        //                 fileType: doc.fileType,
+        //                 uploadedAt: doc.uploadedAt,
+        //                 fileUrl: doc.fileUrl ,
+        //                 storedLocation: doc.fileUrl ,
+        //                 hospitalId: hosp.hospitalId,
+        //                 documentId: doc._id
+        //             });
+        //         });
+        //     });
+        // }
 
-        res.status(httpStatusCode.OK).json({ files: filesToReturn });
+        res.status(httpStatusCode.OK).json({ files: userFiles });
 
     } catch (error) {
         if (error instanceof EasyQError) {

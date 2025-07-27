@@ -3,7 +3,7 @@
 import { FavouriteService } from '../services/favouriteService.js';
 import { ResponseFormatter } from '../util/responseFormatter.js';
 import { httpStatusCode } from '../util/statusCode.js';
-
+import {getHospitalsByIds} from "../controller/hospital.js"
 export async function getfavourite(req, res, next) {
     try {
         const { userId, hospitalId } = req.params;
@@ -20,6 +20,60 @@ export async function getfavourite(req, res, next) {
         next(error);
     }
 }
+
+
+
+export async function getfavouriteById(req, res, next) {
+    try {
+        console.log(req,"user")
+        const { userId } = req.params;
+
+        // Step 1: Find user's favourite hospitals
+        const favouriteData = await FavouriteService.getfavouriteById( userId );
+
+        if (!favouriteData) {
+            return res.status(200).json({
+                success: true,
+                message: 'No favourite found',
+                data: [],
+            });
+        }
+       console.log(favouriteData,"kkkk")
+        // Step 2: Extract only the hospitalIds where isFavourite = true
+        const favHospitalIds = favouriteData.favouriteHospitals
+            .filter(h => h.isFavourite)
+            .map(h => h.hospitalId);
+
+        if (favHospitalIds.length === 0) {
+            return res.status(200).json({
+                success: true,
+                message: 'No favourite hospitals found',
+                data: [],
+            });
+        }
+
+        // Step 3: Fetch hospital details
+        const hospitals = await getHospitalsByIds(favHospitalIds);
+       console.log(hospitals,"khhh")
+            
+        // Step 4: Attach isFavourite: true to each hospital
+        const hospitalsWithFavouriteFlag = hospitals.map(h => ({
+            ...h.toObject(),
+            isFavourite: true
+        }));
+
+        // Final response
+        return res.status(200).json({
+            success: true,
+            message: 'Favourite hospitals retrieved successfully',
+            data: hospitalsWithFavouriteFlag
+        });
+
+    } catch (error) {
+        next(error);
+    }
+}
+
 
 export async function postfavourite(req, res, next) {
     try {

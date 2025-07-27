@@ -2,7 +2,7 @@ import User from "../model/userProfile.js"
 import bcrypt from 'bcrypt'
 import { EasyQError } from '../config/error.js';
 import { httpStatusCode } from '../util/statusCode.js';
-export async function getUserDetails(email,phoneNumber) {
+export async function getUserDetails(phoneNumber) {
   try {
     const user = await User.findOne({ phoneNumber:phoneNumber })
     return user
