@@ -13,7 +13,7 @@
 
 ### Login
 **Status:** ✅ Available  
-**Integration:** ❌ Not Done
+**Integration:** ✅ Done
 
 **Endpoint:** `POST /api/login/`
 
@@ -54,7 +54,7 @@ Authorization: Bearer <token>
 
 ### Signup
 **Status:** ✅ Available  
-**Integration:** ❌ Not Done
+**Integration:** ✅ Done
 
 **Endpoint:** `POST /api/signup`
 
