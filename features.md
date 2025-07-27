@@ -25,7 +25,7 @@
 |----------------|--------------|---------------|---------------|---------------------------------------|
 | Main Profile   | ✅ Done      | ✅ Done       | ✅ Done       | API details needed                    |
 | All Appointments| ✅ Done      | ✅ Done       | ✅ Done       | Remove reschedule button              |
-| Followup       | ✅ Done      | ✅ Done       | ✅ Done       | Functionality unclear                 |
+| Followup       | ⚠️ In Progress| ⚠️ In Progress| ⚠️ In Progress| Functionality unclear                 |
 | Documents      | ✅ Done      | ✅ Done       | ✅ Done       | Is API: get files for user?           |
 | Favourites     | ✅ Done      | ✅ Done       | ✅ Done       |                                       |
 | Support/About/Terms/Priv.| ⚠️ Needs Popup| ✅ Available  | ❌ Not Done   | Popup UI needed                       |
@@ -74,9 +74,9 @@
 - **Integration:** ✅ Done
 
 #### Followup
-- **UI:** ✅ Done
-- **API:** ✅ Done
-- **Integration:** ✅ Done
+- **UI:** ⚠️ In Progress
+- **API:** ⚠️ In Progress
+- **Integration:** ⚠️ In Progress
 
 #### Documents
 - **UI:** ✅ Done
