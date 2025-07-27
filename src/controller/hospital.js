@@ -595,6 +595,11 @@ export async function deleteHsptl(req, res, next) {
     }
 }
 
+export async function getHospitalsByIds(ids) {
+    return await Hospital.find({ hospitalId: { $in: ids } });
+}
+
+
 
 
 

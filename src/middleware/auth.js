@@ -37,7 +37,7 @@ async function authenticate(req, res, next) {
             'Invalid Authorization header format. Must be "Bearer <token>".'
         ));
     }
-
+    
     const token = tokenParts[1];
     let decodedPayload = null;
 
@@ -45,14 +45,18 @@ async function authenticate(req, res, next) {
         // --- Attempt Firebase ID Token verification first ---
         decodedPayload = await admin.auth().verifyIdToken(token);
 
-        let userFromDb = await User.findOne({ mobileNumber: decodedPayload.phoneNumber, }).select('isActive');
+        let userFromDb = await User.findOne({ phoneNumber: decodedPayload.phone_number, });
         if (!userFromDb) {
-            authLogger.error('Authorization failed: Authenticated user not found in DB.', { userId: authenticatedUserId, path: req.path });
-            return next(new EasyQError('AuthenticationError', httpStatusCode.UNAUTHORIZED, true, 'Authenticated user not found.'));
+             const newUser = await User.create({
+                phoneNumber: decodedPayload.phone_number,
+                isActive: true,
+                profileUpdate: false,
+            });
+            userFromDb = newUser;
+           authLogger.info('New user created from Firebase login.', { userId: newUser.userId });
         }
-        req.user = decodedPayload;
+        req.user = {...decodedPayload,role:"admin"};
         req.isActive = userFromDb.isActive;
-
         authLogger.info('Token verified successfully by Firebase Admin SDK', {
             userId: decodedPayload.uid,
             email: decodedPayload.email,

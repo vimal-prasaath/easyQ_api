@@ -2,7 +2,7 @@
 import express from "express";
 import { login } from "../../controller/login.js"; // Assuming controller path is correct
 import { resetUserPassword } from "../../controller/user.js"; // Assuming controller path is correct
-
+import authenticate from "../../middleware/auth.js";
 const router = express.Router();
 
 
@@ -35,7 +35,7 @@ const router = express.Router();
  *       401:
  *         description: Unauthorized
  */
-router.post('/', login); // This endpoint will be accessed at /api/login due to app.use in app.js
+router.post('/', authenticate,login); // This endpoint will be accessed at /api/login due to app.use in app.js
 
 /**
  * @swagger

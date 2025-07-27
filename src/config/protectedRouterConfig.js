@@ -5,8 +5,10 @@ import {
     deleteUser,
     resetUserPassword,
     activateUser,
-    getAllInActiveUser
+    getAllInActiveUser,
+    
 } from "../controller/user.js";
+import {login} from "../controller/login.js"
 import {
     createHospital,
     getHospitalDetails,
@@ -53,7 +55,7 @@ import {
 
 import { qrGeneator, getQRCode } from '../controller/qrgeneratorControllr.js'; 
 
-import { postfavourite, getfavourite } from '../controller/favourite.js'; 
+import { postfavourite, getfavourite , getfavouriteById } from '../controller/favourite.js'; 
 
 import { createQA, getQAs, updateQA, deleteQA } from '../controller/helpCenter.js'; 
 
@@ -83,7 +85,8 @@ const protectedRoutesConfig = [
     { path: '/user/:userId', method: 'put', resourceType: 'profile', action: 'update', resourceIdParamName: 'userId', handlers: [updateUser] },
     { path: '/user/getdetails', method: 'post', resourceType: 'profile', action: 'read', handlers: [finduser] },
     { path: '/user/delete/:userId', method: 'delete', resourceType: 'profile', action: 'delete', resourceIdParamName: 'userId', handlers: [deleteUser] },
-
+    // { path: '/user/login', method: 'post', resourceType: 'profile', action: 'read', resourceIdParamName: 'userId', handlers: [login] },
+  
     // --- HOSPITAL ROUTES ---
        //hospital --> Admin Roles
     { path: '/hospital/basicDetails', method: 'post', resourceType: 'hospital', action: 'create', handlers: [createHospital] },
@@ -133,7 +136,8 @@ const protectedRoutesConfig = [
      // --- FAVOURITE ROUTES ---
     { path: '/favourite/addfav', method: 'post', resourceType: 'favourite', action: 'add', handlers: [postfavourite] },
     { path: '/favourite/:userId/:hospitalId', method: 'get', resourceType: 'favourite', action: 'read', resourceIdParamName: 'userId', handlers: [getfavourite] },
-
+    { path: '/favourite/:userId', method: 'get', resourceType: 'favourite', action: 'read', resourceIdParamName: 'userId', handlers: [getfavouriteById] },
+     
    // --- HELP CENTER (Q&A) ROUTES ---
     { path: '/qa', method: 'post', resourceType: 'qa', action: 'create', handlers: [createQA] },
     { path: '/qa', method: 'get', resourceType: 'qa', action: 'read_all', handlers: [getQAs] },

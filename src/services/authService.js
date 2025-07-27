@@ -1,6 +1,6 @@
 
 import User from '../model/userProfile.js';
-import { getUserDetails } from '../util/authController.js';
+import { getUserDetails,createUser } from '../util/authController.js';
 import { validUser, updateToken, getToken } from '../util/loginHandler.js';
 import { generatePasswordHash } from '../util/authController.js';
 import { EasyQError } from '../config/error.js';
@@ -8,13 +8,13 @@ import { httpStatusCode } from '../util/statusCode.js';
 
 export class AuthService {
     
-    static async login(email, password,phoneNumber) {
+    static async login(phoneNumber) {
         try {
             const userData = await getUserDetails(phoneNumber);
 
-            if (!userData) {
-                await getUserDetails.createUser(phoneNumber)
-            }
+            // if (!userData) {
+            //     await createUser(phoneNumber)
+            // }
             // const token = await getToken(userData);
             // const valid = await validUser(password, userData.passwordHash);
 
@@ -71,15 +71,16 @@ export class AuthService {
                 );
             }
 
-            const existingUser = await User.findOne({ email: userData.email });
-            if (existingUser) {
-                throw new EasyQError(
-                    'ConflictError',
-                    httpStatusCode.CONFLICT,
-                    true,
-                    'User with this email already exists.'
-                );
-            }
+            const existingUser = await User.findOne({ phoneNumber: userData.phoneNumber });
+             console.log(existingUser,"ooo")
+            // if (existingUser) {
+            //     throw new EasyQError(
+            //         'ConflictError',
+            //         httpStatusCode.CONFLICT,
+            //         true,
+            //         'User with this email already exists.'
+            //     );
+            // }
             //password
             // const hashedPassword = await generatePasswordHash(userData.password);
             // const newUserData = {
@@ -87,19 +88,28 @@ export class AuthService {
             //     passwordHash: hashedPassword
             // };
             // delete newUserData.password;
+            console.log(existingUser,"ooo")
+        const allowedFields = ['name', 'phoneNumber', 'gender', 'dateOfBirth','email','role'];
+         allowedFields.forEach(field => {
+            if (userData[field] !== undefined) {
+                existingUser[field] = userData[field];
+            }
+        });
+        existingUser.profileUpadate = true
+        existingUser.save()
 
-            const newUserData = {
-                ...userData,
-                profileUpadate: true
-            };
+            // const newUserData = {
+            //     ...userData,
+            //     profileUpadate: true
+            // };
 
-            const newUser = await User.create(newUserData);
+            // const newUser = await User(newUserData);
 
             return {
                 message: 'User registered successfully!',
                 user: {
-                    userId: newUser.userId,
-                    email: newUser.email
+                    userId: existingUser.userId,
+                    email: existingUser.email
                 }
             };
         } catch (error) {

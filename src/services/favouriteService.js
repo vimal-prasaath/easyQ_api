@@ -193,6 +193,25 @@ export class FavouriteService {
             );
         }
     }
+
+    static async getfavouriteById(userId){
+        try {
+            const favouriteData = await Favourite.findOne(
+                {
+                    userId: userId
+                }
+            );
+
+            return favouriteData;
+        } catch (error) {
+            throw new EasyQError(
+                'DatabaseError',
+                httpStatusCode.INTERNAL_SERVER_ERROR,
+                false,
+                `Failed to retrieve favourite status: ${error.message}`
+            );
+        }
+    }
 }
 
 
