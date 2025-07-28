@@ -55,13 +55,19 @@ async function authenticate(req, res, next) {
             userFromDb = newUser;
            authLogger.info('New user created from Firebase login.', { userId: newUser.userId });
         }
-        req.user = {...decodedPayload,role:"admin"};
+        req.user = {...decodedPayload,role:"user"};
         req.isActive = userFromDb.isActive;
         authLogger.info('Token verified successfully by Firebase Admin SDK', {
             userId: decodedPayload.uid,
             email: decodedPayload.email,
             path: req.path
         });
+        authLogger.error('token error',{
+            user:req.user,
+            userFromDb: userFromDb,
+            body:req.body
+            
+        })
         next()
     } catch (firebaseError) {
         authLogger.warn('Firebase ID Token verification failed, attempting custom JWT verification.', {
