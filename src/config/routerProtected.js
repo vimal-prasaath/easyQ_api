@@ -22,12 +22,12 @@ export const setupProtectedRoutes = (router, routesConfig) => {
             return;
         }
 
-         const authMiddleware = AuthorizationManager.authorize(finalAction, resourceType);
+        //  const authMiddleware = AuthorizationManager.authorize(finalAction, resourceType);
 
         router[method.toLowerCase()](
             path,
             //  authenticate,
-              authMiddleware,
+            //   authMiddleware,
             ...handlers
         );
     });
