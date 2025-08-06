@@ -9,6 +9,7 @@ import {
     
 } from "../controller/user.js";
 import {login} from "../controller/login.js"
+import { appointmentLimiter } from "../middleware/appointment-rate-controller.js";
 import {
     createHospital,
     getHospitalDetails,
@@ -19,7 +20,9 @@ import {
     deleteHsptl,
     getAllHospitalDetails,
     updateHospitalBasicDetails,
-    getHospitalDetailsBylocation
+    getHospitalDetailsBylocation,
+    getAllInActiveHsptl,
+    activateHsptl
 } from "../controller/hospital.js";
 
 import {
@@ -32,6 +35,7 @@ import {
 } from "../controller/doctor.js";
 
 import {
+    
     createAppointment,
     updateAppointment,
     deleteAppointment,
@@ -39,7 +43,8 @@ import {
     getAppointmentsByDoctor,
     getAppointmentById,
     getAppointmentsByHospital,
-    getAppointmentsByPatient
+    getAppointmentsByPatient,
+    safeCreateAppointment
 } from "../controller/appointment.js"; 
 
 import { searchHospital } from '../controller/searchController.js'; 
@@ -94,6 +99,8 @@ const protectedRoutesConfig = [
     { path: '/hospital/:hospitalId', method: 'delete', resourceType: 'hospital', action: 'delete', resourceIdParamName: 'hospitalId', handlers: [deleteHsptl] },
     { path: '/hospital/details/:hospitalId', method: 'put', resourceType: 'hospital', action: 'update_basic_details', resourceIdParamName: 'hospitalId', handlers: [updateHospitalBasicDetails] },
     { path: '/hospital/facilities/:hospitalId', method: 'put', resourceType: 'hospital', action: 'update_facilities_details', resourceIdParamName: 'hospitalId', handlers: [updateFacility] },
+    { path: '/hospital/admin/activate', method: 'get', resourceType: 'hospital', action: 'read', handlers: [getAllInActiveHsptl] },
+    { path: '/hospital/admin/activate', method: 'post', resourceType: 'hospital', action: 'read', handlers: [activateHsptl] },
     
         //hospital --> User Roles 
     { path: '/hospital/review/:hospitalId', method: 'put', resourceType: 'hospital_review', action: 'update_review_details', resourceIdParamName: 'hospitalId', handlers: [updateReviewComment] },
@@ -110,7 +117,8 @@ const protectedRoutesConfig = [
     { path: '/doctor/all/:hospitalId', method: 'get', resourceType: 'doctor', action: 'read_all_in_hospital', resourceIdParamName: 'hospitalId', handlers: [getAllDoctor] },
     { path: '/doctor/meet', method: 'post', resourceType: 'doctor', action: 'read_all_in_hospital', resourceIdParamName: 'hospitalId', handlers: [meetDoctor] },
     // --- Appoitment ROUTES ---
-    { path: '/appoitment', method: 'post', resourceType: 'appointment', action: 'create', handlers: [createAppointment] },
+    { path: '/appoitment', method: 'post', resourceType: 'appointment', action: 'create', handlers: [appointmentLimiter,createAppointment] },
+    { path: '/appoitment/check', method: 'post', resourceType: 'appointment', action: 'create', handlers: [safeCreateAppointment] },
     { path: '/appoitment/process', method: 'post', resourceType: 'appointment', action: 'process_payment', handlers: [processAppointment] },
     { path: '/appoitment/:appointmentId', method: 'put', resourceType: 'appointment', action: 'update', resourceIdParamName: 'appointmentId', handlers: [updateAppointment] },
     { path: '/appoitment/:appointmentId', method: 'delete', resourceType: 'appointment', action: 'delete', resourceIdParamName: 'appointmentId', handlers: [deleteAppointment] },

@@ -17,6 +17,14 @@ export class DoctorService {
                     `Hospital with ID ${doctorData.hospitalId} not found. Cannot create doctor.`
                 );
             }
+            if (hospitalData.isActive === false) {
+                throw new EasyQError(
+                    'HospitalInactiveError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    `Cannot add doctor. Hospital with ID ${doctorData.hospitalId} is inactive.`
+                );
+            }
 
             const doctor = await Doctor.create(doctorData);
             const specializationName = doctor.specialization;
@@ -108,7 +116,7 @@ export class DoctorService {
     }
    static async updateDoctor(doctorId, updates) {
     try {
-        if (Object.keys(updates).length === 0) {
+        if (!updates) {
             throw new EasyQError(
                 'ValidationError',
                 httpStatusCode.BAD_REQUEST,
@@ -150,7 +158,7 @@ export class DoctorService {
         // ✅ Apply all other general updates like name, email, status, etc.
         Object.assign(doctor, updates);
 
-        await doctor.save();
+        await Doctor.findOneAndUpdate({ doctorId }, updates, { new: true });
 
         // Return cleaned object
         return doctor.toObject({

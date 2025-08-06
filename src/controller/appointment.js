@@ -238,3 +238,26 @@ export async function processAppointment(req, res, next) {
 }
 
 
+
+export async function safeCreateAppointment(req, res, next) {
+    const appointmentData = req.body;
+    logApiRequest(req, { action: 'safe_create_appointment', data: appointmentData });
+
+    try {
+        const newAppointment = await AppointmentService.safeCreateAppointment(appointmentData);
+         console.log(newAppointment,"kl")
+        const response = constructResponse(
+            true,
+            httpStatusCode.CREATED,
+            'Data fetched successfully.',
+            newAppointment
+        );
+
+        logApiResponse(req, response);
+        res.status(httpStatusCode.CREATED).json(response);
+    } catch (error) {
+        next(error);
+    }
+}
+
+

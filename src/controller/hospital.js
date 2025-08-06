@@ -394,7 +394,7 @@ export async function updateReviewComment(req, res, next) {
 
 export async function getAllHospitalDetails(req, res, next) {
     try {
-        const allHospitals = await Hospital.find({});
+        const allHospitals = await  Hospital.find({ isActive: true });
 
         res.status(httpStatusCode.OK).json({
             message: 'Successfully retrieved all hospital basic details',
@@ -495,7 +495,7 @@ export async function getHospitalDetailsBylocation(req, res, next) {
             ));
         }
 
-        const allHospitals = await Hospital.find(query);
+        const allHospitals = await Hospital.find({ ...query, isActive: true });
         res.status(httpStatusCode.OK).json({
             message: 'Hospitals fetch successfully',
             count: allHospitals.length,
@@ -596,8 +596,70 @@ export async function deleteHsptl(req, res, next) {
 }
 
 export async function getHospitalsByIds(ids) {
-    return await Hospital.find({ hospitalId: { $in: ids } });
-}
+    return await Hospital.find({ hospitalId: { $in: ids }, isActive: true });
+}   
+
+export const getAllInActiveHsptl = async (req, res, next) => {
+    try {
+        const inactiveHospitals = await Hospital.find({ isActive: false });
+        
+        res.status(httpStatusCode.OK).json({
+            success: true,
+            count: inactiveHospitals.length,
+            data: inactiveHospitals
+        });
+    } catch (error) {
+        next(new EasyQError(
+            'DatabaseError',
+            httpStatusCode.INTERNAL_SERVER_ERROR,
+            false,
+            `Error fetching inactive hospitals: ${error.message}`
+        ));
+    }
+};
+
+export const activateHsptl = async (req, res, next) => {
+    const { hospitalId } = req.body;
+
+    if (!hospitalId) {
+        return next(new EasyQError(
+            'ValidationError',
+            httpStatusCode.BAD_REQUEST,
+            true,
+            'Hospital ID is required.'
+        ));
+    }
+
+    try {
+        const hospital = await Hospital.findOneAndUpdate(
+            { hospitalId },
+            { isActive: true },
+            { new: true }
+        );
+
+        if (!hospital) {
+            return next(new EasyQError(
+                'NotFoundError',
+                httpStatusCode.NOT_FOUND,
+                true,
+                `No hospital found with ID: ${hospitalId}`
+            ));
+        }
+
+        res.status(httpStatusCode.OK).json({
+            success: true,
+            message: `Hospital ${hospital.name} has been activated.`,
+            data: hospital
+        });
+    } catch (error) {
+        next(new EasyQError(
+            'DatabaseError',
+            httpStatusCode.INTERNAL_SERVER_ERROR,
+            false,
+            `Error activating hospital: ${error.message}`
+        ));
+    }
+};
 
 
 
