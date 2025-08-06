@@ -143,6 +143,8 @@ const doctorSchema = new Schema({
         ref: 'User'
     }],
 
+    maxAppointment:{type: String,default:20},
+    
     createdAt: {
         type: Date,
         default: Date.now

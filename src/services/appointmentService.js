@@ -7,7 +7,7 @@ import { google } from 'googleapis';
 import { EasyQError } from '../config/error.js';
 import { httpStatusCode } from '../util/statusCode.js';
 import { logInfo, logError, logWarn } from '../config/logger.js';
-import { constructPipeLine } from '../controller/util.js';
+import { constructPipeLine , getAppointmentByIdPipe } from '../controller/util.js';
 
 export class AppointmentService {
 
@@ -102,11 +102,10 @@ export class AppointmentService {
 
     static async getAppointmentsByPatient(patientId) {
         try {
-            const pipeline = constructPipeLine();
-            pipeline.unshift({ $match: { patientId } });
+            const pipeline = getAppointmentByIdPipe(patientId);
+            // pipeline.unshift({ $match: { patientId } });
 
             const appointments = await Appointment.aggregate(pipeline);
-
             logInfo('Retrieved patient appointments', {
                 patientId,
                 count: appointments.length
@@ -396,4 +395,73 @@ export class AppointmentService {
             });
         }
     }
+    
+ static async safeCreateAppointment(appointmentData) {
+    const { doctorId, appointmentDate, patientId } = appointmentData;
+
+    if (!doctorId || !appointmentDate || !patientId) {
+        throw new EasyQError(
+            'ValidationError',
+            httpStatusCode.BAD_REQUEST,
+            true,
+            'Doctor ID, appointment date, and patient ID are required.'
+        );
+    }
+
+    const doctor = await Doctor.findOne({ doctorId }).select('maxAppointment');
+
+    if (!doctor) {
+        throw new EasyQError(
+            'NotFoundError',
+            httpStatusCode.NOT_FOUND,
+            true,
+            'Doctor not found.'
+        );
+    }
+
+    // 🔁 Convert "MM/DD/YYYY" to Date safely
+    let parsedDate;
+    try {
+        const [month, day, year] = appointmentDate.split('/');
+        parsedDate = new Date(`${year}-${month}-${day}`);
+        if (isNaN(parsedDate)) throw new Error();
+    } catch {
+        throw new EasyQError(
+            'InvalidDateFormat',
+            httpStatusCode.BAD_REQUEST,
+            true,
+            `Invalid date format. Expected MM/DD/YYYY but got: ${appointmentDate}`
+        );
+    }
+
+    // ⏳ Match all appointments in that day
+    const startOfDay = new Date(parsedDate);
+    startOfDay.setHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(parsedDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const count = await Appointment.countDocuments({
+        doctorId,
+        appointmentDate: { $gte: startOfDay, $lte: endOfDay }
+    });
+
+    if (count >= doctor.maxAppointment) {
+        throw new EasyQError(
+            'LimitExceededError',
+            httpStatusCode.FORBIDDEN,
+            true,
+            `Appointment limit of ${doctor.maxAppointment} reached for ${appointmentDate}.`
+        );
+    }
+
+    console.log(count, "✅ Appointments already booked on this day");
+
+    return {
+        limitReached: false,
+    };
 }
+
+}
+
+

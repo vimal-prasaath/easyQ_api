@@ -51,6 +51,7 @@ const hospitalSchema = new Schema({
       required: true,
     },
   },
+  isActive:{type:Boolean,default:false},
   departments: [
     {
       name: {
