@@ -96,3 +96,46 @@ export const getAppointmentByIdPipe = (patientId) => {
         }
     ];
 };
+
+
+export const getAppointmentByAppointmentIdPipe = (appointmentId) => {
+    return [
+        {
+            $match: { appointmentId }
+        },
+        {
+            $lookup: {
+                from: 'doctors',
+                localField: 'doctorId',
+                foreignField: 'doctorId',
+                as: 'doctorInfo'
+            }
+        },
+        { $unwind: { path: '$doctorInfo', preserveNullAndEmptyArrays: true } },
+        {
+            $lookup: {
+                from: 'hospitals',
+                localField: 'hospitalId',
+                foreignField: 'hospitalId',
+                as: 'hospitalInfo'
+            }
+        },
+        { $unwind: { path: '$hospitalInfo', preserveNullAndEmptyArrays: true } },
+        {
+            $addFields: {
+                doctorName: '$doctorInfo.name',
+                doctorImage: '$doctorInfo.profileImageUrl',
+                doctorSpecialization: '$doctorInfo.specialization',
+                hospitalAddress: '$hospitalInfo.address',
+                hospitalImage: '$hospitalInfo.imageUrl',
+                hospitalName: '$hospitalInfo.name'
+            }
+        },
+        {
+            $project: {
+                doctorInfo: 0,
+                hospitalInfo: 0
+            }
+        }
+    ];
+};

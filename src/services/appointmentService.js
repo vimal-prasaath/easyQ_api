@@ -7,7 +7,7 @@ import { google } from 'googleapis';
 import { EasyQError } from '../config/error.js';
 import { httpStatusCode } from '../util/statusCode.js';
 import { logInfo, logError, logWarn } from '../config/logger.js';
-import { constructPipeLine , getAppointmentByIdPipe } from '../controller/util.js';
+import { constructPipeLine , getAppointmentByIdPipe, getAppointmentByAppointmentIdPipe } from '../controller/util.js';
 
 export class AppointmentService {
 
@@ -245,7 +245,7 @@ export class AppointmentService {
 
     static async getAppointmentById(appointmentId) {
         try {
-            const appointment = await Appointment.findOne({ appointmentId });
+            const appointment = await Appointment.aggregate(getAppointmentByAppointmentIdPipe(appointmentId));
 
             if (!appointment) {
                 throw new EasyQError(
