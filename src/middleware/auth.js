@@ -4,6 +4,7 @@ import { httpStatusCode } from "../util/statusCode.js";
 import { authLogger } from "../config/logger.js";
 import User from "../model/userProfile.js"
 import admin from '../config/firebaseAdmin.js'
+
 async function authenticate(req, res, next) {
 
     const authHeader = req.headers.authorization;
@@ -62,12 +63,6 @@ async function authenticate(req, res, next) {
             email: decodedPayload.email,
             path: req.path
         });
-        authLogger.error('token error',{
-            user:req.user,
-            userFromDb: userFromDb,
-            body:req.body
-            
-        })
         next()
     } catch (firebaseError) {
         authLogger.warn('Firebase ID Token verification failed, attempting custom JWT verification.', {
@@ -77,59 +72,58 @@ async function authenticate(req, res, next) {
             path: req.path,
             tokenPreview: token.substring(0, 20) + '...'
         });
+
+        //jwt token based on password and
+        try {
+            const decodedPayload = await compareToken(token);
+
+            let userFromDb = await User.findOne({ userId: decodedPayload.data.userId, }).select('isActive');
+            if (!userFromDb) {
+                authLogger.error('Authorization failed: Authenticated user not found in DB.', { userId: decodedPayload.data.userId, path: req.path });
+                return next(new EasyQError('AuthenticationError', httpStatusCode.UNAUTHORIZED, true, 'Authenticated user not found.'));
+            }
+
+            req.user = decodedPayload;
+            req.isActive = userFromDb.isActive;
+
+            authLogger.info('User authenticated successfully', {
+                userId: decodedPayload.data.userId,
+                email: decodedPayload.data.email,
+                role: decodedPayload.data.role,
+                path: req.path,
+                method: req.method,
+                ip: req.ip
+            });
+            next();
+        } catch (error) {
+            authLogger.error('Authentication failed: Token validation error', {
+                errorName: error.name,
+                errorMessage: error.message,
+                path: req.path,
+                method: req.method,
+                ip: req.ip,
+                tokenPreview: token.substring(0, 20) + '...'
+            });
+
+            if (error.name === 'TokenExpiredError') {
+                return next(new EasyQError(
+                    'AuthenticationError',
+                    httpStatusCode.UNAUTHORIZED,
+                    true,
+                    'Authentication failed: Token expired.'
+                ));
+            }
+            if (error.name === 'JsonWebTokenError') {
+                return next(new EasyQError(
+                    'AuthenticationError',
+                    httpStatusCode.UNAUTHORIZED,
+                    true,
+                    'Authentication failed: Invalid token.'
+                ));
+            }
+            next(error);
+        }
     }
-
-
-    //jwt token based on password and
-    // try {
-    //     const decodedPayload = await compareToken(token);
-
-    //     let userFromDb = await User.findOne({ userId: decodedPayload.data.userId, }).select('isActive');
-    //     if (!userFromDb) {
-    //         authLogger.error('Authorization failed: Authenticated user not found in DB.', { userId: authenticatedUserId, path: req.path });
-    //         return next(new EasyQError('AuthenticationError', httpStatusCode.UNAUTHORIZED, true, 'Authenticated user not found.'));
-    //     }
-
-    //     req.user = decodedPayload;
-    //     req.isActive = userFromDb.isActive;
-
-    //     authLogger.info('User authenticated successfully', {
-    //         userId: decodedPayload.data.userId,
-    //         email: decodedPayload.data.email,
-    //         role: decodedPayload.data.role,
-    //         path: req.path,
-    //         method: req.method,
-    //         ip: req.ip
-    //     });
-    //     next();
-    // } catch (error) {
-    //     authLogger.error('Authentication failed: Token validation error', {
-    //         errorName: error.name,
-    //         errorMessage: error.message,
-    //         path: req.path,
-    //         method: req.method,
-    //         ip: req.ip,
-    //         tokenPreview: token.substring(0, 20) + '...'
-    //     });
-
-    //     if (error.name === 'TokenExpiredError') {
-    //         return next(new EasyQError(
-    //             'AuthenticationError',
-    //             httpStatusCode.UNAUTHORIZED,
-    //             true,
-    //             'Authentication failed: Token expired.'
-    //         ));
-    //     }
-    //     if (error.name === 'JsonWebTokenError') {
-    //         return next(new EasyQError(
-    //             'AuthenticationError',
-    //             httpStatusCode.UNAUTHORIZED,
-    //             true,
-    //             'Authentication failed: Invalid token.'
-    //         ));
-    //     }
-    //     next(error);
-    // }
 }
 
 export default authenticate;

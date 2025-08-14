@@ -1,17 +1,11 @@
 import mongoose from "mongoose";
-import generateUniqueId from "generate-unique-id";
+import Counter from './counter.js';
 
 const { Schema, model } = mongoose;
 const hospitalSchema = new Schema({
   hospitalId: {
     type: String,
-    unique: true,
-    default: () => {
-      return generateUniqueId({
-        length: 4,
-        useLetters: false,
-      });
-    },
+    unique: true
   },
   name: {
     type: String,
@@ -48,10 +42,9 @@ const hospitalSchema = new Schema({
     },
     coordinates: {
       type: [Number],
-      required: true,
     },
   },
-  isActive:{type:Boolean,default:false},
+  isActive:{type:Boolean,default:true},
   departments: [
     {
       name: {
@@ -81,7 +74,102 @@ const hospitalSchema = new Schema({
   hospitalType: {
     type: String,
     required: true,
+    enum: ['Hospital', 'Clinic', 'Consultant']
   },
+  
+  // ===== ADMIN FLOW ENHANCEMENTS =====
+  
+  // Admin Reference
+  adminId: {
+    type: String,
+    ref: 'AdminProfile',
+    required: true
+  },
+  
+  // Registration Details
+  registrationNumber: {
+    type: String,
+    trim: true,
+    required: true
+  },
+  yearEstablished: {
+    type: Number,
+    min: [1900, 'Year must be after 1900'],
+    max: [new Date().getFullYear(), 'Year cannot be in the future']
+  },
+  
+  // Enhanced Address
+  googleMapLink: {
+    type: String,
+    trim: true
+  },
+  
+  // Enhanced Contact Details
+  alternativePhone: {
+    type: String,
+    trim: true
+  },
+  emailAddress: {
+    type: String,
+    trim: true,
+    lowercase: true,
+    match: /^\S+@\S+\.\S+$/
+  },
+  
+  // Operation Details
+  workingDays: [{
+    type: String,
+    enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+  }],
+  startTime: {
+    type: String,
+    match: [/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Please enter time in HH:MM format']
+  },
+  endTime: {
+    type: String,
+    match: [/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Please enter time in HH:MM format']
+  },
+  openAlways: {
+    type: Boolean,
+    default: false
+  },
+  maxTokenPerDay: {
+    type: Number,
+    min: [1, 'Max tokens per day must be at least 1']
+  },
+  unlimitedToken: {
+    type: Boolean,
+    default: false
+  },
+  
+  // Document References (stored in File model)
+  documents: {
+    registrationCertificate: {
+      fileName: String,
+      fileUrl: String,
+      fileKey: String,
+      uploadedAt: Date
+    },
+    accreditation: {
+      fileName: String,
+      fileUrl: String,
+      fileKey: String,
+      uploadedAt: Date
+    },
+    logo: {
+      fileName: String,
+      fileUrl: String,
+      fileKey: String,
+      uploadedAt: Date
+    },
+    hospitalImages: [{
+      fileName: String,
+      fileUrl: String,
+      fileKey: String,
+      uploadedAt: Date
+    }]
+  },
+  
   imageUrl: {
     type: String,
     default: "https://example.com/default-hospital.png",
@@ -113,7 +201,22 @@ hospitalSchema.index({ location: "2dsphere" });
 
 hospitalSchema.set("toJSON", { virtuals: true });
 hospitalSchema.set("toObject", { virtuals: true });
-hospitalSchema.pre("save", function (next) {
+// Generate hospitalId before saving
+hospitalSchema.pre("save", async function (next) {
+  // Generate hospitalId if not provided
+  if (!this.hospitalId) {
+    try {
+      const counter = await Counter.findByIdAndUpdate(
+        { _id: 'hospitalId' },
+        { $inc: { sequence_value: 1 } },
+        { new: true, upsert: true }
+      );
+      this.hospitalId = `H${counter.sequence_value.toString().padStart(4, '0')}`;
+    } catch (error) {
+      return next(error);
+    }
+  }
+  
   this.updatedAt = Date.now();
   next();
 });

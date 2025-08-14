@@ -1,22 +1,12 @@
 import mongoose from "mongoose";
-import generateUniqueId from "generate-unique-id";
-
+import Counter from "./counter.js";
 
 const { Schema, model } = mongoose;
 
 const doctorSchema = new Schema({
-    doctorId: {
+        doctorId: {
         type: String,
-        required: true,
-        unique: true,
-        default: () => {
-            return generateUniqueId({
-                length: 4,
-                useNumbers: true,
-                useLetters: false,
-            });
-
-        }
+        unique: true
     },
 
     name: {
@@ -80,9 +70,19 @@ const doctorSchema = new Schema({
         required: true
     },
 
-    profileImageUrl: {
-        type: String,
-        default: 'https://example.com/default-doctor.png'
+    profileImage: {
+        fileName: {
+            type: String,
+            default: null
+        },
+        fileUrl: {
+            type: String,
+            default: 'https://example.com/default-doctor.png'
+        },
+        uploadedAt: {
+            type: Date,
+            default: null
+        }
     },
 
     consultantFee: {
@@ -107,17 +107,18 @@ const doctorSchema = new Schema({
         validate: {
             validator: function(v) {
                 if (v instanceof Date) {
-                    return v > new Date();
+                    return true; // Allow any valid date
                 }
                 if (typeof v === 'string') {
                     const dateRegex = /^(0[1-9]|1[0-2])\/(0[1-9]|[1-2][0-9]|3[0-1])\/\d{4}$/;
                     if (!dateRegex.test(v)) {
-                        this.invalidate('appointmentDate', 'Appointment date must be in MM/DD/YYYY format.', v);
+                        this.invalidate('date', 'Date must be in MM/DD/YYYY format.', v);
                         return false;
                     }
                 }
+                return true;
             }
-            }
+        }
         },
             available:{
                 type: String,
@@ -155,10 +156,37 @@ const doctorSchema = new Schema({
     }
 });
 
-doctorSchema.set('toJSON', { virtuals: true });
+// Virtual field for backward compatibility - profileImageUrl
+doctorSchema.virtual('profileImageUrl').get(function() {
+    return this.profileImage?.fileUrl || 'https://cdn.pixabay.com/photo/2017/01/29/21/16/nurse-2019420_640.jpg';
+});
+
+doctorSchema.set('toJSON', { 
+    virtuals: true,
+    transform: function(doc, ret) {
+        // Remove the nested profileImage object
+        delete ret.profileImage;
+        return ret;
+    }
+});
 doctorSchema.set('toObject', { virtuals: true });
 
-doctorSchema.pre('save', function (next) {
+// Generate doctorId before saving
+doctorSchema.pre('save', async function (next) {
+    // Generate doctorId if not provided
+    if (!this.doctorId) {
+        try {
+            const counter = await Counter.findByIdAndUpdate(
+                { _id: 'doctorId' },
+                { $inc: { sequence_value: 1 } },
+                { new: true, upsert: true }
+            );
+            this.doctorId = `D${counter.sequence_value.toString().padStart(4, '0')}`;
+        } catch (error) {
+            return next(error);
+        }
+    }
+    
     this.updatedAt = Date.now();
     next();
 });

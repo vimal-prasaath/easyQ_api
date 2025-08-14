@@ -12,6 +12,7 @@ import ValidationErrorHandler from "./util/validationErrorHandler.js";
 import dotenv from "dotenv";
 import sign from "./routes/sign/index.js";
 import login from "./routes/login/index.js";
+import admin from "./routes/admin/index.js";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpecs from "./config/swagger.js";
 import "./config/sheduler.js";
@@ -102,6 +103,7 @@ app.use(passport.session());
 
 app.use("/api/signup", authRateLimit, sign);
 app.use("/api/login", authRateLimit, login);
+app.use("/api/admin", authRateLimit, admin);
 // app.use("/api/user", authRateLimit, login);
 
 // 9. Swagger Documentation (public)

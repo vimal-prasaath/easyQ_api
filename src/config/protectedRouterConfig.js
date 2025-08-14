@@ -31,7 +31,8 @@ import {
     deleteDoctor,
     getAllDoctor,
     updateDoctor,
-    meetDoctor
+    meetDoctor,
+    uploadDoctorImage
 } from "../controller/doctor.js";
 
 import {
@@ -79,6 +80,7 @@ import {
 import { uploadFile, getFiles, deleteFile , downloadFile } from "../controller/uploadFile.js"; 
 import {uploadMiddleware , multerErrorHandler} from './fileConfig.js'; 
 import { searchRateLimit } from '../middleware/rateLimiter.js';
+import { updateOnboardingInfo, getAdminDetails } from '../controller/admin.js';
 
 
 const protectedRoutesConfig = [
@@ -86,6 +88,10 @@ const protectedRoutesConfig = [
     { path: '/user', method: 'get', resourceType: 'admin', action: 'read_all', handlers: [getAllUser] },
     { path: '/user/activate/:userId', method: 'put', resourceType: 'admin', action: 'activate', resourceIdParamName: 'userId', handlers: [activateUser] },
     { path: '/user/admins', method: 'get', resourceType: 'admin', action: 'read_inactive_users', handlers: [getAllInActiveUser] },
+    
+    // --- ADMIN ROUTES ---
+    { path: '/admin/onboarding', method: 'put', resourceType: 'admin_profile', action: 'update_onboarding_info', resourceIdParamName: 'adminId', handlers: [updateOnboardingInfo] },
+    { path: '/admin/:adminId', method: 'get', resourceType: 'admin_profile', action: 'read', resourceIdParamName: 'adminId', handlers: [getAdminDetails] },
     //user
     { path: '/user/:userId', method: 'put', resourceType: 'profile', action: 'update', resourceIdParamName: 'userId', handlers: [updateUser] },
     { path: '/user/getdetails', method: 'post', resourceType: 'profile', action: 'read', handlers: [finduser] },
@@ -111,11 +117,12 @@ const protectedRoutesConfig = [
 
     // --- DOCTOR ROUTES ---
     { path: '/doctor/add', method: 'post', resourceType: 'doctor', action: 'create', handlers: [createDoctor] },
-    { path: '/doctor/:doctorId', method: 'get', resourceType: 'profile', action: 'read', resourceIdParamName: 'doctorId', handlers: [getDoctor] },
-    { path: '/doctor/:doctorId', method: 'put', resourceType: 'profile', action: 'update', resourceIdParamName: 'doctorId', handlers: [updateDoctor] },
-    { path: '/doctor/:doctorId', method: 'delete', resourceType: 'doctor', action: 'delete', resourceIdParamName: 'doctorId', handlers: [deleteDoctor] },
+    { path: '/doctor/get', method: 'post', resourceType: 'profile', action: 'read', handlers: [getDoctor] },
+    { path: '/doctor/update', method: 'put', resourceType: 'profile', action: 'update', handlers: [updateDoctor] },
+    { path: '/doctor/delete', method: 'delete', resourceType: 'doctor', action: 'delete', handlers: [deleteDoctor] },
     { path: '/doctor/all/:hospitalId', method: 'get', resourceType: 'doctor', action: 'read_all_in_hospital', resourceIdParamName: 'hospitalId', handlers: [getAllDoctor] },
     { path: '/doctor/meet', method: 'post', resourceType: 'doctor', action: 'read_all_in_hospital', resourceIdParamName: 'hospitalId', handlers: [meetDoctor] },
+    { path: '/doctor/upload-image', method: 'put', resourceType: 'doctor', action: 'upload_image', handlers: [uploadMiddleware.single('file'), multerErrorHandler, uploadDoctorImage] },
     // --- Appoitment ROUTES ---
     { path: '/appoitment', method: 'post', resourceType: 'appointment', action: 'create', handlers: [appointmentLimiter,createAppointment] },
     { path: '/appoitment/check', method: 'post', resourceType: 'appointment', action: 'create', handlers: [safeCreateAppointment] },

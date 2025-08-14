@@ -3,11 +3,76 @@ import Doctor from '../model/doctor.js';
 import Hospital from '../model/hospital.js';
 import { EasyQError } from '../config/error.js';
 import { httpStatusCode } from '../util/statusCode.js';
+import { uploadDoctorImage } from '../config/fireBaseStorage.js';
 
 export class DoctorService {
     
     static async createDoctor(doctorData) {
         try {
+            // ✅ Validate required fields
+            if (!doctorData.hospitalId) {
+                throw new EasyQError(
+                    'ValidationError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    'Hospital ID is required to create a doctor.'
+                );
+            }
+
+            if (!doctorData.name || !doctorData.email || !doctorData.mobileNumber) {
+                throw new EasyQError(
+                    'ValidationError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    'Name, email, and mobile number are required fields.'
+                );
+            }
+
+            // ✅ Validate email format
+            const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
+            if (!emailRegex.test(doctorData.email)) {
+                throw new EasyQError(
+                    'ValidationError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    'Please provide a valid email address.'
+                );
+            }
+
+            // ✅ Validate mobile number format
+            const mobileRegex = /^[0-9]{10}$/;
+            if (!mobileRegex.test(doctorData.mobileNumber)) {
+                throw new EasyQError(
+                    'ValidationError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    'Please provide a valid 10-digit mobile number.'
+                );
+            }
+
+            // ✅ Check if doctor with same email already exists
+            const existingDoctorByEmail = await Doctor.findOne({ email: doctorData.email.toLowerCase() });
+            if (existingDoctorByEmail) {
+                throw new EasyQError(
+                    'ConflictError',
+                    httpStatusCode.CONFLICT,
+                    true,
+                    `A doctor with email ${doctorData.email} already exists.`
+                );
+            }
+
+            // ✅ Check if doctor with same mobile already exists
+            const existingDoctorByMobile = await Doctor.findOne({ mobileNumber: doctorData.mobileNumber });
+            if (existingDoctorByMobile) {
+                throw new EasyQError(
+                    'ConflictError',
+                    httpStatusCode.CONFLICT,
+                    true,
+                    `A doctor with mobile number ${doctorData.mobileNumber} already exists.`
+                );
+            }
+
+            // ✅ Validate hospital exists and is active
             const hospitalData = await Hospital.findOne({ hospitalId: doctorData.hospitalId });
             if (!hospitalData) {
                 throw new EasyQError(
@@ -116,7 +181,17 @@ export class DoctorService {
     }
    static async updateDoctor(doctorId, updates) {
     try {
-        if (!updates) {
+        // ✅ Validate doctorId
+        if (!doctorId) {
+            throw new EasyQError(
+                'ValidationError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                'Doctor ID is required for update.'
+            );
+        }
+
+        if (!updates || Object.keys(updates).length === 0) {
             throw new EasyQError(
                 'ValidationError',
                 httpStatusCode.BAD_REQUEST,
@@ -125,6 +200,7 @@ export class DoctorService {
             );
         }
 
+        // ✅ Check if doctor exists
         const doctor = await Doctor.findOne({ doctorId });
 
         if (!doctor) {
@@ -132,8 +208,83 @@ export class DoctorService {
                 'NotFoundError',
                 httpStatusCode.NOT_FOUND,
                 true,
-                'Doctor not found.'
+                `Doctor with ID ${doctorId} not found.`
             );
+        }
+
+        // ✅ Validate email format if being updated
+        if (updates.email) {
+            const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
+            if (!emailRegex.test(updates.email)) {
+                throw new EasyQError(
+                    'ValidationError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    'Please provide a valid email address.'
+                );
+            }
+
+            // ✅ Check if email is already taken by another doctor
+            const existingDoctorByEmail = await Doctor.findOne({ 
+                email: updates.email.toLowerCase(),
+                doctorId: { $ne: doctorId } // Exclude current doctor
+            });
+            if (existingDoctorByEmail) {
+                throw new EasyQError(
+                    'ConflictError',
+                    httpStatusCode.CONFLICT,
+                    true,
+                    `A doctor with email ${updates.email} already exists.`
+                );
+            }
+        }
+
+        // ✅ Validate mobile number format if being updated
+        if (updates.mobileNumber) {
+            const mobileRegex = /^[0-9]{10}$/;
+            if (!mobileRegex.test(updates.mobileNumber)) {
+                throw new EasyQError(
+                    'ValidationError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    'Please provide a valid 10-digit mobile number.'
+                );
+            }
+
+            // ✅ Check if mobile is already taken by another doctor
+            const existingDoctorByMobile = await Doctor.findOne({ 
+                mobileNumber: updates.mobileNumber,
+                doctorId: { $ne: doctorId } // Exclude current doctor
+            });
+            if (existingDoctorByMobile) {
+                throw new EasyQError(
+                    'ConflictError',
+                    httpStatusCode.CONFLICT,
+                    true,
+                    `A doctor with mobile number ${updates.mobileNumber} already exists.`
+                );
+            }
+        }
+
+        // ✅ Validate hospital exists if hospitalId is being updated
+        if (updates.hospitalId && updates.hospitalId !== doctor.hospitalId) {
+            const hospitalData = await Hospital.findOne({ hospitalId: updates.hospitalId });
+            if (!hospitalData) {
+                throw new EasyQError(
+                    'NotFoundError',
+                    httpStatusCode.NOT_FOUND,
+                    true,
+                    `Hospital with ID ${updates.hospitalId} not found. Cannot update doctor.`
+                );
+            }
+            if (hospitalData.isActive === false) {
+                throw new EasyQError(
+                    'HospitalInactiveError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    `Cannot update doctor. Hospital with ID ${updates.hospitalId} is inactive.`
+                );
+            }
         }
 
         // ✅ Handle workingHours separately
@@ -219,8 +370,39 @@ export class DoctorService {
 
     static async getDoctorsByHospital(hospitalId, options = {}) {
         try {
+            // ✅ Validate hospitalId
+            if (!hospitalId) {
+                throw new EasyQError(
+                    'ValidationError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    'Hospital ID is required to get doctors.'
+                );
+            }
+
+            // ✅ Validate hospital exists
+            const hospitalData = await Hospital.findOne({ hospitalId: hospitalId });
+            if (!hospitalData) {
+                throw new EasyQError(
+                    'NotFoundError',
+                    httpStatusCode.NOT_FOUND,
+                    true,
+                    `Hospital with ID ${hospitalId} not found.`
+                );
+            }
+
             const { page = 1, limit = 10, specialization } = options;
             
+            // ✅ Validate pagination parameters
+            if (page < 1 || limit < 1) {
+                throw new EasyQError(
+                    'ValidationError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    'Page and limit must be positive numbers.'
+                );
+            }
+
             const filter = { hospitalId: hospitalId };
             if (specialization) {
                 filter.specialization = new RegExp(specialization, 'i');
@@ -238,6 +420,7 @@ export class DoctorService {
             return {
                 doctors: doctors,
                 hospitalId: hospitalId,
+                hospitalName: hospitalData.name, // ✅ Include hospital name
                 pagination: {
                     currentPage: parseInt(page),
                     totalPages: Math.ceil(total / limit),
@@ -513,6 +696,111 @@ export class DoctorService {
                 httpStatusCode.INTERNAL_SERVER_ERROR,
                 true,
                 `Failed to remove patient from doctor: ${error.message}`
+            );
+        }
+    }
+
+    static async uploadDoctorImage(doctorId, file) {
+        try {
+            // ✅ Validate doctorId
+            if (!doctorId) {
+                throw new EasyQError(
+                    'ValidationError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    'Doctor ID is required to upload image.'
+                );
+            }
+
+            // ✅ Validate file
+            if (!file) {
+                throw new EasyQError(
+                    'ValidationError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    'No file provided for upload.'
+                );
+            }
+
+            // ✅ Validate file type
+            const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+            if (!allowedMimeTypes.includes(file.mimetype)) {
+                throw new EasyQError(
+                    'ValidationError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    'Only JPEG and PNG image files are allowed.'
+                );
+            }
+
+            // ✅ Validate file size (5MB limit)
+            const maxSize = 5 * 1024 * 1024; // 5MB in bytes
+            if (file.size > maxSize) {
+                throw new EasyQError(
+                    'ValidationError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    'File size must be less than 5MB.'
+                );
+            }
+
+            // ✅ Check if doctor exists
+            const doctor = await Doctor.findOne({ doctorId: doctorId });
+            if (!doctor) {
+                throw new EasyQError(
+                    'NotFoundError',
+                    httpStatusCode.NOT_FOUND,
+                    true,
+                    `Doctor with ID ${doctorId} not found.`
+                );
+            }
+
+            // ✅ Validate hospital exists
+            const hospitalData = await Hospital.findOne({ hospitalId: doctor.hospitalId });
+            if (!hospitalData) {
+                throw new EasyQError(
+                    'NotFoundError',
+                    httpStatusCode.NOT_FOUND,
+                    true,
+                    `Hospital with ID ${doctor.hospitalId} not found for doctor ${doctorId}.`
+                );
+            }
+
+            // Upload image to Firebase
+            const uploadResult = await uploadDoctorImage(
+                file.buffer,
+                file.originalname,
+                file.mimetype,
+                doctor.hospitalId,
+                doctorId
+            );
+
+            // Update doctor profile with new image
+            const updatedDoctor = await Doctor.findOneAndUpdate(
+                { doctorId: doctorId },
+                {
+                    profileImage: {
+                        fileName: uploadResult.path.split('/').pop(),
+                        fileUrl: uploadResult.url,
+                        uploadedAt: new Date()
+                    }
+                },
+                { new: true, runValidators: true }
+            );
+
+            return {
+                message: "Doctor image uploaded successfully",
+                profileImageUrl: updatedDoctor.profileImageUrl
+            };
+        } catch (error) {
+            if (error instanceof EasyQError) {
+                throw error;
+            }
+            throw new EasyQError(
+                'DatabaseError',
+                httpStatusCode.INTERNAL_SERVER_ERROR,
+                true,
+                `Failed to upload doctor image: ${error.message}`
             );
         }
     }

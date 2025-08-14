@@ -64,7 +64,16 @@ export async function getDoctor(req, res, next) {
     logApiRequest(req, { action: 'get_doctor' });
 
     try {
-        const { doctorId } = req.params;
+        const { doctorId } = req.body;
+        
+        if (!doctorId) {
+            return res.status(httpStatusCode.BAD_REQUEST).json(
+                ResponseFormatter.formatErrorResponse({
+                    message: "doctorId is required in request body",
+                    statusCode: httpStatusCode.BAD_REQUEST
+                })
+            );
+        }
         
         doctorLogger.info('Doctor retrieval started', {
             userId: req.user?.userId,
@@ -103,7 +112,7 @@ export async function getDoctor(req, res, next) {
             error: error.message,
             stack: error.stack,
             userId: req.user?.userId,
-            doctorId: req.params.doctorId
+            doctorId: req.body.doctorId
         });
         next(error);
     }
@@ -117,7 +126,16 @@ export async function deleteDoctor(req, res, next) {
     logApiRequest(req, { action: 'delete_doctor' });
 
     try {
-        const { doctorId } = req.params;
+        const { doctorId } = req.body;
+        
+        if (!doctorId) {
+            return res.status(httpStatusCode.BAD_REQUEST).json(
+                ResponseFormatter.formatErrorResponse({
+                    message: "doctorId is required in request body",
+                    statusCode: httpStatusCode.BAD_REQUEST
+                })
+            );
+        }
         
         doctorLogger.info('Doctor deletion started', {
             userId: req.user?.userId,
@@ -159,8 +177,16 @@ export async function deleteDoctor(req, res, next) {
 
 export async function updateDoctor(req, res, next) {
     try {
-        const { doctorId } = req.params;
-        const updates = req.body;
+        const { doctorId, ...updates } = req.body;
+        
+        if (!doctorId) {
+            return res.status(httpStatusCode.BAD_REQUEST).json(
+                ResponseFormatter.formatErrorResponse({
+                    message: "doctorId is required in request body",
+                    statusCode: httpStatusCode.BAD_REQUEST
+                })
+            );
+        }
         
         const updatedDoctor = await DoctorService.updateDoctor(doctorId, updates);
         
@@ -208,6 +234,80 @@ export async function meetDoctor(req,res,next){
 
     }catch(error){
         next(error)
+    }
+}
+
+export async function uploadDoctorImage(req, res, next) {
+    const startTime = Date.now();
+    console.log(req)
+    
+    // Log API request
+    logApiRequest(req, { action: 'upload_doctor_image' });
+
+    try {
+        const { doctorId } = req.body;
+        const file = req.file;
+
+        if (!doctorId) {
+            return res.status(httpStatusCode.BAD_REQUEST).json(
+                ResponseFormatter.formatErrorResponse({
+                    message: "doctorId is required in request body",
+                    statusCode: httpStatusCode.BAD_REQUEST
+                })
+            );
+        }
+
+        if (!file) {
+            return res.status(httpStatusCode.BAD_REQUEST).json(
+                ResponseFormatter.formatErrorResponse({
+                    message: "No file uploaded or file type/size not allowed",
+                    statusCode: httpStatusCode.BAD_REQUEST
+                })
+            );
+        }
+
+        doctorLogger.info('Doctor image upload started', {
+            userId: req.user?.userId,
+            doctorId: doctorId,
+            fileName: file.originalname,
+            fileSize: file.size
+        });
+
+        const result = await DoctorService.uploadDoctorImage(doctorId, file);
+        
+        const response = ResponseFormatter.formatSuccessResponse({
+            message: "Doctor image uploaded successfully",
+            data: result,
+            statusCode: httpStatusCode.OK
+        });
+
+        doctorLogger.info('Doctor image uploaded successfully', {
+            userId: req.user?.userId,
+            doctorId: doctorId,
+            fileName: result.profileImageUrl
+        });
+
+        // Log performance
+        logPerformance('Doctor Image Upload', Date.now() - startTime, {
+            doctorId: doctorId,
+            userId: req.user?.userId
+        });
+
+        // Log API response
+        logApiResponse(req, res, response, { 
+            action: 'upload_doctor_image_success',
+            doctorId: doctorId 
+        });
+        
+        res.status(httpStatusCode.OK).json(response);
+    } catch (error) {
+        doctorLogger.error('Doctor image upload error', {
+            error: error.message,
+            stack: error.stack,
+            userId: req.user?.userId,
+            doctorId: req.body.doctorId
+        });
+        next(error);
     }
 }
 

@@ -90,51 +90,58 @@ import { EasyQError } from "../config/error.js";
 import { httpStatusCode } from "../util/statusCode.js";
 import { authLogger } from "../config/logger.js";
 async function authorizeRoles(req, res, next) {
-    if (!req.user) {
-        authLogger.error('Broad authorization failed: User data missing in req.user. Ensure authenticate middleware runs first.', { path: req.path });
-        return next(new EasyQError(
-            'AuthorizationError',
-            httpStatusCode.FORBIDDEN,
-            true,
-            'Authentication required. User information is missing.'
-        ));
-    }
-
-    const authenticatedUserId =  req.user.user_id;
-    const isActive = req.isActive;
-    if (!isActive) {
-        authLogger.warn('Broad authorization denied: Inactive user attempting to access resource.', {
-            userId: authenticatedUserId,
-            role: req.user.role || (req.user.data ? req.user.data.role : 'N/A'),
-            path: req.path
-        });
-        return next(new EasyQError(
-            'AuthorizationError',
-            httpStatusCode.FORBIDDEN,
-            true,
-            'Your account is currently inactive. Please contact an administrator for access.'
-        ));
-    }
-
-    const resourceOwnerId = req.headers['x-user-id'];
-
-    if (resourceOwnerId) {
-        const authId = String(authenticatedUserId).trim();
-        const ownerId = String(resourceOwnerId).trim();
-
-        if (authId !== ownerId) {
-            authLogger.warn('Security Alert: Mismatch between userId in custom header and userId in token payload.', {
-                path: req.path,
-                tokenUserId: authenticatedUserId,
-                headerUserId: resourceOwnerId
-            });
-            return next(new EasyQError('AuthorizationError', httpStatusCode.BAD_REQUEST, true, 'User ID mismatch in request.'));
+    try {
+        if (!req.user) {
+            authLogger.error('Broad authorization failed: User data missing in req.user. Ensure authenticate middleware runs first.', { path: req.path });
+            return next(new EasyQError(
+                'AuthorizationError',
+                httpStatusCode.FORBIDDEN,
+                true,
+                'Authentication required. User information is missing.'
+            ));
         }
-    } else {
-        authLogger.debug('Broad authorization: x-user-id header not found or not required for this specific check.', { path: req.path });
+    
+        const authenticatedUserId =  req.user.user_id;
+        const isActive = req.isActive;
+        if (!isActive) {
+            authLogger.warn('Broad authorization denied: Inactive user attempting to access resource.', {
+                userId: authenticatedUserId,
+                role: req.user.role || (req.user.data ? req.user.data.role : 'N/A'),
+                path: req.path
+            });
+            return next(new EasyQError(
+                'AuthorizationError',
+                httpStatusCode.FORBIDDEN,
+                true,
+                'Your account is currently inactive. Please contact an administrator for access.'
+            ));
+        }
+    
+        const resourceOwnerId = req.headers['x-user-id'];
+    
+        if (resourceOwnerId) {
+            const authId = String(authenticatedUserId).trim();
+            const ownerId = String(resourceOwnerId).trim();
+    
+            if (authId !== ownerId) {
+                authLogger.warn('Security Alert: Mismatch between userId in custom header and userId in token payload.', {
+                    path: req.path,
+                    tokenUserId: authenticatedUserId,
+                    headerUserId: resourceOwnerId
+                });
+                return next(new EasyQError('AuthorizationError', httpStatusCode.BAD_REQUEST, true, 'User ID mismatch in request.'));
+            }
+        } else {
+            authLogger.debug('Broad authorization: x-user-id header not found or not required for this specific check.', { path: req.path });
+        }
+        console.log("next test") 
+    
+        next();
+    } catch (error) {
+        console.log(error)
+        next(error)
     }
-
-    next();
+    
 }
 
 export default authorizeRoles;
