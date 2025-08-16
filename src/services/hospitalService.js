@@ -222,6 +222,178 @@ export class HospitalService {
         }
     }
 
+    static async addFacilities(hospitalId, facilities) {
+        try {
+            // Validate hospital exists
+            const hospital = await Hospital.findOne({ hospitalId: hospitalId });
+            if (!hospital) {
+                throw new EasyQError(
+                    'NotFoundError',
+                    httpStatusCode.NOT_FOUND,
+                    true,
+                    `Hospital with ID ${hospitalId} not found.`
+                );
+            }
+
+            if (!hospital.isActive) {
+                throw new EasyQError(
+                    'HospitalInactiveError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    `Cannot add facilities. Hospital with ID ${hospitalId} is inactive.`
+                );
+            }
+
+            // Validate facilities data
+            if (!Array.isArray(facilities) || facilities.length === 0) {
+                throw new EasyQError(
+                    'ValidationError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    'Facilities array is required and cannot be empty.'
+                );
+            }
+
+            // Validate each facility
+            for (const facility of facilities) {
+                if (!facility.name || !facility.type) {
+                    throw new EasyQError(
+                        'ValidationError',
+                        httpStatusCode.BAD_REQUEST,
+                        true,
+                        'Each facility must have name and type.'
+                    );
+                }
+            }
+
+            // Add facilities to hospital
+            const addedFacilities = [];
+            for (const facility of facilities) {
+                const newFacility = {
+                    name: facility.name,
+                    type: facility.type,
+                    description: facility.description || '',
+                    isAvailable: facility.isAvailable !== false, // Default to true
+                    addedAt: new Date()
+                };
+                
+                hospital.facilities.push(newFacility);
+                addedFacilities.push(newFacility);
+            }
+
+            await hospital.save();
+
+            return {
+                hospitalId: hospitalId,
+                addedCount: addedFacilities.length,
+                addedFacilities: addedFacilities,
+                totalFacilities: hospital.facilities.length
+            };
+        } catch (error) {
+            if (error instanceof EasyQError) {
+                throw error;
+            }
+            throw new EasyQError(
+                'DatabaseError',
+                httpStatusCode.INTERNAL_SERVER_ERROR,
+                true,
+                `Failed to add facilities: ${error.message}`
+            );
+        }
+    }
+
+    static async updateFacilities(hospitalId, facilities) {
+        try {
+            // Validate hospital exists
+            const hospital = await Hospital.findOne({ hospitalId: hospitalId });
+            if (!hospital) {
+                throw new EasyQError(
+                    'NotFoundError',
+                    httpStatusCode.NOT_FOUND,
+                    true,
+                    `Hospital with ID ${hospitalId} not found.`
+                );
+            }
+
+            if (!hospital.isActive) {
+                throw new EasyQError(
+                    'HospitalInactiveError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    `Cannot update facilities. Hospital with ID ${hospitalId} is inactive.`
+                );
+            }
+
+            // Validate facilities data
+            if (!Array.isArray(facilities) || facilities.length === 0) {
+                throw new EasyQError(
+                    'ValidationError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    'Facilities array is required and cannot be empty.'
+                );
+            }
+
+            // Validate each facility
+            for (const facility of facilities) {
+                if (!facility.id || !facility.name || !facility.type) {
+                    throw new EasyQError(
+                        'ValidationError',
+                        httpStatusCode.BAD_REQUEST,
+                        true,
+                        'Each facility must have id, name, and type.'
+                    );
+                }
+            }
+
+            // Update facilities
+            const updatedFacilities = [];
+            for (const facilityUpdate of facilities) {
+                const facilityIndex = hospital.facilities.findIndex(f => f._id.toString() === facilityUpdate.id);
+                
+                if (facilityIndex === -1) {
+                    throw new EasyQError(
+                        'NotFoundError',
+                        httpStatusCode.NOT_FOUND,
+                        true,
+                        `Facility with ID ${facilityUpdate.id} not found.`
+                    );
+                }
+
+                // Update facility
+                hospital.facilities[facilityIndex] = {
+                    ...hospital.facilities[facilityIndex],
+                    name: facilityUpdate.name,
+                    type: facilityUpdate.type,
+                    description: facilityUpdate.description || hospital.facilities[facilityIndex].description,
+                    isAvailable: facilityUpdate.isAvailable !== undefined ? facilityUpdate.isAvailable : hospital.facilities[facilityIndex].isAvailable,
+                    updatedAt: new Date()
+                };
+
+                updatedFacilities.push(hospital.facilities[facilityIndex]);
+            }
+
+            await hospital.save();
+
+            return {
+                hospitalId: hospitalId,
+                updatedCount: updatedFacilities.length,
+                updatedFacilities: updatedFacilities,
+                totalFacilities: hospital.facilities.length
+            };
+        } catch (error) {
+            if (error instanceof EasyQError) {
+                throw error;
+            }
+            throw new EasyQError(
+                'DatabaseError',
+                httpStatusCode.INTERNAL_SERVER_ERROR,
+                true,
+                `Failed to update facilities: ${error.message}`
+            );
+        }
+    }
+
     static async addDoctorIdToDepartment(){
 
     }

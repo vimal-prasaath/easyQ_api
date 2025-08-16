@@ -166,6 +166,45 @@ export const deleteFileFromFirebase = async (filePath) => {
   }
 };
 
+// Delete all files in a folder recursively
+export const deleteFolderFromFirebase = async (folderPath) => {
+  try {
+    const [files] = await bucket.getFiles({ prefix: folderPath });
+    
+    if (files.length === 0) {
+      console.log("No files found in folder:", folderPath);
+      return { deletedCount: 0 };
+    }
+
+    const deletePromises = files.map(file => file.delete());
+    await Promise.all(deletePromises);
+    
+    console.log(`Deleted ${files.length} files from folder:`, folderPath);
+    return { deletedCount: files.length };
+  } catch (error) {
+    console.error("Error deleting folder from Firebase Storage:", error);
+    throw error;
+  }
+};
+
+// Extract file path from Firebase URL
+export const extractFilePathFromUrl = (firebaseUrl) => {
+  try {
+    const url = new URL(firebaseUrl);
+    const pathParts = url.pathname.split('/');
+    // Remove the bucket name and get the file path
+    const bucketName = process.env.STORAGE_BUCKET_NAME;
+    const bucketIndex = pathParts.findIndex(part => part === bucketName);
+    if (bucketIndex !== -1) {
+      return pathParts.slice(bucketIndex + 1).join('/');
+    }
+    return null;
+  } catch (error) {
+    console.error("Error extracting file path from URL:", error);
+    return null;
+  }
+};
+
 // New function for doctor image uploads
 export const uploadDoctorImage = async (
   fileBuffer,

@@ -5,8 +5,7 @@ import {
     deleteUser,
     resetUserPassword,
     activateUser,
-    getAllInActiveUser,
-    
+    getAllInActiveUser
 } from "../controller/user.js";
 import {login} from "../controller/login.js"
 import { appointmentLimiter } from "../middleware/appointment-rate-controller.js";
@@ -22,7 +21,9 @@ import {
     updateHospitalBasicDetails,
     getHospitalDetailsBylocation,
     getAllInActiveHsptl,
-    activateHsptl
+    activateHsptl,
+    addFacilities,
+    updateFacilities
 } from "../controller/hospital.js";
 
 import {
@@ -80,7 +81,9 @@ import {
 import { uploadFile, getFiles, deleteFile , downloadFile } from "../controller/uploadFile.js"; 
 import {uploadMiddleware , multerErrorHandler} from './fileConfig.js'; 
 import { searchRateLimit } from '../middleware/rateLimiter.js';
-import { updateOnboardingInfo, getAdminDetails } from '../controller/admin.js';
+import { updateOnboardingInfo, getAdminDetails, getAdminDashboard } from '../controller/admin.js';
+import authenticateAdmin from '../middleware/adminAuth.js';
+import adminVerificationCheck from '../middleware/adminVerificationCheck.js';
 
 
 const protectedRoutesConfig = [
@@ -89,9 +92,14 @@ const protectedRoutesConfig = [
     { path: '/user/activate/:userId', method: 'put', resourceType: 'admin', action: 'activate', resourceIdParamName: 'userId', handlers: [activateUser] },
     { path: '/user/admins', method: 'get', resourceType: 'admin', action: 'read_inactive_users', handlers: [getAllInActiveUser] },
     
+    // --- ACCOUNT MANAGEMENT ROUTES ---
+    { path: '/user/:userId/activate', method: 'put', resourceType: 'user', action: 'activate', resourceIdParamName: 'userId', handlers: [activateUser] },
+    
     // --- ADMIN ROUTES ---
-    { path: '/admin/onboarding', method: 'put', resourceType: 'admin_profile', action: 'update_onboarding_info', resourceIdParamName: 'adminId', handlers: [updateOnboardingInfo] },
+    { path: '/admin/onboarding', method: 'put', resourceType: 'admin_profile', action: 'update_onboarding_info', handlers: [updateOnboardingInfo] },
+    { path: '/admin/dashboard', method: 'post', resourceType: 'admin_profile', action: 'read_dashboard', handlers: [getAdminDashboard] },
     { path: '/admin/:adminId', method: 'get', resourceType: 'admin_profile', action: 'read', resourceIdParamName: 'adminId', handlers: [getAdminDetails] },
+    
     //user
     { path: '/user/:userId', method: 'put', resourceType: 'profile', action: 'update', resourceIdParamName: 'userId', handlers: [updateUser] },
     { path: '/user/getdetails', method: 'post', resourceType: 'profile', action: 'read', handlers: [finduser] },
@@ -108,6 +116,10 @@ const protectedRoutesConfig = [
     { path: '/hospital/admin/activate', method: 'get', resourceType: 'hospital', action: 'read', handlers: [getAllInActiveHsptl] },
     { path: '/hospital/admin/activate', method: 'post', resourceType: 'hospital', action: 'read', handlers: [activateHsptl] },
     
+    // --- HOSPITAL FACILITIES ROUTES ---
+    { path: '/hospital/:hospitalId/facilities', method: 'post', resourceType: 'hospital_facilities', action: 'add', resourceIdParamName: 'hospitalId', handlers: [addFacilities] },
+    { path: '/hospital/:hospitalId/facilities', method: 'put', resourceType: 'hospital_facilities', action: 'update', resourceIdParamName: 'hospitalId', handlers: [updateFacilities] },
+    
         //hospital --> User Roles 
     { path: '/hospital/review/:hospitalId', method: 'put', resourceType: 'hospital_review', action: 'update_review_details', resourceIdParamName: 'hospitalId', handlers: [updateReviewComment] },
     { path: '/hospital/review', method: 'post', resourceType: 'hospital_review', action: 'create', handlers: [createReviews] },
@@ -116,13 +128,13 @@ const protectedRoutesConfig = [
     { path: '/hospital', method: 'get', resourceType: 'hospital', action: 'read_all', handlers: [getAllHospitalDetails] },
 
     // --- DOCTOR ROUTES ---
-    { path: '/doctor/add', method: 'post', resourceType: 'doctor', action: 'create', handlers: [createDoctor] },
+    { path: '/doctor/add', method: 'post', resourceType: 'doctor', action: 'create', handlers: [authenticateAdmin, adminVerificationCheck, createDoctor] },
     { path: '/doctor/get', method: 'post', resourceType: 'profile', action: 'read', handlers: [getDoctor] },
     { path: '/doctor/update', method: 'put', resourceType: 'profile', action: 'update', handlers: [updateDoctor] },
-    { path: '/doctor/delete', method: 'delete', resourceType: 'doctor', action: 'delete', handlers: [deleteDoctor] },
+    { path: '/doctor/delete', method: 'delete', resourceType: 'doctor', action: 'delete', handlers: [authenticateAdmin, adminVerificationCheck, deleteDoctor] },
     { path: '/doctor/all/:hospitalId', method: 'get', resourceType: 'doctor', action: 'read_all_in_hospital', resourceIdParamName: 'hospitalId', handlers: [getAllDoctor] },
     { path: '/doctor/meet', method: 'post', resourceType: 'doctor', action: 'read_all_in_hospital', resourceIdParamName: 'hospitalId', handlers: [meetDoctor] },
-    { path: '/doctor/upload-image', method: 'put', resourceType: 'doctor', action: 'upload_image', handlers: [uploadMiddleware.single('file'), multerErrorHandler, uploadDoctorImage] },
+    { path: '/doctor/upload-image', method: 'put', resourceType: 'doctor', action: 'upload_image', handlers: [authenticateAdmin, adminVerificationCheck, uploadMiddleware.single('file'), multerErrorHandler, uploadDoctorImage] },
     // --- Appoitment ROUTES ---
     { path: '/appoitment', method: 'post', resourceType: 'appointment', action: 'create', handlers: [appointmentLimiter,createAppointment] },
     { path: '/appoitment/check', method: 'post', resourceType: 'appointment', action: 'create', handlers: [safeCreateAppointment] },

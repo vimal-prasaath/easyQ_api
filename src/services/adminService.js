@@ -1,11 +1,17 @@
 import AdminProfile from "../model/adminProfile.js";
 import Hospital from "../model/hospital.js";
+import Doctor from "../model/doctor.js";
+import Appointment from "../model/appointment.js";
+import HospitalReview from "../model/hospitalReview.js";
+import HospitalDetails from "../model/facility.js";
+import Favourite from "../model/hospitalFavourite.js";
 import bcrypt from "bcrypt";
 import { generateToken } from "../util/tokenGenerator.js";
 import { EasyQError } from "../config/error.js";
 import { httpStatusCode } from "../util/statusCode.js";
 import { authLogger } from "../config/logger.js";
-import { uploadAdminHospitalFile, uploadAdminOwnerFile } from "../config/fireBaseStorage.js";
+import { uploadAdminHospitalFile, uploadAdminOwnerFile, deleteFolderFromFirebase, extractFilePathFromUrl, deleteFileFromFirebase } from "../config/fireBaseStorage.js";
+import User from "../model/userProfile.js"; // Added import for User model
 
 class AdminService {
     async createAdmin(adminData) {
@@ -642,7 +648,376 @@ class AdminService {
                 'DatabaseError',
                 httpStatusCode.INTERNAL_SERVER_ERROR,
                 true,
-                'Failed to update hospital basic information.'
+                error
+            );
+        }
+    }
+
+    static async getVerificationStatus(userId) {
+        try {
+            // Check if user exists (could be admin or regular user)
+            const admin = await AdminProfile.findOne({ adminId: userId });
+            const user = await User.findOne({ userId: userId });
+            
+            if (!admin && !user) {
+                throw new EasyQError(
+                    'NotFoundError',
+                    httpStatusCode.NOT_FOUND,
+                    true,
+                    `User with ID ${userId} not found.`
+                );
+            }
+
+            const targetUser = admin || user;
+            const userType = admin ? 'admin' : 'user';
+
+            return {
+                userId: userId,
+                userType: userType,
+                verificationStatus: targetUser.verificationStatus || 'Pending',
+                isActive: targetUser.isActive || false,
+                createdAt: targetUser.createdAt,
+                lastUpdated: targetUser.updatedAt
+            };
+        } catch (error) {
+            if (error instanceof EasyQError) {
+                throw error;
+            }
+            throw new EasyQError(
+                'DatabaseError',
+                httpStatusCode.INTERNAL_SERVER_ERROR,
+                true,
+                `Failed to get verification status: ${error.message}`
+            );
+        }
+    }
+
+    static async activateUser(userId) {
+        try {
+            // Check if user exists (could be admin or regular user)
+            const admin = await AdminProfile.findOne({ adminId: userId });
+            const user = await User.findOne({ userId: userId });
+            
+            if (!admin && !user) {
+                throw new EasyQError(
+                    'NotFoundError',
+                    httpStatusCode.NOT_FOUND,
+                    true,
+                    `User with ID ${userId} not found.`
+                );
+            }
+
+            const targetUser = admin || user;
+            const userType = admin ? 'admin' : 'user';
+
+            // Update verification status and activate user
+            const updateData = {
+                verificationStatus: 'Verified',
+                isActive: true,
+                updatedAt: new Date()
+            };
+
+            if (admin) {
+                await AdminProfile.findOneAndUpdate(
+                    { adminId: userId },
+                    updateData,
+                    { new: true }
+                );
+            } else {
+                await User.findOneAndUpdate(
+                    { userId: userId },
+                    updateData,
+                    { new: true }
+                );
+            }
+
+            return {
+                userId: userId,
+                userType: userType,
+                verificationStatus: 'Verified',
+                isActive: true,
+                activatedAt: new Date(),
+                message: `${userType} account activated successfully`
+            };
+        } catch (error) {
+            if (error instanceof EasyQError) {
+                throw error;
+            }
+            throw new EasyQError(
+                'DatabaseError',
+                httpStatusCode.INTERNAL_SERVER_ERROR,
+                true,
+                `Failed to activate user: ${error.message}`
+            );
+        }
+    }
+
+    async updateHospitalCompleteInfo(adminId, hospitalId, hospitalData) {
+        try {
+            // Verify admin exists and has access to this hospital
+            const admin = await AdminProfile.findOne({ adminId });
+            if (!admin) {
+                throw new EasyQError(
+                    'NotFoundError',
+                    httpStatusCode.NOT_FOUND,
+                    true,
+                    'Admin not found.'
+                );
+            }
+
+            // Find the hospital by hospitalId (string ID like "H0001")
+            const hospital = await Hospital.findOne({ hospitalId: hospitalId });
+            if (!hospital) {
+                throw new EasyQError(
+                    'NotFoundError',
+                    httpStatusCode.NOT_FOUND,
+                    true,
+                    'Hospital not found.'
+                );
+            }
+
+            // Verify admin has access to this hospital
+            if (admin.hospitalId && admin.hospitalId.toString() !== hospital._id.toString()) {
+                throw new EasyQError(
+                    'AuthorizationError',
+                    httpStatusCode.FORBIDDEN,
+                    true,
+                    'Admin does not have access to this hospital.'
+                );
+            }
+
+            // Update hospital fields if provided
+            if (hospitalData.name !== undefined) hospital.name = hospitalData.name;
+            if (hospitalData.hospitalType !== undefined) hospital.hospitalType = hospitalData.hospitalType;
+            if (hospitalData.registrationNumber !== undefined) hospital.registrationNumber = hospitalData.registrationNumber;
+            if (hospitalData.yearEstablished !== undefined) hospital.yearEstablished = hospitalData.yearEstablished;
+            if (hospitalData.googleMapLink !== undefined) hospital.googleMapLink = hospitalData.googleMapLink;
+
+            // Update address if any address field is provided
+            if (hospitalData.address || hospitalData.city || hospitalData.state || hospitalData.pincode) {
+                hospital.address = {
+                    street: hospitalData.address || hospital.address?.street || '',
+                    city: hospitalData.city || hospital.address?.city || '',
+                    state: hospitalData.state || hospital.address?.state || '',
+                    zipCode: hospitalData.pincode || hospital.address?.zipCode || '',
+                    country: hospital.address?.country || "India"
+                };
+            }
+
+            // Update contact details if provided
+            if (hospitalData.phoneNumber !== undefined) hospital.phoneNumber = hospitalData.phoneNumber;
+            if (hospitalData.alternativePhone !== undefined) hospital.alternativePhone = hospitalData.alternativePhone;
+            if (hospitalData.emailAddress !== undefined) hospital.emailAddress = hospitalData.emailAddress;
+
+            // Update operation details if provided
+            if (hospitalData.workingDays !== undefined) hospital.workingDays = hospitalData.workingDays;
+            if (hospitalData.startTime !== undefined) hospital.startTime = hospitalData.startTime;
+            if (hospitalData.endTime !== undefined) hospital.endTime = hospitalData.endTime;
+            if (hospitalData.openAlways !== undefined) hospital.openAlways = hospitalData.openAlways;
+            if (hospitalData.maxTokenPerDay !== undefined) hospital.maxTokenPerDay = hospitalData.maxTokenPerDay;
+            if (hospitalData.unlimitedToken !== undefined) hospital.unlimitedToken = hospitalData.unlimitedToken;
+
+            await hospital.save();
+
+            return {
+                message: "Hospital information updated successfully",
+                hospital: {
+                    hospitalId: hospital.hospitalId,
+                    name: hospital.name,
+                    hospitalType: hospital.hospitalType,
+                    registrationNumber: hospital.registrationNumber,
+                    yearEstablished: hospital.yearEstablished,
+                    address: hospital.address,
+                    contact: {
+                        phoneNumber: hospital.phoneNumber,
+                        alternativePhone: hospital.alternativePhone,
+                        emailAddress: hospital.emailAddress
+                    },
+                    operation: {
+                        workingDays: hospital.workingDays,
+                        startTime: hospital.startTime,
+                        endTime: hospital.endTime,
+                        openAlways: hospital.openAlways,
+                        maxTokenPerDay: hospital.maxTokenPerDay,
+                        unlimitedToken: hospital.unlimitedToken
+                    }
+                },
+                updatedAt: hospital.updatedAt
+            };
+        } catch (error) {
+            if (error instanceof EasyQError) {
+                throw error;
+            }
+            authLogger.error('Error updating hospital complete info:', error);
+            throw new EasyQError(
+                'DatabaseError',
+                httpStatusCode.INTERNAL_SERVER_ERROR,
+                true,
+                error
+            );
+        }
+    }
+
+    async deleteAdmin(adminId) {
+        try {
+            // Find the admin
+            const admin = await AdminProfile.findOne({ adminId });
+            if (!admin) {
+                throw new EasyQError(
+                    'NotFoundError',
+                    httpStatusCode.NOT_FOUND,
+                    true,
+                    'Admin not found.'
+                );
+            }
+
+            // Get all hospitals associated with this admin
+            const hospitals = await Hospital.find({ adminId: adminId });
+            const hospitalIds = hospitals.map(h => h.hospitalId);
+
+            // Delete all associated data for each hospital
+            for (const hospitalId of hospitalIds) {
+                // Delete doctors associated with this hospital
+                await Doctor.deleteMany({ hospitalId: hospitalId });
+                
+                // Delete appointments associated with this hospital
+                await Appointment.deleteMany({ hospitalId: hospitalId });
+                
+                // Delete hospital facilities
+                await HospitalDetails.deleteOne({ hospitalId: hospitalId });
+                
+                // Delete hospital reviews
+                await HospitalReview.deleteOne({ hospitalId: hospitalId });
+                
+                // Delete hospital favorites
+                await Favourite.deleteMany({ 'favouriteHospitals.hospitalId': hospitalId });
+            }
+
+            // Delete Firebase files for each hospital
+            const firebaseDeletionResults = [];
+            for (const hospital of hospitals) {
+                try {
+                    // Delete hospital folder (contains all hospital documents)
+                    const hospitalFolderResult = await deleteFolderFromFirebase(`hospitals/${hospital.hospitalId}`);
+                    firebaseDeletionResults.push({
+                        hospitalId: hospital.hospitalId,
+                        hospitalFolder: hospitalFolderResult
+                    });
+                } catch (error) {
+                    authLogger.error(`Error deleting Firebase files for hospital ${hospital.hospitalId}:`, error);
+                    firebaseDeletionResults.push({
+                        hospitalId: hospital.hospitalId,
+                        error: error.message
+                    });
+                }
+            }
+
+            // Delete admin owner documents folder
+            let adminFolderResult = { deletedCount: 0 };
+            try {
+                adminFolderResult = await deleteFolderFromFirebase(`owners/${adminId}`);
+            } catch (error) {
+                authLogger.error(`Error deleting Firebase files for admin ${adminId}:`, error);
+            }
+
+            // Delete all hospitals associated with this admin
+            await Hospital.deleteMany({ adminId: adminId });
+
+            // Delete the admin profile
+            await AdminProfile.findOneAndDelete({ adminId: adminId });
+
+            return {
+                message: "Admin and all associated data deleted successfully",
+                deletedAdmin: {
+                    adminId: admin.adminId,
+                    email: admin.email,
+                    username: admin.username
+                },
+                deletedHospitals: hospitals.map(h => ({
+                    hospitalId: h.hospitalId,
+                    name: h.name
+                })),
+                deletedData: {
+                    hospitalsCount: hospitals.length,
+                    doctorsCount: await Doctor.countDocuments({ hospitalId: { $in: hospitalIds } }),
+                    appointmentsCount: await Appointment.countDocuments({ hospitalId: { $in: hospitalIds } }),
+                    reviewsCount: await HospitalReview.countDocuments({ hospitalId: { $in: hospitalIds } })
+                },
+                firebaseDeletion: {
+                    adminOwnerFiles: adminFolderResult,
+                    hospitalFiles: firebaseDeletionResults
+                },
+                deletedAt: new Date()
+            };
+        } catch (error) {
+            if (error instanceof EasyQError) {
+                throw error;
+            }
+            authLogger.error('Error deleting admin:', error);
+            throw new EasyQError(
+                'DatabaseError',
+                httpStatusCode.INTERNAL_SERVER_ERROR,
+                true,
+                error
+            );
+        }
+    }
+
+    static async deleteAccount(userId) {
+        try {
+            // Check if user exists (could be admin or regular user)
+            const admin = await AdminProfile.findOne({ adminId: userId });
+            const user = await User.findOne({ userId: userId });
+            
+            if (!admin && !user) {
+                throw new EasyQError(
+                    'NotFoundError',
+                    httpStatusCode.NOT_FOUND,
+                    true,
+                    `User with ID ${userId} not found.`
+                );
+            }
+
+            const targetUser = admin || user;
+            const userType = admin ? 'admin' : 'user';
+
+            // Soft delete - mark as inactive and deleted
+            const updateData = {
+                isActive: false,
+                isDeleted: true,
+                deletedAt: new Date(),
+                updatedAt: new Date()
+            };
+
+            if (admin) {
+                await AdminProfile.findOneAndUpdate(
+                    { adminId: userId },
+                    updateData,
+                    { new: true }
+                );
+            } else {
+                await User.findOneAndUpdate(
+                    { userId: userId },
+                    updateData,
+                    { new: true }
+                );
+            }
+
+            return {
+                userId: userId,
+                userType: userType,
+                deletedAt: new Date(),
+                message: `${userType} account deleted successfully`
+            };
+        } catch (error) {
+            if (error instanceof EasyQError) {
+                throw error;
+            }
+            throw new EasyQError(
+                'DatabaseError',
+                httpStatusCode.INTERNAL_SERVER_ERROR,
+                true,
+                `Failed to delete account: ${error.message}`
             );
         }
     }

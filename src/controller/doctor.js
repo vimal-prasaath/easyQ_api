@@ -11,15 +11,29 @@ export async function createDoctor(req, res, next) {
 
     try {
         const doctorData = req.body;
+        const { adminId } = doctorData;
+        
+        // Validate adminId
+        if (!adminId) {
+            return res.status(httpStatusCode.BAD_REQUEST).json(
+                ResponseFormatter.formatErrorResponse({
+                    message: "adminId is required in request body",
+                    statusCode: httpStatusCode.BAD_REQUEST
+                })
+            );
+        }
         
         doctorLogger.info('Doctor creation started', {
             userId: req.user?.userId,
+            adminId: adminId,
             doctorName: doctorData.name,
             doctorEmail: doctorData.email,
             hospitalId: doctorData.hospitalId
         });
 
+
         const result = await DoctorService.createDoctor(doctorData);
+
         const response = ResponseFormatter.formatSuccessResponse({
             message: "Doctor created successfully",
             data: result,
@@ -28,6 +42,7 @@ export async function createDoctor(req, res, next) {
 
         doctorLogger.info('Doctor created successfully', {
             userId: req.user?.userId,
+            adminId: adminId,
             doctorId: result.doctorId,
             doctorName: result.name,
             hospitalId: result.hospitalId
@@ -36,13 +51,15 @@ export async function createDoctor(req, res, next) {
         // Log performance
         logPerformance('Doctor Creation', Date.now() - startTime, {
             doctorId: result.doctorId,
-            userId: req.user?.userId
+            userId: req.user?.userId,
+            adminId: adminId
         });
 
         // Log API response
         logApiResponse(req, res, response, { 
             action: 'create_doctor_success',
-            doctorId: result.doctorId 
+            doctorId: result.doctorId,
+            adminId: adminId
         });
         
         res.status(httpStatusCode.CREATED).json(response);
@@ -126,7 +143,7 @@ export async function deleteDoctor(req, res, next) {
     logApiRequest(req, { action: 'delete_doctor' });
 
     try {
-        const { doctorId } = req.body;
+        const { doctorId, adminId } = req.body;
         
         if (!doctorId) {
             return res.status(httpStatusCode.BAD_REQUEST).json(
@@ -137,8 +154,18 @@ export async function deleteDoctor(req, res, next) {
             );
         }
         
+        if (!adminId) {
+            return res.status(httpStatusCode.BAD_REQUEST).json(
+                ResponseFormatter.formatErrorResponse({
+                    message: "adminId is required in request body",
+                    statusCode: httpStatusCode.BAD_REQUEST
+                })
+            );
+        }
+        
         doctorLogger.info('Doctor deletion started', {
             userId: req.user?.userId,
+            adminId: adminId,
             doctorId
         });
 
@@ -152,6 +179,7 @@ export async function deleteDoctor(req, res, next) {
 
         doctorLogger.info('Doctor deleted successfully', {
             userId: req.user?.userId,
+            adminId: adminId,
             doctorId: deletedDoctor.doctorId,
             doctorName: deletedDoctor.name
         });
@@ -159,13 +187,15 @@ export async function deleteDoctor(req, res, next) {
         // Log performance
         logPerformance('Doctor Deletion', Date.now() - startTime, {
             doctorId,
-            userId: req.user?.userId
+            userId: req.user?.userId,
+            adminId: adminId
         });
 
         // Log API response
         logApiResponse(req, res, response, { 
             action: 'delete_doctor_success',
-            doctorId: deletedDoctor.doctorId 
+            doctorId: deletedDoctor.doctorId,
+            adminId: adminId
         });
         
         res.status(httpStatusCode.OK).json(response);
@@ -239,19 +269,27 @@ export async function meetDoctor(req,res,next){
 
 export async function uploadDoctorImage(req, res, next) {
     const startTime = Date.now();
-    console.log(req)
     
     // Log API request
     logApiRequest(req, { action: 'upload_doctor_image' });
 
     try {
-        const { doctorId } = req.body;
+        const { doctorId, adminId } = req.body;
         const file = req.file;
 
         if (!doctorId) {
             return res.status(httpStatusCode.BAD_REQUEST).json(
                 ResponseFormatter.formatErrorResponse({
                     message: "doctorId is required in request body",
+                    statusCode: httpStatusCode.BAD_REQUEST
+                })
+            );
+        }
+
+        if (!adminId) {
+            return res.status(httpStatusCode.BAD_REQUEST).json(
+                ResponseFormatter.formatErrorResponse({
+                    message: "adminId is required in request body",
                     statusCode: httpStatusCode.BAD_REQUEST
                 })
             );
@@ -268,6 +306,7 @@ export async function uploadDoctorImage(req, res, next) {
 
         doctorLogger.info('Doctor image upload started', {
             userId: req.user?.userId,
+            adminId: adminId,
             doctorId: doctorId,
             fileName: file.originalname,
             fileSize: file.size
@@ -283,6 +322,7 @@ export async function uploadDoctorImage(req, res, next) {
 
         doctorLogger.info('Doctor image uploaded successfully', {
             userId: req.user?.userId,
+            adminId: adminId,
             doctorId: doctorId,
             fileName: result.profileImageUrl
         });
@@ -290,13 +330,15 @@ export async function uploadDoctorImage(req, res, next) {
         // Log performance
         logPerformance('Doctor Image Upload', Date.now() - startTime, {
             doctorId: doctorId,
-            userId: req.user?.userId
+            userId: req.user?.userId,
+            adminId: adminId
         });
 
         // Log API response
         logApiResponse(req, res, response, { 
             action: 'upload_doctor_image_success',
-            doctorId: doctorId 
+            doctorId: doctorId,
+            adminId: adminId
         });
         
         res.status(httpStatusCode.OK).json(response);

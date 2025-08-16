@@ -3,10 +3,14 @@ import Hospital from "../model/hospital.js"
 import HsptlFacilities from "../model/facility.js"
 import HospitalReview from "../model/hospitalReview.js"
 import Favourite from "../model/hospitalFavourite.js"
+import Doctor from "../model/doctor.js"
+import Appointment from "../model/appointment.js"
+import HospitalDetails from "../model/facility.js"
 import { updateObjectPayload, updateFacilityPayload, updateComment, searchBylocation } from './update_controller.js'
 import { EasyQError } from "../config/error.js"
 import { httpStatusCode } from "../util/statusCode.js"
 import {logInfo, logError} from "../config/logger.js"
+import { deleteFolderFromFirebase } from "../config/fireBaseStorage.js"
 
 export async function createHospital(req, res, next) {
 
@@ -564,9 +568,27 @@ export async function deleteHsptl(req, res, next) {
             ));
         }
 
+        // Delete Firebase files for this hospital
+        let firebaseDeletionResult = { deletedCount: 0 };
+        try {
+            firebaseDeletionResult = await deleteFolderFromFirebase(`hospitals/${hospitalId}`);
+        } catch (error) {
+            logError(`Error deleting Firebase files for hospital ${hospitalId}:`, error);
+        }
+
+        // Delete all associated data
         await HsptlFacilities.deleteOne({ hospitalId: hospitalId });
         await HospitalReview.deleteOne({ hospitalId: hospitalId });
         await Favourite.deleteMany({ 'favouriteHospitals.hospitalId': hospitalId });
+        
+        // Delete doctors associated with this hospital
+        await Doctor.deleteMany({ hospitalId: hospitalId });
+        
+        // Delete appointments associated with this hospital
+        await Appointment.deleteMany({ hospitalId: hospitalId });
+        
+        // Delete hospital facilities
+        await HospitalDetails.deleteOne({ hospitalId: hospitalId });
 
         res.status(httpStatusCode.OK).json({
             message: `Hospital "${deletedHospital.name}" (ID: ${hospitalId}) and its associated data deleted successfully.`,
@@ -574,7 +596,9 @@ export async function deleteHsptl(req, res, next) {
                 hospitalId: deletedHospital.hospitalId,
                 name: deletedHospital.name
             },
-
+            firebaseDeletion: {
+                hospitalFiles: firebaseDeletionResult
+            }
         });
 
     } catch (error) {
@@ -660,6 +684,146 @@ export const activateHsptl = async (req, res, next) => {
         ));
     }
 };
+
+// Add facilities to hospital
+export async function addFacilities(req, res, next) {
+    const startTime = Date.now();
+    
+    logApiRequest(req, { action: 'add_facilities' });
+
+    try {
+        const { hospitalId } = req.params;
+        const facilitiesData = req.body;
+        
+        if (!hospitalId) {
+            return res.status(httpStatusCode.BAD_REQUEST).json(
+                ResponseFormatter.formatErrorResponse({
+                    message: "hospitalId is required in URL parameters",
+                    statusCode: httpStatusCode.BAD_REQUEST
+                })
+            );
+        }
+
+        if (!facilitiesData || !Array.isArray(facilitiesData.facilities)) {
+            return res.status(httpStatusCode.BAD_REQUEST).json(
+                ResponseFormatter.formatErrorResponse({
+                    message: "facilities array is required in request body",
+                    statusCode: httpStatusCode.BAD_REQUEST
+                })
+            );
+        }
+
+        hospitalLogger.info('Add facilities started', {
+            userId: req.user?.userId,
+            hospitalId: hospitalId,
+            facilitiesCount: facilitiesData.facilities.length
+        });
+
+        const result = await HospitalService.addFacilities(hospitalId, facilitiesData.facilities);
+        
+        const response = ResponseFormatter.formatSuccessResponse({
+            message: "Facilities added successfully",
+            data: result,
+            statusCode: httpStatusCode.CREATED
+        });
+
+        hospitalLogger.info('Facilities added successfully', {
+            userId: req.user?.userId,
+            hospitalId: hospitalId,
+            addedCount: result.addedCount
+        });
+
+        logPerformance('Add Facilities', Date.now() - startTime, {
+            hospitalId: hospitalId,
+            userId: req.user?.userId
+        });
+
+        logApiResponse(req, res, response, { 
+            action: 'add_facilities_success',
+            hospitalId: hospitalId 
+        });
+        
+        res.status(httpStatusCode.CREATED).json(response);
+    } catch (error) {
+        hospitalLogger.error('Add facilities error', {
+            error: error.message,
+            stack: error.stack,
+            userId: req.user?.userId,
+            hospitalId: req.params.hospitalId
+        });
+        next(error);
+    }
+}
+
+// Update facilities
+export async function updateFacilities(req, res, next) {
+    const startTime = Date.now();
+    
+    logApiRequest(req, { action: 'update_facilities' });
+
+    try {
+        const { hospitalId } = req.params;
+        const facilitiesData = req.body;
+        
+        if (!hospitalId) {
+            return res.status(httpStatusCode.BAD_REQUEST).json(
+                ResponseFormatter.formatErrorResponse({
+                    message: "hospitalId is required in URL parameters",
+                    statusCode: httpStatusCode.BAD_REQUEST
+                })
+            );
+        }
+
+        if (!facilitiesData || !Array.isArray(facilitiesData.facilities)) {
+            return res.status(httpStatusCode.BAD_REQUEST).json(
+                ResponseFormatter.formatErrorResponse({
+                    message: "facilities array is required in request body",
+                    statusCode: httpStatusCode.BAD_REQUEST
+                })
+            );
+        }
+
+        hospitalLogger.info('Update facilities started', {
+            userId: req.user?.userId,
+            hospitalId: hospitalId,
+            facilitiesCount: facilitiesData.facilities.length
+        });
+
+        const result = await HospitalService.updateFacilities(hospitalId, facilitiesData.facilities);
+        
+        const response = ResponseFormatter.formatSuccessResponse({
+            message: "Facilities updated successfully",
+            data: result,
+            statusCode: httpStatusCode.OK
+        });
+
+        hospitalLogger.info('Facilities updated successfully', {
+            userId: req.user?.userId,
+            hospitalId: hospitalId,
+            updatedCount: result.updatedCount
+        });
+
+        logPerformance('Update Facilities', Date.now() - startTime, {
+            hospitalId: hospitalId,
+            userId: req.user?.userId
+        });
+
+        logApiResponse(req, res, response, { 
+            action: 'update_facilities_success',
+            hospitalId: hospitalId 
+        });
+        
+        res.status(httpStatusCode.OK).json(response);
+    } catch (error) {
+        hospitalLogger.error('Update facilities error', {
+            error: error.message,
+            stack: error.stack,
+            userId: req.user?.userId,
+            hospitalId: req.params.hospitalId
+        });
+        next(error);
+    }
+}
 
 
 

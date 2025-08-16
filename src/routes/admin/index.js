@@ -8,7 +8,9 @@ import {
     getAdminDetails,
     getAdminDashboard,
     updateOwnerInfo,
-    updateHospitalBasicInfo
+    updateHospitalBasicInfo,
+    updateHospitalCompleteInfo,
+    deleteAdmin
 } from '../../controller/admin.js';
 import authenticateAdmin from '../../middleware/adminAuth.js';
 import { uploadMiddleware, multerErrorHandler } from '../../config/fileConfig.js';
@@ -566,5 +568,224 @@ router.put('/owner-info', authenticateAdmin, updateOwnerInfo);
  *         description: Admin or hospital not found
  */
 router.put('/hospital/basic-info', authenticateAdmin, updateHospitalBasicInfo);
+
+/**
+ * @swagger
+ * /api/admin/hospital/complete-info:
+ *   put:
+ *     summary: Update complete hospital information (all fields except owner info)
+ *     tags: [Admin]
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - adminId
+ *               - hospitalId
+ *             properties:
+ *               adminId:
+ *                 type: string
+ *                 description: Admin ID (e.g., A0001)
+ *               hospitalId:
+ *                 type: string
+ *                 description: Hospital ID (e.g., H0001)
+ *               # Basic Information
+ *               name:
+ *                 type: string
+ *                 description: Name of the hospital/clinic
+ *               hospitalType:
+ *                 type: string
+ *                 enum: [Hospital, Clinic, Consultant]
+ *                 description: Type of healthcare facility
+ *               registrationNumber:
+ *                 type: string
+ *                 description: Hospital registration number
+ *               yearEstablished:
+ *                 type: number
+ *                 minimum: 1900
+ *                 description: Year when hospital was established
+ *               # Address Information
+ *               address:
+ *                 type: string
+ *                 description: Street address
+ *               city:
+ *                 type: string
+ *                 description: City name
+ *               state:
+ *                 type: string
+ *                 description: State name
+ *               pincode:
+ *                 type: string
+ *                 description: PIN code
+ *               googleMapLink:
+ *                 type: string
+ *                 format: uri
+ *                 description: Google Maps link
+ *               # Contact Details
+ *               phoneNumber:
+ *                 type: string
+ *                 description: Primary office phone number
+ *               alternativePhone:
+ *                 type: string
+ *                 description: Alternative phone number
+ *               emailAddress:
+ *                 type: string
+ *                 format: email
+ *                 description: Hospital email address
+ *               # Operation Details
+ *               workingDays:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   enum: [Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday]
+ *                 description: Days when hospital is open
+ *               startTime:
+ *                 type: string
+ *                 pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+ *                 description: Opening time (HH:MM format, required if not openAlways)
+ *               endTime:
+ *                 type: string
+ *                 pattern: '^([01]?[0-9]|2[0-3]):[0-5][0-9]$'
+ *                 description: Closing time (HH:MM format, required if not openAlways)
+ *               openAlways:
+ *                 type: boolean
+ *                 default: false
+ *                 description: Whether hospital is open 24/7
+ *               maxTokenPerDay:
+ *                 type: number
+ *                 minimum: 1
+ *                 description: Maximum tokens per day (required if not unlimitedToken)
+ *               unlimitedToken:
+ *                 type: boolean
+ *                 default: false
+ *                 description: Whether tokens are unlimited
+ *     responses:
+ *       200:
+ *         description: Hospital information updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     message:
+ *                       type: string
+ *                     hospital:
+ *                       type: object
+ *                       properties:
+ *                         hospitalId:
+ *                           type: string
+ *                         name:
+ *                           type: string
+ *                         hospitalType:
+ *                           type: string
+ *                         registrationNumber:
+ *                           type: string
+ *                         yearEstablished:
+ *                           type: number
+ *                         address:
+ *                           type: object
+ *                         contact:
+ *                           type: object
+ *                         operation:
+ *                           type: object
+ *                     updatedAt:
+ *                       type: string
+ *                       format: date-time
+ *       400:
+ *         description: Validation error
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Admin or hospital not found
+ *       500:
+ *         description: Internal server error
+ */
+router.put('/hospital/complete-info', authenticateAdmin, updateHospitalCompleteInfo);
+
+/**
+ * @swagger
+ * /api/admin/{adminId}:
+ *   delete:
+ *     summary: Delete admin and all associated data
+ *     tags: [Admin]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: adminId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Admin ID to delete (e.g., A0001)
+ *     responses:
+ *       200:
+ *         description: Admin and all associated data deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     message:
+ *                       type: string
+ *                     deletedAdmin:
+ *                       type: object
+ *                       properties:
+ *                         adminId:
+ *                           type: string
+ *                         email:
+ *                           type: string
+ *                         username:
+ *                           type: string
+ *                     deletedHospitals:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           hospitalId:
+ *                             type: string
+ *                           name:
+ *                             type: string
+ *                     deletedData:
+ *                       type: object
+ *                       properties:
+ *                         hospitalsCount:
+ *                           type: number
+ *                         doctorsCount:
+ *                           type: number
+ *                         appointmentsCount:
+ *                           type: number
+ *                         reviewsCount:
+ *                           type: number
+ *                     deletedAt:
+ *                       type: string
+ *                       format: date-time
+ *       400:
+ *         description: Bad request - missing adminId
+ *       401:
+ *         description: Unauthorized
+ *       404:
+ *         description: Admin not found
+ *       500:
+ *         description: Internal server error
+ */
+router.delete('/:adminId', authenticateAdmin, deleteAdmin);
 
 export default router;

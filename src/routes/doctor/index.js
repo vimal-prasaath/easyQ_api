@@ -2,6 +2,8 @@ import { createDoctor, getDoctor, deleteDoctor, getAllDoctor, updateDoctor, uplo
 import express from "express";
 import authorizeOwnerOrAdmin from "../../middleware/adminOwnerOrAdmin.js";
 import authorizeRoles from "../../middleware/authorization.js";
+import authenticateAdmin from "../../middleware/adminAuth.js";
+import adminVerificationCheck from "../../middleware/adminVerificationCheck.js";
 import { uploadMiddleware, multerErrorHandler } from "../../config/fileConfig.js";
 const router = express.Router();
 
@@ -18,16 +20,51 @@ const router = express.Router();
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Doctor'
+ *             type: object
+ *             required:
+ *               - adminId
+ *               - name
+ *               - email
+ *               - mobileNumber
+ *               - specialization
+ *               - hospitalId
+ *               - consultantFee
+ *             properties:
+ *               adminId:
+ *                 type: string
+ *                 description: Admin ID (required for verification)
+ *               name:
+ *                 type: string
+ *                 description: Doctor name
+ *               email:
+ *                 type: string
+ *                 description: Doctor email
+ *               mobileNumber:
+ *                 type: string
+ *                 description: Doctor mobile number
+ *               specialization:
+ *                 type: string
+ *                 description: Doctor specialization
+ *               hospitalId:
+ *                 type: string
+ *                 description: Hospital ID
+ *               consultantFee:
+ *                 type: number
+ *                 description: Consultant fee
+ *               status:
+ *                 type: string
+ *                 description: Doctor status (Available/Unavailable)
  *     responses:
  *       201:
  *         description: Doctor created successfully
  *       400:
- *         description: Invalid input data
+ *         description: Invalid input data - adminId is required
  *       401:
  *         description: Unauthorized
+ *       403:
+ *         description: Admin verification required - Only approved admins can add doctors
  */
-router.post("/add",authorizeRoles, createDoctor)
+router.post("/add", authenticateAdmin, adminVerificationCheck, createDoctor)
 
 /**
  * @swagger
@@ -117,22 +154,30 @@ router.post("/add",authorizeRoles, createDoctor)
  *           schema:
  *             type: object
  *             required:
+ *               - adminId
  *               - doctorId
  *             properties:
+ *               adminId:
+ *                 type: string
+ *                 description: Admin ID (required for verification)
  *               doctorId:
  *                 type: string
  *                 description: Doctor ID
  *     responses:
  *       200:
  *         description: Doctor deleted successfully
+ *       400:
+ *         description: Invalid input data - adminId is required
  *       401:
  *         description: Unauthorized
+ *       403:
+ *         description: Admin verification required - Only approved admins can delete doctors
  *       404:
  *         description: Doctor not found
  */
 router.post("/get", authorizeOwnerOrAdmin, getDoctor)
 router.put("/update", authorizeRoles, updateDoctor)
-router.delete("/delete", authorizeRoles, deleteDoctor)
+router.delete("/delete", authenticateAdmin, adminVerificationCheck, deleteDoctor)
 /**
  * @swagger
  * /api/doctor/all/{hospitalId}:
@@ -177,9 +222,13 @@ router.get("/all/:hospitalId",authorizeOwnerOrAdmin, getAllDoctor)
  *           schema:
  *             type: object
  *             required:
+ *               - adminId
  *               - doctorId
  *               - file
  *             properties:
+ *               adminId:
+ *                 type: string
+ *                 description: Admin ID (required for verification)
  *               doctorId:
  *                 type: string
  *                 description: Doctor ID
@@ -208,20 +257,23 @@ router.get("/all/:hospitalId",authorizeOwnerOrAdmin, getAllDoctor)
  *                       type: string
  *                       format: date-time
  *       400:
- *         description: Bad request - missing file or invalid file
+ *         description: Bad request - missing adminId, doctorId, file or invalid file
  *       401:
  *         description: Unauthorized
  *       404:
  *         description: Doctor not found
  *       413:
  *         description: File too large
+ *       403:
+ *         description: Admin verification required - Only approved admins can upload doctor images
  *       415:
  *         description: Unsupported media type
  *       500:
  *         description: Internal server error
  */
 router.put('/upload-image',
-    authorizeRoles,
+    authenticateAdmin,
+    adminVerificationCheck,
     uploadMiddleware.single('file'),
     multerErrorHandler,
     uploadDoctorImage

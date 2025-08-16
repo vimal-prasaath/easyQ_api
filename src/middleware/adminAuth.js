@@ -109,7 +109,7 @@ async function authenticateAdmin(req, res, next) {
         
         // Skip authorization check for file upload routes since multer hasn't processed the form data yet
         // Authorization will be handled in the controller after multer processes the form data
-        if (req.path.includes('/hospital-documents') || req.path.includes('/owner-documents')) {
+        if (req.path.includes('/hospital-documents') || req.path.includes('/owner-documents') || req.path.includes('/doctor/upload-image')) {
             authLogger.info('Admin authenticated for file upload route - authorization will be handled in controller', {
                 adminId: authenticatedUserId,
                 path: req.path
@@ -119,7 +119,7 @@ async function authenticateAdmin(req, res, next) {
         
         // Get resource owner ID from different sources based on route
         let resourceOwnerId;
-        if (req.path.includes('/owner-info') || req.path.includes('/onboarding')) {
+        if (req.path.includes('/owner-info') || req.path.includes('/onboarding') || req.path.includes('/dashboard') || req.path.includes('/hospital/basic-info') || req.path.includes('/hospital/complete-info') || req.path.includes('/doctor/add') || req.path.includes('/doctor/delete') || req.path.includes('/doctor/update') || req.path.includes('/doctor/all')) {
             // For admin owner-info/onboarding routes, get adminId from request body
             resourceOwnerId = req.body.adminId;
         } else {

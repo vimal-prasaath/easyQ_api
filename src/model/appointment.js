@@ -211,6 +211,33 @@ const appointmentSchema = new Schema({
         type: String,
     },
     
+    // Check-in/Check-out fields
+    checkInTime: {
+        type: Date,
+        default: null
+    },
+    checkOutTime: {
+        type: Date,
+        default: null
+    },
+    isCheckedIn: {
+        type: Boolean,
+        default: false
+    },
+    lastScannedDate: {
+        type: Date,
+        default: null
+    },
+    checkInStatus: {
+        type: String,
+        enum: ['Not Checked-in', 'Checked-in', 'Checked-out'],
+        default: 'Not Checked-in'
+    },
+    scannedBy: {
+        type: String,
+        default: null
+    },
+    
     statusHistory: [
         {
             status: { type: String },

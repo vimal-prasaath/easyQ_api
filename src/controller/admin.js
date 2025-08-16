@@ -403,3 +403,258 @@ export const updateHospitalBasicInfo = async (req, res, next) => {
         next(error);
     }
 };
+
+// Get verification status
+export async function getVerificationStatus(req, res, next) {
+    const startTime = Date.now();
+    
+    authLogger.info('Verification status check started', {
+        userId: req.user?.userId,
+        targetUserId: req.params.userId
+    });
+
+    try {
+        const { userId } = req.params;
+        
+        if (!userId) {
+            return res.status(httpStatusCode.BAD_REQUEST).json(
+                constructResponse(false, httpStatusCode.BAD_REQUEST, "userId is required in URL parameters")
+            );
+        }
+
+        authLogger.info('Verification status check started', {
+            userId: req.user?.userId,
+            targetUserId: userId
+        });
+
+        const result = await AdminService.getVerificationStatus(userId);
+        
+        const response = constructResponse(true, httpStatusCode.OK, "Verification status retrieved successfully", result);
+
+        authLogger.info('Verification status retrieved successfully', {
+            userId: req.user?.userId,
+            targetUserId: userId,
+            status: result.verificationStatus
+        });
+
+        authLogger.info('Verification Status Check', Date.now() - startTime, {
+            targetUserId: userId,
+            userId: req.user?.userId
+        });
+        
+        res.status(httpStatusCode.OK).json(response);
+    } catch (error) {
+        authLogger.error('Verification status check error', {
+            error: error.message,
+            stack: error.stack,
+            userId: req.user?.userId,
+            targetUserId: req.params.userId
+        });
+        next(error);
+    }
+}
+
+// Activate user (Admin)
+export async function activateUser(req, res, next) {
+    const startTime = Date.now();
+    
+    authLogger.info('User activation started', {
+        userId: req.user?.userId,
+        targetUserId: req.params.userId
+    });
+
+    try {
+        const { userId } = req.params;
+        
+        if (!userId) {
+            return res.status(httpStatusCode.BAD_REQUEST).json(
+                constructResponse(false, httpStatusCode.BAD_REQUEST, "userId is required in URL parameters")
+            );
+        }
+
+        authLogger.info('User activation started', {
+            userId: req.user?.userId,
+            targetUserId: userId
+        });
+
+        const result = await AdminService.activateUser(userId);
+        
+        const response = constructResponse(true, httpStatusCode.OK, "User activated successfully", result);
+
+        authLogger.info('User activated successfully', {
+            userId: req.user?.userId,
+            targetUserId: userId
+        });
+
+        authLogger.info('User Activation', Date.now() - startTime, {
+            targetUserId: userId,
+            userId: req.user?.userId
+        });
+        
+        res.status(httpStatusCode.OK).json(response);
+    } catch (error) {
+        authLogger.error('User activation error', {
+            error: error.message,
+            stack: error.stack,
+            userId: req.user?.userId,
+            targetUserId: req.params.userId
+        });
+        next(error);
+    }
+}
+
+// Delete account
+export async function deleteAccount(req, res, next) {
+    const startTime = Date.now();
+    
+    authLogger.info('Account deletion started', {
+        userId: req.user?.userId,
+        targetUserId: req.params.userId
+    });
+
+    try {
+        const { userId } = req.params;
+        
+        if (!userId) {
+            return res.status(httpStatusCode.BAD_REQUEST).json(
+                constructResponse(false, httpStatusCode.BAD_REQUEST, "userId is required in URL parameters")
+            );
+        }
+
+        authLogger.info('Account deletion started', {
+            userId: req.user?.userId,
+            targetUserId: userId
+        });
+
+        const result = await AdminService.deleteAccount(userId);
+        
+        const response = constructResponse(true, httpStatusCode.OK, "Account deleted successfully", result);
+
+        authLogger.info('Account deleted successfully', {
+            userId: req.user?.userId,
+            targetUserId: userId
+        });
+
+        authLogger.info('Account Deletion', Date.now() - startTime, {
+            targetUserId: userId,
+            userId: req.user?.userId
+        });
+        
+        res.status(httpStatusCode.OK).json(response);
+    } catch (error) {
+        authLogger.error('Account deletion error', {
+            error: error.message,
+            stack: error.stack,
+            userId: req.user?.userId,
+            targetUserId: req.params.userId
+        });
+        next(error);
+    }
+}
+
+export const deleteAdmin = async (req, res, next) => {
+    try {
+        const { adminId } = req.params;
+        
+        if (!adminId) {
+            return res.status(httpStatusCode.BAD_REQUEST).json(
+                constructResponse(false, httpStatusCode.BAD_REQUEST, "Admin ID is required")
+            );
+        }
+
+        const result = await AdminService.deleteAdmin(adminId);
+        
+        authLogger.info('Admin deleted successfully', {
+            adminId: adminId
+        });
+
+        return res.status(httpStatusCode.OK).json(
+            constructResponse(true, httpStatusCode.OK, "Admin and all associated data deleted successfully", result)
+        );
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const updateHospitalCompleteInfo = async (req, res, next) => {
+    try {
+        const { adminId, hospitalId, ...hospitalData } = req.body;
+        
+        if (!adminId) {
+            return res.status(httpStatusCode.BAD_REQUEST).json(
+                constructResponse(false, httpStatusCode.BAD_REQUEST, "Admin ID is required")
+            );
+        }
+
+        if (!hospitalId) {
+            return res.status(httpStatusCode.BAD_REQUEST).json(
+                constructResponse(false, httpStatusCode.BAD_REQUEST, "Hospital ID is required")
+            );
+        }
+
+        // Validate hospital type if provided
+        if (hospitalData.hospitalType) {
+            const validTypes = ['Hospital', 'Clinic', 'Consultant'];
+            if (!validTypes.includes(hospitalData.hospitalType)) {
+                return res.status(httpStatusCode.BAD_REQUEST).json(
+                    constructResponse(false, httpStatusCode.BAD_REQUEST, "Hospital type must be one of: Hospital, Clinic, Consultant")
+                );
+            }
+        }
+
+        // Validate working days if provided
+        if (hospitalData.workingDays) {
+            const validDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+            const invalidDays = hospitalData.workingDays.filter(day => !validDays.includes(day));
+            if (invalidDays.length > 0) {
+                return res.status(httpStatusCode.BAD_REQUEST).json(
+                    constructResponse(false, httpStatusCode.BAD_REQUEST, `Invalid working days: ${invalidDays.join(', ')}`)
+                );
+            }
+        }
+
+        // Validate time format if provided
+        if (hospitalData.startTime || hospitalData.endTime) {
+            const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
+            if (hospitalData.startTime && !timeRegex.test(hospitalData.startTime)) {
+                return res.status(httpStatusCode.BAD_REQUEST).json(
+                    constructResponse(false, httpStatusCode.BAD_REQUEST, "Start time must be in HH:MM format")
+                );
+            }
+            if (hospitalData.endTime && !timeRegex.test(hospitalData.endTime)) {
+                return res.status(httpStatusCode.BAD_REQUEST).json(
+                    constructResponse(false, httpStatusCode.BAD_REQUEST, "End time must be in HH:MM format")
+                );
+            }
+        }
+
+        // Validate token settings if provided
+        if (hospitalData.unlimitedToken === false && hospitalData.maxTokenPerDay !== undefined) {
+            if (!hospitalData.maxTokenPerDay || hospitalData.maxTokenPerDay < 1) {
+                return res.status(httpStatusCode.BAD_REQUEST).json(
+                    constructResponse(false, httpStatusCode.BAD_REQUEST, "Max tokens per day must be at least 1 when not unlimited")
+                );
+            }
+        }
+
+        // Validate email format if provided
+        if (hospitalData.emailAddress && !/^\S+@\S+\.\S+$/.test(hospitalData.emailAddress)) {
+            return res.status(httpStatusCode.BAD_REQUEST).json(
+                constructResponse(false, httpStatusCode.BAD_REQUEST, "Invalid email format")
+            );
+        }
+
+        const result = await AdminService.updateHospitalCompleteInfo(adminId, hospitalId, hospitalData);
+        
+        authLogger.info('Hospital complete info updated successfully', {
+            adminId: adminId,
+            hospitalId: hospitalId
+        });
+
+        return res.status(httpStatusCode.OK).json(
+            constructResponse(true, httpStatusCode.OK, "Hospital information updated successfully", result)
+        );
+    } catch (error) {
+        next(error);
+    }
+};
