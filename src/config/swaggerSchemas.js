@@ -884,6 +884,34 @@ export const swaggerPaths = {
       }
     }
   },
+  '/api/admin/user/activate/{userId}': {
+    put: {
+      summary: 'Activate a user account (Public - No authentication required)',
+      tags: ['Admin'],
+      parameters: [
+        {
+          in: 'path',
+          name: 'userId',
+          required: true,
+          schema: { type: 'string' },
+          description: 'User ID to activate'
+        }
+      ],
+      responses: {
+        200: { 
+          description: 'User activated successfully',
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/SuccessResponse' }
+            }
+          }
+        },
+        400: { description: 'Invalid input data' },
+        404: { description: 'User not found' },
+        500: { description: 'Internal server error' }
+      }
+    }
+  },
   '/api/user/getUser': {
     get: {
       summary: 'Get current user profile',

@@ -10,7 +10,8 @@ import {
     updateOwnerInfo,
     updateHospitalBasicInfo,
     updateHospitalCompleteInfo,
-    deleteAdmin
+    deleteAdmin,
+    activateUser
 } from '../../controller/admin.js';
 import authenticateAdmin from '../../middleware/adminAuth.js';
 import { uploadMiddleware, multerErrorHandler } from '../../config/fileConfig.js';
@@ -20,6 +21,9 @@ const router = express.Router();
 router.post('/signup', adminSignup);
 
 router.post('/login', adminLogin);
+
+// Public route - no authentication required
+router.put('/user/activate/:userId', activateUser);
 
 router.put('/onboarding', authenticateAdmin, updateOnboardingInfo);
 

@@ -691,7 +691,7 @@ class AdminService {
         }
     }
 
-    static async activateUser(userId) {
+    async activateUser(userId) {
         try {
             // Check if user exists (could be admin or regular user)
             const admin = await AdminProfile.findOne({ adminId: userId });
@@ -711,7 +711,7 @@ class AdminService {
 
             // Update verification status and activate user
             const updateData = {
-                verificationStatus: 'Verified',
+                verificationStatus: 'Approved',
                 isActive: true,
                 updatedAt: new Date()
             };
@@ -733,7 +733,7 @@ class AdminService {
             return {
                 userId: userId,
                 userType: userType,
-                verificationStatus: 'Verified',
+                verificationStatus: 'Approved',
                 isActive: true,
                 activatedAt: new Date(),
                 message: `${userType} account activated successfully`
