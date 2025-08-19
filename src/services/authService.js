@@ -47,7 +47,6 @@ export class AuthService {
                 }
             };
         } catch (error) {
-            console.log(error)
             if (error instanceof EasyQError) {
                 throw error;
             }
@@ -72,7 +71,6 @@ export class AuthService {
             }
 
             const existingUser = await User.findOne({ phoneNumber: userData.phoneNumber });
-             console.log(existingUser,"ooo")
             // if (existingUser) {
             //     throw new EasyQError(
             //         'ConflictError',
@@ -88,7 +86,6 @@ export class AuthService {
             //     passwordHash: hashedPassword
             // };
             // delete newUserData.password;
-            console.log(existingUser,"ooo")
         const allowedFields = ['name', 'phoneNumber', 'gender', 'dateOfBirth','email','role'];
          allowedFields.forEach(field => {
             if (userData[field] !== undefined) {
@@ -113,13 +110,11 @@ export class AuthService {
                 }
             };
         } catch (error) {
-            console.log(error)
             if (error instanceof EasyQError) {
                 throw error;
             }
             if (error.name === 'ValidationError' && error.errors) {
                 const messages = Object.values(error.errors).map(val => val.message);
-                console.log(messages)
                 throw new EasyQError(
                     'ValidationError',
                     httpStatusCode.BAD_REQUEST,

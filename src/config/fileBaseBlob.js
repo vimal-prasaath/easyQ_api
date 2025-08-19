@@ -43,7 +43,6 @@ export const uploadFileToFirebase = async (
     const publicUrl = `https://storage.googleapis.com/${process.env.STORAGE_BUCKET_NAME}/${uniqueName}`;
     return { url: publicUrl, key: uniqueName }; // 'key' here refers to the file path in Firebase Storage
   } catch (error) {
-    console.error("Error uploading to Firebase Storage:", error);
     throw error;
   }
 };
@@ -63,10 +62,6 @@ export const getPresignedUrlForDownload = async (
     });
     return url;
   } catch (error) {
-    console.error(
-      "Error generating presigned URL for Firebase Storage:",
-      error
-    );
     throw error;
   }
 };

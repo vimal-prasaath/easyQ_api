@@ -245,7 +245,6 @@ export async function safeCreateAppointment(req, res, next) {
 
     try {
         const newAppointment = await AppointmentService.safeCreateAppointment(appointmentData);
-         console.log(newAppointment,"kl")
         const response = constructResponse(
             true,
             httpStatusCode.CREATED,

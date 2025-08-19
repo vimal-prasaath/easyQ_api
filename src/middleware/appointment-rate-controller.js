@@ -30,7 +30,6 @@ export async function appointmentLimiter(req, res, next) {
         }
 
         const APPOINTMENT_LIMIT = doctor.maxAppointment;
-        console.log(APPOINTMENT_LIMIT,"KKK")
         // Count current appointments for that doctor on the date
         const appointmentCount = await Appointment.countDocuments({
             doctorId,

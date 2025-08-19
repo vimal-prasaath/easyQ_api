@@ -134,11 +134,8 @@ async function authorizeRoles(req, res, next) {
         } else {
             authLogger.debug('Broad authorization: x-user-id header not found or not required for this specific check.', { path: req.path });
         }
-        console.log("next test") 
-    
         next();
     } catch (error) {
-        console.log(error)
         next(error)
     }
     

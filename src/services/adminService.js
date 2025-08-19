@@ -273,7 +273,6 @@ class AdminService {
                 onboardingProgress: admin.getOnboardingProgress()
             };
         } catch (error) {
-            console.log("error", error);
             if (error instanceof EasyQError) {
                 throw error;
             }

@@ -25,7 +25,6 @@ export async function getfavourite(req, res, next) {
 
 export async function getfavouriteById(req, res, next) {
     try {
-        console.log(req,"user")
         const { userId } = req.params;
 
         // Step 1: Find user's favourite hospitals
@@ -38,7 +37,6 @@ export async function getfavouriteById(req, res, next) {
                 data: [],
             });
         }
-       console.log(favouriteData,"kkkk")
         // Step 2: Extract only the hospitalIds where isFavourite = true
         const favHospitalIds = favouriteData.favouriteHospitals
             .filter(h => h.isFavourite)
@@ -54,7 +52,6 @@ export async function getfavouriteById(req, res, next) {
 
         // Step 3: Fetch hospital details
         const hospitals = await getHospitalsByIds(favHospitalIds);
-       console.log(hospitals,"khhh")
             
         // Step 4: Attach isFavourite: true to each hospital
         const hospitalsWithFavouriteFlag = hospitals.map(h => ({

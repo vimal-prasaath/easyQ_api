@@ -455,8 +455,6 @@ export class AppointmentService {
         );
     }
 
-    console.log(count, "✅ Appointments already booked on this day");
-
     return {
         limitReached: false,
     };

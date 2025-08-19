@@ -25,7 +25,6 @@ export async function signUp(req, res, next) {
         
         res.status(httpStatusCode.CREATED).json(response);
     } catch (error) {
-        console.log(error)
         next(error);
     }
 }
