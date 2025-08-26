@@ -95,6 +95,18 @@ export class ValidationErrorHandler {
     }
 
     /**
+     * Handle JSON parsing errors
+     */
+    static handleJSONParseError(error) {
+        return new EasyQError(
+            'JSONParseError',
+            httpStatusCode.BAD_REQUEST,
+            true,
+            'Invalid JSON format in request body. Please check your request data.'
+        );
+    }
+
+    /**
      * Main error processing function
      */
     static processError(error, req = null) {
@@ -126,6 +138,11 @@ export class ValidationErrorHandler {
 
         if (error.name === 'TokenExpiredError' || error.name === 'JsonWebTokenError') {
             return this.handleJWTError(error);
+        }
+
+        // Handle JSON parsing errors
+        if (error instanceof SyntaxError && error.status === 400 && 'body' in error) {
+            return this.handleJSONParseError(error);
         }
 
         // If it's already an EasyQError, return as is

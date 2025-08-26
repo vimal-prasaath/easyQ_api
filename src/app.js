@@ -75,6 +75,19 @@ app.use(generalRateLimit);
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
+// 5.1. JSON parsing error handler
+app.use((error, req, res, next) => {
+  if (error instanceof SyntaxError && error.status === 400 && 'body' in error) {
+    return res.status(400).json({
+      status: 'error',
+      name: 'JSONParseError',
+      message: 'Invalid JSON format in request body',
+      details: error.message
+    });
+  }
+  next(error);
+});
+
 // 6. Input sanitization and normalization
 // app.use(sanitizeInput);
 // app.use(normalizeInput);
@@ -166,7 +179,6 @@ app.use((req, res, next) => {
 app.use((err, req, res, next) => {
   // Process the error using our centralized error handler
   const processedError = ValidationErrorHandler.processError(err, req);
-
   // Log the error with context
   logError(processedError, {
     originalError: err.message,

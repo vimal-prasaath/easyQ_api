@@ -160,7 +160,7 @@ class AdminService {
 
             // Create or update hospital with all information
             let hospital = await Hospital.findOne({ adminId });
-            
+
             if (!hospital) {
                 // Create new hospital
                 hospital = new Hospital({
@@ -183,7 +183,7 @@ class AdminService {
                     googleMapLink: onboardingData.googleMapLink,
                     phoneNumber: onboardingData.phoneNumber,
                     alternativePhone: onboardingData.alternativePhone,
-                    emailAddress: onboardingData.emailAddress,
+                    email: onboardingData.emailAddress,
                     workingDays: onboardingData.workingDays,
                     startTime: onboardingData.startTime,
                     endTime: onboardingData.endTime,
@@ -222,6 +222,7 @@ class AdminService {
                 hospital.maxTokenPerDay = onboardingData.maxTokenPerDay;
                 hospital.unlimitedToken = onboardingData.unlimitedToken;
             }
+
             await hospital.save();
 
             // Update admin with owner info, hospital reference, and progress
@@ -281,7 +282,7 @@ class AdminService {
                 'DatabaseError',
                 httpStatusCode.INTERNAL_SERVER_ERROR,
                 true,
-                'Failed to update onboarding information.'
+                error
             );
         }
     }
