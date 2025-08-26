@@ -352,6 +352,39 @@ export const getAdminDashboard = async (req, res, next) => {
     }
 };
 
+export const getTodayStats = async (req, res, next) => {
+    try {
+        const { adminId, date } = req.body;
+        
+        if (!adminId) {
+            return res.status(httpStatusCode.BAD_REQUEST).json(
+                constructResponse(false, httpStatusCode.BAD_REQUEST, "Admin ID is required")
+            );
+        }
+
+        if (!date) {
+            return res.status(httpStatusCode.BAD_REQUEST).json(
+                constructResponse(false, httpStatusCode.BAD_REQUEST, "Date is required (format: YYYY-MM-DD)")
+            );
+        }
+
+        // Validate date format
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!dateRegex.test(date)) {
+            return res.status(httpStatusCode.BAD_REQUEST).json(
+                constructResponse(false, httpStatusCode.BAD_REQUEST, "Invalid date format. Use YYYY-MM-DD format")
+            );
+        }
+
+        const result = await AdminService.getTodayStats(adminId, date);
+        return res.status(httpStatusCode.OK).json(
+            constructResponse(true, httpStatusCode.OK, "Statistics retrieved successfully", result)
+        );
+    } catch (error) {
+        next(error);
+    }
+};
+
 export const updateOwnerInfo = async (req, res, next) => {
     try {
         const { adminId, ...ownerData } = req.body;

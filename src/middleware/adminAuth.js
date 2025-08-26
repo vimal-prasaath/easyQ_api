@@ -119,7 +119,7 @@ async function authenticateAdmin(req, res, next) {
         
         // Get resource owner ID from different sources based on route
         let resourceOwnerId;
-        if (req.path.includes('/owner-info') || req.path.includes('/onboarding') || req.path.includes('/dashboard') || req.path.includes('/hospital/basic-info') || req.path.includes('/hospital/complete-info') || req.path.includes('/doctor/add') || req.path.includes('/doctor/delete') || req.path.includes('/doctor/update') || req.path.includes('/doctor/all')) {
+        if (req.path.includes('/owner-info') || req.path.includes('/onboarding') || req.path.includes('/dashboard') || req.path.includes('/hospital/basic-info') || req.path.includes('/hospital/complete-info') || req.path.includes('/doctor/add') || req.path.includes('/doctor/delete') || req.path.includes('/doctor/update') || req.path.includes('/doctor/all') || req.path.includes('/today-stats')) {
             // For admin owner-info/onboarding routes, get adminId from request body
             resourceOwnerId = req.body.adminId;
         } else {

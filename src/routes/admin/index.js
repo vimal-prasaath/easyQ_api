@@ -7,6 +7,7 @@ import {
     updateOwnerDocuments,
     getAdminDetails,
     getAdminDashboard,
+    getTodayStats,
     updateOwnerInfo,
     updateHospitalBasicInfo,
     updateHospitalCompleteInfo,
@@ -44,6 +45,8 @@ router.put('/owner-documents',
 router.get('/:adminId', authenticateAdmin, getAdminDetails);
 
 router.post('/dashboard', authenticateAdmin, getAdminDashboard);
+
+router.post('/today-stats', authenticateAdmin, getTodayStats);
 
 router.put('/owner-info', authenticateAdmin, updateOwnerInfo);
 

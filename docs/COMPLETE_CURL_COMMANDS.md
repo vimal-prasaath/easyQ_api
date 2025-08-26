@@ -8,7 +8,7 @@ This document provides complete `curl` commands for testing the entire admin por
 3. **Doctor Management** - Complete CRUD operations with image uploads
 4. **QR Code System** - QR generation and check-in/check-out functionality
 
-6. **Dashboard** - Real-time statistics and data
+6. **Dashboard** - Real-time statistics, date-specific tokens, and patient check-ins
 
 ## 🔐 **AUTHENTICATION & ACCOUNT MANAGEMENT**
 
@@ -470,6 +470,70 @@ curl -X POST http://localhost:3000/api/admin/dashboard \
 }
 ```
 
+### 19. Get Date-Specific Statistics (Tokens and Patient Check-ins)
+```bash
+curl -X POST http://localhost:3000/api/admin/today-stats \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
+  -d '{
+    "adminId": "A0001",
+    "date": "2024-01-27"
+  }'
+```
+
+**Expected Response:**
+```json
+{
+  "success": true,
+  "message": "Statistics retrieved successfully",
+  "data": {
+    "summary": {
+      "totalTokensIssued": 25,
+      "totalPatientsCheckedIn": 18,
+      "date": "2024-01-27"
+    },
+    "patients": [
+      {
+        "patientId": "P0001",
+        "name": "John Doe",
+        "email": "john.doe@email.com",
+        "phoneNumber": "+919876543210",
+        "appointmentId": "12345",
+        "checkInStatus": "Checked-in",
+        "checkInTime": "2024-01-27T10:30:00.000Z",
+        "checkOutTime": null,
+        "appointmentDate": "2024-01-27T00:00:00.000Z",
+        "appointmentTime": "10:30"
+      },
+      {
+        "patientId": "P0002",
+        "name": "Jane Smith",
+        "email": "jane.smith@email.com",
+        "phoneNumber": "+919876543211",
+        "appointmentId": "12346",
+        "checkInStatus": "Checked-out",
+        "checkInTime": "2024-01-27T09:15:00.000Z",
+        "checkOutTime": "2024-01-27T11:45:00.000Z",
+        "appointmentDate": "2024-01-27T00:00:00.000Z",
+        "appointmentTime": "09:30"
+      },
+      {
+        "patientId": "P0003",
+        "name": "Mike Johnson",
+        "email": "mike.johnson@email.com",
+        "phoneNumber": "+919876543212",
+        "appointmentId": "12347",
+        "checkInStatus": "Not Checked-in",
+        "checkInTime": null,
+        "checkOutTime": null,
+        "appointmentDate": "2024-01-27T00:00:00.000Z",
+        "appointmentTime": "14:00"
+      }
+    ]
+  }
+}
+```
+
 ## 🔄 **TESTING SEQUENCE**
 
 ### **Complete Workflow Testing:**
@@ -513,6 +577,9 @@ curl -X POST http://localhost:3000/api/admin/dashboard \
    ```bash
    # 9. Get dashboard data
    curl -X POST http://localhost:3000/api/admin/dashboard -H "Content-Type: application/json" -H "Authorization: Bearer YOUR_JWT_TOKEN" -d '{"adminId": "A0001"}'
+   
+       # 10. Get date-specific statistics
+    curl -X POST http://localhost:3000/api/admin/today-stats -H "Content-Type: application/json" -H "Authorization: Bearer YOUR_JWT_TOKEN" -d '{"adminId": "A0001", "date": "2024-01-27"}'
    ```
 
 ## 📁 **FIREBASE FOLDER STRUCTURE**

@@ -13,6 +13,20 @@ import { authLogger } from "../config/logger.js";
 import { uploadAdminHospitalFile, uploadAdminOwnerFile, deleteFolderFromFirebase, extractFilePathFromUrl, deleteFileFromFirebase } from "../config/fireBaseStorage.js";
 import User from "../model/userProfile.js"; // Added import for User model
 
+// Date utility function for timezone-independent comparison
+const getDateString = (date) => {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
+const isToday = (date) => {
+    const today = new Date();
+    return getDateString(date) === getDateString(today);
+};
+
 class AdminService {
     async createAdmin(adminData) {
         try {
@@ -533,6 +547,140 @@ class AdminService {
                 httpStatusCode.INTERNAL_SERVER_ERROR,
                 true,
                 'Failed to get admin dashboard data.'
+            );
+        }
+    }
+
+    async getTodayStats(adminId, date) {
+        try {
+            const admin = await AdminProfile.findOne({ adminId });
+            if (!admin) {
+                throw new EasyQError(
+                    'NotFoundError',
+                    httpStatusCode.NOT_FOUND,
+                    true,
+                    'Admin not found.'
+                );
+            }
+
+            // Get hospital ID from Hospital collection using adminId
+            const hospital = await Hospital.findOne({ adminId: adminId });
+            if (!hospital) {
+                throw new EasyQError(
+                    'ValidationError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    'Hospital not found for this admin.'
+                );
+            }
+            
+            const hospitalId = hospital.hospitalId;
+
+            // Use the provided date instead of today's date
+            const targetDate = new Date(date);
+            if (isNaN(targetDate.getTime())) {
+                throw new EasyQError(
+                    'ValidationError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    'Invalid date provided.'
+                );
+            }
+
+            const targetDateString = getDateString(targetDate);
+
+            const startOfDay = new Date(date + 'T00:00:00.000Z');
+            const endOfDay = new Date(date + 'T23:59:59.999Z');
+
+            // First, let's check what appointments exist for this hospital
+            const allAppointments = await Appointment.find({ hospitalId: hospitalId }).limit(5);
+            
+           
+            // Get appointments for the specified date with patient details using aggregation
+            const todayAppointments = await Appointment.aggregate([
+                {
+                    $match: {
+                        hospitalId: hospitalId,
+                        appointmentDate: {
+                            $gte: startOfDay,
+                            $lte: endOfDay
+                        }
+                    }
+                },
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: 'patientId',
+                        foreignField: 'userId',
+                        as: 'patient'
+                    }
+                },
+                {
+                    $unwind: {
+                        path: '$patient',
+                        preserveNullAndEmptyArrays: true
+                    }
+                },
+                {
+                    $project: {
+                        appointmentId: 1,
+                        appointmentDate: 1,
+                        appointmentTime: 1,
+                        checkInTime: 1,
+                        checkOutTime: 1,
+                        checkInStatus: 1,
+                        isCheckedIn: 1,
+                        lastScannedDate: 1,
+                        patientId: '$patient.userId',
+                        patientName: '$patient.name',
+                        patientEmail: '$patient.email',
+                        patientPhone: '$patient.phoneNumber'
+                    }
+                },
+                {
+                    $sort: { appointmentTime: 1 }
+                }
+            ]);
+
+            // Calculate statistics
+            const totalTokensIssued = todayAppointments.length;
+            const totalPatientsCheckedIn = todayAppointments.filter(apt => 
+                apt.checkInStatus === 'Checked-in' || apt.checkInStatus === 'Checked-out'
+            ).length;
+
+            // Format patient list
+            const patients = todayAppointments.map(apt => ({
+                patientId: apt.patientId,
+                name: apt.patientName || 'Unknown',
+                email: apt.patientEmail || '',
+                phoneNumber: apt.patientPhone || '',
+                appointmentId: apt.appointmentId,
+                checkInStatus: apt.checkInStatus,
+                checkInTime: apt.checkInTime,
+                checkOutTime: apt.checkOutTime,
+                appointmentDate: apt.appointmentDate,
+                appointmentTime: apt.appointmentTime
+            }));
+
+            return {
+                summary: {
+                    totalTokensIssued,
+                    totalPatientsCheckedIn,
+                    date: date // Use the original input date
+                },
+                patients
+            };
+
+        } catch (error) {
+            if (error instanceof EasyQError) {
+                throw error;
+            }
+            authLogger.error('Error getting today stats:', error);
+            throw new EasyQError(
+                'DatabaseError',
+                httpStatusCode.INTERNAL_SERVER_ERROR,
+                true,
+                error
             );
         }
     }
