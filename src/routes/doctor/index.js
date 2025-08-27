@@ -20,4 +20,7 @@ router.put('/upload-image',
     uploadDoctorImage
 );
 
+// New route for updating doctor profile image URL (frontend handles upload)
+router.put('/update-image-url', authenticateAdmin, updateDoctorImageUrl);
+
 export default router;

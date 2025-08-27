@@ -691,3 +691,80 @@ export const updateHospitalCompleteInfo = async (req, res, next) => {
         next(error);
     }
 };
+
+// New endpoints for updating file URLs (frontend handles upload)
+export const updateHospitalLogoUrl = async (req, res, next) => {
+    try {
+        const { adminId, fileUrl, fileName } = req.body;
+        
+        if (!adminId || !fileUrl || !fileName) {
+            return res.status(httpStatusCode.BAD_REQUEST).json(
+                constructResponse(false, httpStatusCode.BAD_REQUEST, 'Admin ID, file URL, and file name are required')
+            );
+        }
+
+        const result = await AdminService.updateHospitalLogoUrl(adminId, fileUrl, fileName);
+        return res.status(httpStatusCode.OK).json(
+            constructResponse(true, httpStatusCode.OK, 'Hospital logo URL updated successfully', result)
+        );
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const updateHospitalImagesUrl = async (req, res, next) => {
+    try {
+        const { adminId, fileUrl, fileName } = req.body;
+        
+        if (!adminId || !fileUrl || !fileName) {
+            return res.status(httpStatusCode.BAD_REQUEST).json(
+                constructResponse(false, httpStatusCode.BAD_REQUEST, 'Admin ID, file URL, and file name are required')
+            );
+        }
+
+        const result = await AdminService.updateHospitalImagesUrl(adminId, fileUrl, fileName);
+        return res.status(httpStatusCode.OK).json(
+            constructResponse(true, httpStatusCode.OK, 'Hospital image URL updated successfully', result)
+        );
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const updateHospitalDocumentsUrl = async (req, res, next) => {
+    try {
+        const { adminId, documentType, fileUrl, fileName } = req.body;
+        
+        if (!adminId || !documentType || !fileUrl || !fileName) {
+            return res.status(httpStatusCode.BAD_REQUEST).json(
+                constructResponse(false, httpStatusCode.BAD_REQUEST, 'Admin ID, document type, file URL, and file name are required')
+            );
+        }
+
+        const result = await AdminService.updateHospitalDocumentsUrl(adminId, documentType, fileUrl, fileName);
+        return res.status(httpStatusCode.OK).json(
+            constructResponse(true, httpStatusCode.OK, 'Hospital document URL updated successfully', result)
+        );
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const updateOwnerDocumentsUrl = async (req, res, next) => {
+    try {
+        const { adminId, documentType, fileUrl, fileName } = req.body;
+        
+        if (!adminId || !documentType || !fileUrl || !fileName) {
+            return res.status(httpStatusCode.BAD_REQUEST).json(
+                constructResponse(false, httpStatusCode.BAD_REQUEST, 'Admin ID, document type, file URL, and file name are required')
+            );
+        }
+
+        const result = await AdminService.updateOwnerDocumentsUrl(adminId, documentType, fileUrl, fileName);
+        return res.status(httpStatusCode.OK).json(
+            constructResponse(true, httpStatusCode.OK, 'Owner document URL updated successfully', result)
+        );
+    } catch (error) {
+        next(error);
+    }
+};

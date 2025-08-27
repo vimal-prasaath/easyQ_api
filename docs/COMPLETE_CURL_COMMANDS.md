@@ -198,6 +198,66 @@ curl -X PUT http://localhost:3000/api/admin/owner-documents \
   -F "file=@/path/to/pan_card.jpg"
 ```
 
+## 🔗 **URL UPDATE ENDPOINTS (Frontend File Upload)**
+
+### 10. Update Hospital Logo URL
+```bash
+curl -X PUT http://localhost:3000/api/admin/hospital-logo-url \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
+  -d '{
+    "adminId": "A0001",
+    "fileUrl": "https://storage.googleapis.com/your-bucket/hospitals/H0001/logo-1234567890-123456789.png",
+    "fileName": "hospital_logo.png"
+  }'
+```
+
+### 11. Update Hospital Images URL
+```bash
+curl -X PUT http://localhost:3000/api/admin/hospital-images-url \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
+  -d '{
+    "adminId": "A0001",
+    "fileUrl": "https://storage.googleapis.com/your-bucket/hospitals/H0001/hospitalImages-1234567890-123456789.jpg",
+    "fileName": "hospital_image1.jpg"
+  }'
+```
+
+### 12. Update Hospital Documents URL
+```bash
+curl -X PUT http://localhost:3000/api/admin/hospital-documents-url \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
+  -d '{
+    "adminId": "A0001",
+    "documentType": "registrationCertificate",
+    "fileUrl": "https://storage.googleapis.com/your-bucket/hospitals/H0001/registrationCertificate-1234567890-123456789.pdf",
+    "fileName": "registration_certificate.pdf"
+  }'
+```
+
+**Supported document types:**
+- `registrationCertificate`
+- `accreditation`
+
+### 13. Update Owner Documents URL
+```bash
+curl -X PUT http://localhost:3000/api/admin/owner-documents-url \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
+  -d '{
+    "adminId": "A0001",
+    "documentType": "aadharCard",
+    "fileUrl": "https://storage.googleapis.com/your-bucket/owners/A0001/aadharCard-1234567890-123456789.jpg",
+    "fileName": "aadhar_card.jpg"
+  }'
+```
+
+**Supported document types:**
+- `aadharCard`
+- `panCard`
+
 ## 👨‍⚕️ **DOCTOR MANAGEMENT**
 
 ### 10. Create Doctor (Requires Approved Admin)
@@ -297,6 +357,19 @@ curl -X DELETE http://localhost:3000/api/doctor/delete \
   -d '{
     "adminId": "A0001",
     "doctorId": "D0001"
+  }'
+```
+
+### 16. Update Doctor Profile Image URL (Frontend File Upload)
+```bash
+curl -X PUT http://localhost:3000/api/doctor/update-image-url \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
+  -d '{
+    "adminId": "A0001",
+    "doctorId": "D0001",
+    "fileUrl": "https://storage.googleapis.com/your-bucket/hospitals/H0001/doctors/D0001-1705315200000-123456789.jpg",
+    "fileName": "doctor_photo.jpg"
   }'
 ```
 

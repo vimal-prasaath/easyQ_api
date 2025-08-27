@@ -1169,6 +1169,209 @@ class AdminService {
             );
         }
     }
+
+    // New methods for updating file URLs (frontend handles upload)
+    async updateHospitalLogoUrl(adminId, fileUrl, fileName) {
+        try {
+            const admin = await AdminProfile.findOne({ adminId });
+            if (!admin) {
+                throw new EasyQError(
+                    'ValidationError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    'Admin not found.'
+                );
+            }
+
+            const hospital = await Hospital.findOne({ adminId });
+            if (!hospital) {
+                throw new EasyQError(
+                    'ValidationError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    'Hospital not found for this admin.'
+                );
+            }
+
+            // Update hospital logo URL
+            const updatedHospital = await Hospital.findOneAndUpdate(
+                { adminId },
+                {
+                    $set: {
+                        'documents.logo': {
+                            fileName: fileName,
+                            fileUrl: fileUrl,
+                            uploadedAt: new Date()
+                        }
+                    }
+                },
+                { new: true }
+            );
+
+            return {
+                hospitalId: updatedHospital.hospitalId,
+                logo: updatedHospital.documents.logo
+            };
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async updateHospitalImagesUrl(adminId, fileUrl, fileName) {
+        try {
+            const admin = await AdminProfile.findOne({ adminId });
+            if (!admin) {
+                throw new EasyQError(
+                    'ValidationError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    'Admin not found.'
+                );
+            }
+
+            const hospital = await Hospital.findOne({ adminId });
+            if (!hospital) {
+                throw new EasyQError(
+                    'ValidationError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    'Hospital not found for this admin.'
+                );
+            }
+
+            // Add hospital image to array
+            const newImage = {
+                fileName: fileName,
+                fileUrl: fileUrl,
+                uploadedAt: new Date()
+            };
+
+            const updatedHospital = await Hospital.findOneAndUpdate(
+                { adminId },
+                {
+                    $push: {
+                        'documents.hospitalImages': newImage
+                    }
+                },
+                { new: true }
+            );
+
+            return {
+                hospitalId: updatedHospital.hospitalId,
+                hospitalImages: updatedHospital.documents.hospitalImages
+            };
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async updateHospitalDocumentsUrl(adminId, documentType, fileUrl, fileName) {
+        try {
+            const admin = await AdminProfile.findOne({ adminId });
+            if (!admin) {
+                throw new EasyQError(
+                    'ValidationError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    'Admin not found.'
+                );
+            }
+
+            const hospital = await Hospital.findOne({ adminId });
+            if (!hospital) {
+                throw new EasyQError(
+                    'ValidationError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    'Hospital not found for this admin.'
+                );
+            }
+
+            // Validate document type
+            const validDocumentTypes = ['registrationCertificate', 'accreditation'];
+            if (!validDocumentTypes.includes(documentType)) {
+                throw new EasyQError(
+                    'ValidationError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    'Invalid document type. Must be one of: ' + validDocumentTypes.join(', ')
+                );
+            }
+
+            // Update hospital document URL
+            const updateField = `documents.${documentType}`;
+            const updatedHospital = await Hospital.findOneAndUpdate(
+                { adminId },
+                {
+                    $set: {
+                        [updateField]: {
+                            fileName: fileName,
+                            fileUrl: fileUrl,
+                            uploadedAt: new Date()
+                        }
+                    }
+                },
+                { new: true }
+            );
+
+            return {
+                hospitalId: updatedHospital.hospitalId,
+                documentType: documentType,
+                document: updatedHospital.documents[documentType]
+            };
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async updateOwnerDocumentsUrl(adminId, documentType, fileUrl, fileName) {
+        try {
+            const admin = await AdminProfile.findOne({ adminId });
+            if (!admin) {
+                throw new EasyQError(
+                    'ValidationError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    'Admin not found.'
+                );
+            }
+
+            // Validate document type
+            const validDocumentTypes = ['aadharCard', 'panCard'];
+            if (!validDocumentTypes.includes(documentType)) {
+                throw new EasyQError(
+                    'ValidationError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    'Invalid document type. Must be one of: ' + validDocumentTypes.join(', ')
+                );
+            }
+
+            // Update owner document URL
+            const updateField = `ownerDocuments.${documentType}`;
+            const updatedAdmin = await AdminProfile.findOneAndUpdate(
+                { adminId },
+                {
+                    $set: {
+                        [updateField]: {
+                            fileName: fileName,
+                            fileUrl: fileUrl,
+                            uploadedAt: new Date()
+                        }
+                    }
+                },
+                { new: true }
+            );
+
+            return {
+                adminId: updatedAdmin.adminId,
+                documentType: documentType,
+                document: updatedAdmin.ownerDocuments[documentType]
+            };
+        } catch (error) {
+            throw error;
+        }
+    }
 }
 
 export default new AdminService();

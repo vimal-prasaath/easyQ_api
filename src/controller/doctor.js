@@ -353,4 +353,31 @@ export async function uploadDoctorImage(req, res, next) {
     }
 }
 
+// New endpoint for updating doctor profile image URL (frontend handles upload)
+export const updateDoctorImageUrl = async (req, res, next) => {
+    try {
+        const { adminId, doctorId, fileUrl, fileName } = req.body;
+        
+        if (!adminId || !doctorId || !fileUrl || !fileName) {
+            return res.status(httpStatusCode.BAD_REQUEST).json(
+                ResponseFormatter.formatErrorResponse({
+                    message: "Admin ID, doctor ID, file URL, and file name are required",
+                    statusCode: httpStatusCode.BAD_REQUEST
+                })
+            );
+        }
+
+        const result = await DoctorService.updateDoctorImageUrl(adminId, doctorId, fileUrl, fileName);
+        return res.status(httpStatusCode.OK).json(
+            ResponseFormatter.formatSuccessResponse({
+                message: "Doctor profile image URL updated successfully",
+                data: result,
+                statusCode: httpStatusCode.OK
+            })
+        );
+    } catch (error) {
+        next(error);
+    }
+};
+
 

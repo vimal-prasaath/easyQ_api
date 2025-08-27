@@ -4,6 +4,7 @@ import Hospital from '../model/hospital.js';
 import { EasyQError } from '../config/error.js';
 import { httpStatusCode } from '../util/statusCode.js';
 import { uploadDoctorImage } from '../config/fireBaseStorage.js';
+import AdminProfile from '../model/adminProfile.js'; // Added import for AdminProfile
 
 export class DoctorService {
     
@@ -802,6 +803,63 @@ export class DoctorService {
                 true,
                 `Failed to upload doctor image: ${error.message}`
             );
+        }
+    }
+
+    // New method for updating doctor profile image URL (frontend handles upload)
+    async updateDoctorImageUrl(adminId, doctorId, fileUrl, fileName) {
+        try {
+            // Verify admin exists and is approved
+            const admin = await AdminProfile.findOne({ adminId });
+            if (!admin) {
+                throw new EasyQError(
+                    'ValidationError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    'Admin not found.'
+                );
+            }
+
+            if (admin.verificationStatus !== 'Approved') {
+                throw new EasyQError(
+                    'ValidationError',
+                    httpStatusCode.FORBIDDEN,
+                    true,
+                    'Only approved admins can update doctor information.'
+                );
+            }
+
+            // Find and update doctor
+            const updatedDoctor = await Doctor.findOneAndUpdate(
+                { doctorId, adminId },
+                {
+                    $set: {
+                        profileImage: {
+                            fileName: fileName,
+                            fileUrl: fileUrl,
+                            uploadedAt: new Date()
+                        }
+                    }
+                },
+                { new: true }
+            );
+
+            if (!updatedDoctor) {
+                throw new EasyQError(
+                    'ValidationError',
+                    httpStatusCode.NOT_FOUND,
+                    true,
+                    'Doctor not found or not associated with this admin.'
+                );
+            }
+
+            return {
+                doctorId: updatedDoctor.doctorId,
+                name: updatedDoctor.name,
+                profileImage: updatedDoctor.profileImage
+            };
+        } catch (error) {
+            throw error;
         }
     }
 }

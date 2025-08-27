@@ -12,7 +12,11 @@ import {
     updateHospitalBasicInfo,
     updateHospitalCompleteInfo,
     deleteAdmin,
-    activateUser
+    activateUser,
+    updateHospitalLogoUrl,
+    updateHospitalImagesUrl,
+    updateHospitalDocumentsUrl,
+    updateOwnerDocumentsUrl
 } from '../../controller/admin.js';
 import authenticateAdmin from '../../middleware/adminAuth.js';
 import { uploadMiddleware, multerErrorHandler } from '../../config/fileConfig.js';
@@ -55,5 +59,11 @@ router.put('/hospital/basic-info', authenticateAdmin, updateHospitalBasicInfo);
 router.put('/hospital/complete-info', authenticateAdmin, updateHospitalCompleteInfo);
 
 router.delete('/:adminId', authenticateAdmin, deleteAdmin);
+
+// New routes for updating file URLs (frontend handles upload)
+router.put('/hospital-logo-url', authenticateAdmin, updateHospitalLogoUrl);
+router.put('/hospital-images-url', authenticateAdmin, updateHospitalImagesUrl);
+router.put('/hospital-documents-url', authenticateAdmin, updateHospitalDocumentsUrl);
+router.put('/owner-documents-url', authenticateAdmin, updateOwnerDocumentsUrl);
 
 export default router;
