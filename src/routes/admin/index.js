@@ -19,7 +19,7 @@ import {
     updateOwnerDocumentsUrl
 } from '../../controller/admin.js';
 import authenticateAdmin from '../../middleware/adminAuth.js';
-import { uploadMiddleware, multerErrorHandler } from '../../config/fileConfig.js';
+import { uploadMiddleware, busboyErrorHandler } from '../../config/fileConfig.js';
 
 const router = express.Router();
 
@@ -34,15 +34,15 @@ router.put('/onboarding', authenticateAdmin, updateOnboardingInfo);
 
 router.put('/hospital-documents',
     authenticateAdmin,
-    uploadMiddleware.single('file'),
-    multerErrorHandler,
+    uploadMiddleware,
+    busboyErrorHandler,
     updateHospitalDocuments
 );
 
 router.put('/owner-documents',
     authenticateAdmin,
-    uploadMiddleware.single('file'),
-    multerErrorHandler,
+    uploadMiddleware,
+    busboyErrorHandler,
     updateOwnerDocuments
 );
 

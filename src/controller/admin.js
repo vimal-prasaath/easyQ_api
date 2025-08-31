@@ -214,6 +214,7 @@ export const updateHospitalDocuments = async (req, res, next) => {
             ));
         }
 
+
         // Authorization check: Verify that the adminId in form data matches the authenticated admin
         const authenticatedAdminId = req.user.data.userId;
         if (adminId !== authenticatedAdminId) {

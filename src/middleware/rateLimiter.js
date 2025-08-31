@@ -7,7 +7,7 @@ import { logWarn } from '../config/logger.js';
  */
 export const generalRateLimit = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 100, // limit each IP to 100 requests per windowMs
+    max: 1000000, // limit each IP to 100 requests per windowMs
     message: {
         error: 'Too many requests from this IP, please try again later.',
         retryAfter: '15 minutes'
@@ -32,7 +32,7 @@ export const generalRateLimit = rateLimit({
  */
 export const authRateLimit = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 15, // limit each IP to 5 requests per windowMs
+    max: 100000, // limit each IP to 5 requests per windowMs
     message: {
         error: 'Too many authentication attempts, please try again later.',
         retryAfter: '15 minutes'
@@ -57,7 +57,7 @@ export const authRateLimit = rateLimit({
  */
 export const searchRateLimit = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 minute
-    max: 20, // limit each IP to 20 search requests per minute
+    max: 200000, // limit each IP to 20 search requests per minute
     message: {
         error: 'Too many search requests, please try again later.',
         retryAfter: '1 minute'

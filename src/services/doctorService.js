@@ -724,15 +724,15 @@ export class DoctorService {
             }
 
             // ✅ Validate file type
-            const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png'];
-            if (!allowedMimeTypes.includes(file.mimetype)) {
-                throw new EasyQError(
-                    'ValidationError',
-                    httpStatusCode.BAD_REQUEST,
-                    true,
-                    'Only JPEG and PNG image files are allowed.'
-                );
-            }
+            // const allowedMimeTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+            // if (!allowedMimeTypes.includes(file.mimetype)) {
+            //     throw new EasyQError(
+            //         'ValidationError',
+            //         httpStatusCode.BAD_REQUEST,
+            //         true,
+            //         'Only JPEG, JPG, and PNG image files are allowed.'
+            //     );
+            // }
 
             // ✅ Validate file size (5MB limit)
             const maxSize = 5 * 1024 * 1024; // 5MB in bytes
@@ -807,7 +807,7 @@ export class DoctorService {
     }
 
     // New method for updating doctor profile image URL (frontend handles upload)
-    async updateDoctorImageUrl(adminId, doctorId, fileUrl, fileName) {
+    static async updateDoctorImageUrl(adminId, doctorId, fileUrl, fileName) {
         try {
             // Verify admin exists and is approved
             const admin = await AdminProfile.findOne({ adminId });
@@ -831,7 +831,7 @@ export class DoctorService {
 
             // Find and update doctor
             const updatedDoctor = await Doctor.findOneAndUpdate(
-                { doctorId, adminId },
+                { doctorId },
                 {
                     $set: {
                         profileImage: {
@@ -843,6 +843,7 @@ export class DoctorService {
                 },
                 { new: true }
             );
+
 
             if (!updatedDoctor) {
                 throw new EasyQError(

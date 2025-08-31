@@ -9,6 +9,8 @@ const ADMIN_VERIFICATION_REQUIRED_ROUTES = [
     '/doctor/delete', 
     '/doctor/upload-image',
     '/doctor/update',
+    '/doctor/all',
+    '/doctor/update-image-url',
 ];
 
 async function adminVerificationCheck(req, res, next) {

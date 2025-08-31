@@ -79,12 +79,13 @@ import {
 } from '../controller/review.js';
 
 import { uploadFile, getFiles, deleteFile , downloadFile } from "../controller/uploadFile.js"; 
-import {uploadMiddleware , multerErrorHandler} from './fileConfig.js'; 
+import {uploadMiddleware , busboyErrorHandler} from './fileConfig.js'; 
 import { searchRateLimit } from '../middleware/rateLimiter.js';
 import { updateOnboardingInfo, getAdminDetails, getAdminDashboard } from '../controller/admin.js';
 import authenticateAdmin from '../middleware/adminAuth.js';
 import adminVerificationCheck from '../middleware/adminVerificationCheck.js';
 
+import { updateDoctorImageUrl } from '../controller/doctor.js';
 
 const protectedRoutesConfig = [
     //admin
@@ -134,7 +135,8 @@ const protectedRoutesConfig = [
     { path: '/doctor/delete', method: 'delete', resourceType: 'doctor', action: 'delete', handlers: [authenticateAdmin, adminVerificationCheck, deleteDoctor] },
     { path: '/doctor/all/:hospitalId', method: 'get', resourceType: 'doctor', action: 'read_all_in_hospital', resourceIdParamName: 'hospitalId', handlers: [getAllDoctor] },
     { path: '/doctor/meet', method: 'post', resourceType: 'doctor', action: 'read_all_in_hospital', resourceIdParamName: 'hospitalId', handlers: [meetDoctor] },
-    { path: '/doctor/upload-image', method: 'put', resourceType: 'doctor', action: 'upload_image', handlers: [authenticateAdmin, adminVerificationCheck, uploadMiddleware.single('file'), multerErrorHandler, uploadDoctorImage] },
+    { path: '/doctor/upload-image', method: 'put', resourceType: 'doctor', action: 'upload_image', handlers: [authenticateAdmin, adminVerificationCheck, uploadMiddleware, busboyErrorHandler, uploadDoctorImage] },
+    { path: '/doctor/update-image-url', method: 'put', resourceType: 'doctor', action: 'update_image_url', handlers: [authenticateAdmin, updateDoctorImageUrl] },
     // --- Appoitment ROUTES ---
     { path: '/appoitment', method: 'post', resourceType: 'appointment', action: 'create', handlers: [appointmentLimiter,createAppointment] },
     { path: '/appoitment/check', method: 'post', resourceType: 'appointment', action: 'create', handlers: [safeCreateAppointment] },
@@ -183,7 +185,7 @@ const protectedRoutesConfig = [
     // { path: '/reviews/admin/suspicious', method: 'get', resourceType: 'review', action: 'read_suspicious', handlers: [getSuspiciousReviews] },
       
     //upload-files
-    { path: '/uploadfile', method: 'post', resourceType: 'file', action: 'upload', handlers: [uploadMiddleware.single('file'),multerErrorHandler,uploadFile] },
+    { path: '/uploadfile', method: 'post', resourceType: 'file', action: 'upload', handlers: [uploadMiddleware,busboyErrorHandler,uploadFile] },
     { path: '/getfile', method: 'post', resourceType: 'file', action: 'read_all', handlers: [getFiles] },
     { path: '/file/download', method: 'post', resourceType: 'file', action: 'download', handlers: [downloadFile] },
     { path: '/file/delete', method: 'delete', resourceType: 'file', action: 'delete', handlers: [deleteFile] },

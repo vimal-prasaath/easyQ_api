@@ -4,7 +4,7 @@ import authorizeOwnerOrAdmin from "../../middleware/adminOwnerOrAdmin.js";
 import authorizeRoles from "../../middleware/authorization.js";
 import authenticateAdmin from "../../middleware/adminAuth.js";
 import adminVerificationCheck from "../../middleware/adminVerificationCheck.js";
-import { uploadMiddleware, multerErrorHandler } from "../../config/fileConfig.js";
+import { uploadMiddleware, busboyErrorHandler } from "../../config/fileConfig.js";
 const router = express.Router();
 
 router.post("/add", authenticateAdmin, adminVerificationCheck, createDoctor)
@@ -15,8 +15,8 @@ router.get("/all/:hospitalId",authorizeOwnerOrAdmin, getAllDoctor)
 router.put('/upload-image',
     authenticateAdmin,
     adminVerificationCheck,
-    uploadMiddleware.single('file'),
-    multerErrorHandler,
+    uploadMiddleware,
+    busboyErrorHandler,
     uploadDoctorImage
 );
 

@@ -4,7 +4,7 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const bucket = getStorage().bucket();
+const bucket = getStorage().bucket(process.env.STORAGE_BUCKET_NAME);
 
 export const uploadFileToFirebase = async (
   fileBuffer,
@@ -24,6 +24,7 @@ export const uploadFileToFirebase = async (
   const file = bucket.file(filePathInStorage);
 
   try {
+    
     await file.save(fileBuffer, {
       contentType: mimetype,
       metadata: {
@@ -33,11 +34,27 @@ export const uploadFileToFirebase = async (
           originalName: originalname,
         },
       },
+      public: true, // Make file publicly accessible
     });
 
+    // Ensure the file is publicly accessible
     await file.makePublic();
 
+    // Generate the public URL
     const publicUrl = `https://storage.googleapis.com/${process.env.STORAGE_BUCKET_NAME}/${filePathInStorage}`;
+    
+    
+    // Verify the file is accessible
+    try {
+      const [exists] = await file.exists();
+      if (!exists) {
+        throw new Error('File was not saved properly');
+      }
+      console.log('File verification successful');
+    } catch (verifyError) {
+      console.error('Error verifying file upload:', verifyError);
+      throw new Error('File upload verification failed');
+    }
 
     return { url: publicUrl, path: filePathInStorage };
   } catch (error) {
@@ -228,6 +245,8 @@ export const uploadDoctorImage = async (
   const file = bucket.file(filePathInStorage);
 
   try {
+    console.log(`Uploading doctor image: ${originalname} with MIME type: ${mimetype}`);
+    
     await file.save(fileBuffer, {
       contentType: mimetype,
       metadata: {
@@ -238,11 +257,28 @@ export const uploadDoctorImage = async (
           originalName: originalname,
         },
       },
+      public: true, // Make file publicly accessible
     });
 
+    // Ensure the file is publicly accessible
     await file.makePublic();
 
+    // Generate the public URL
     const publicUrl = `https://storage.googleapis.com/${process.env.STORAGE_BUCKET_NAME}/${filePathInStorage}`;
+    
+    console.log(`Doctor image uploaded successfully. Public URL: ${publicUrl}`);
+    
+    // Verify the file is accessible
+    try {
+      const [exists] = await file.exists();
+      if (!exists) {
+        throw new Error('Doctor image was not saved properly');
+      }
+      console.log('Doctor image verification successful');
+    } catch (verifyError) {
+      console.error('Error verifying doctor image upload:', verifyError);
+      throw new Error('Doctor image upload verification failed');
+    }
 
     return { url: publicUrl, path: filePathInStorage };
   } catch (error) {
