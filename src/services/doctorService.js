@@ -307,6 +307,11 @@ export class DoctorService {
             delete updates.workingHours;
         }
 
+        // ✅ Handle profile image updates to ensure profileImageUrl is also updated
+        if (updates.profileImage && updates.profileImage.fileUrl) {
+            updates.profileImageUrl = updates.profileImage.fileUrl;
+        }
+
         // ✅ Apply all other general updates like name, email, status, etc.
         Object.assign(doctor, updates);
 
@@ -784,7 +789,9 @@ export class DoctorService {
                         fileName: uploadResult.path.split('/').pop(),
                         fileUrl: uploadResult.url,
                         uploadedAt: new Date()
-                    }
+                    },
+                    // Also update the profileImageUrl field with the uploaded image URL
+                    profileImageUrl: uploadResult.url
                 },
                 { new: true, runValidators: true }
             );
@@ -838,7 +845,9 @@ export class DoctorService {
                             fileName: fileName,
                             fileUrl: fileUrl,
                             uploadedAt: new Date()
-                        }
+                        },
+                        // Also update the profileImageUrl field with the provided image URL
+                        profileImageUrl: fileUrl
                     }
                 },
                 { new: true }

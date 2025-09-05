@@ -37,6 +37,7 @@ app.use(
         connectSrc: [
           "'self'",
           "https://api2-cd3vrfxtha-uc.a.run.app",
+          "https://api3-cd3vrfxtha-uc.a.run.app",
           "http://localhost:3000",
         ],
       },

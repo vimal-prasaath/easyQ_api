@@ -186,6 +186,17 @@ const hospitalSchema = new Schema({
     min: 0,
     max: 5,
   },
+  
+  // Hospital Information
+  about: {
+    type: String,
+    trim: true
+  },
+      services: {
+        type: String,
+        trim: true
+    },
+  
   createdAt: {
     type: Date,
     default: Date.now,

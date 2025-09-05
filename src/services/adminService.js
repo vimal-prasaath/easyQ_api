@@ -192,7 +192,7 @@ class AdminService {
                     },
                     location: {
                         type: "Point",
-                        coordinates: [0, 0] // Default coordinates - can be updated later
+                        coordinates: onboardingData.location?.coordinates || [0, 0] // Use provided coordinates or default to [0, 0]
                     },
                     googleMapLink: onboardingData.googleMapLink,
                     phoneNumber: onboardingData.phoneNumber,
@@ -203,7 +203,9 @@ class AdminService {
                     endTime: onboardingData.endTime,
                     openAlways: onboardingData.openAlways,
                     maxTokenPerDay: onboardingData.maxTokenPerDay,
-                    unlimitedToken: onboardingData.unlimitedToken
+                    unlimitedToken: onboardingData.unlimitedToken,
+                    about: onboardingData.about,
+                    services: onboardingData.services
                 });
             } else {
                 // Update existing hospital
@@ -218,8 +220,13 @@ class AdminService {
                     zipCode: onboardingData.pincode,
                     country: "India"
                 };
-                // Ensure location field exists for geospatial index
-                if (!hospital.location || !hospital.location.coordinates) {
+                // Update location coordinates if provided, otherwise ensure location field exists for geospatial index
+                if (onboardingData.location?.coordinates) {
+                    hospital.location = {
+                        type: "Point",
+                        coordinates: onboardingData.location.coordinates
+                    };
+                } else if (!hospital.location || !hospital.location.coordinates) {
                     hospital.location = {
                         type: "Point",
                         coordinates: [0, 0] // Default coordinates - can be updated later
@@ -235,6 +242,8 @@ class AdminService {
                 hospital.openAlways = onboardingData.openAlways;
                 hospital.maxTokenPerDay = onboardingData.maxTokenPerDay;
                 hospital.unlimitedToken = onboardingData.unlimitedToken;
+                hospital.about = onboardingData.about;
+                hospital.services = onboardingData.services;
             }
 
             await hospital.save();
@@ -282,7 +291,9 @@ class AdminService {
                         openAlways: hospital.openAlways,
                         maxTokenPerDay: hospital.maxTokenPerDay,
                         unlimitedToken: hospital.unlimitedToken
-                    }
+                    },
+                    about: hospital.about,
+                    services: hospital.services
                 },
                 ownerInfo: admin.ownerInfo,
                 onboardingProgress: admin.getOnboardingProgress()
@@ -351,6 +362,12 @@ class AdminService {
 
             // Update the specific document type in hospital.documents
             hospital.documents[documentType] = documentData;
+            
+            // If this is a hospital image upload, also update the imageUrl field
+            if (documentType === 'hospitalImages') {
+                hospital.imageUrl = documentData.fileUrl;
+            }
+            
             await hospital.save();
 
             return {
@@ -359,7 +376,9 @@ class AdminService {
                     fileName: documentData.fileName,
                     fileUrl: documentData.fileUrl,
                     uploadedAt: documentData.uploadedAt
-                }
+                },
+                // Include imageUrl in response if it was updated
+                ...(documentType === 'hospitalImages' && { imageUrl: documentData.fileUrl })
             };
         } catch (error) {
             if (error instanceof EasyQError) {
@@ -530,6 +549,8 @@ class AdminService {
                         unlimitedToken: hospital.unlimitedToken
                     },
                     documents: hospital.documents,
+                    about: hospital.about,
+                    services: hospital.services,
                     isActive: hospital.isActive,
                     createdAt: hospital.createdAt,
                     updatedAt: hospital.updatedAt
@@ -952,6 +973,14 @@ class AdminService {
                 };
             }
 
+            // Update location coordinates if provided
+            if (hospitalData.location?.coordinates) {
+                hospital.location = {
+                    type: "Point",
+                    coordinates: hospitalData.location.coordinates
+                };
+            }
+
             // Update contact details if provided
             if (hospitalData.phoneNumber !== undefined) hospital.phoneNumber = hospitalData.phoneNumber;
             if (hospitalData.alternativePhone !== undefined) hospital.alternativePhone = hospitalData.alternativePhone;
@@ -964,6 +993,10 @@ class AdminService {
             if (hospitalData.openAlways !== undefined) hospital.openAlways = hospitalData.openAlways;
             if (hospitalData.maxTokenPerDay !== undefined) hospital.maxTokenPerDay = hospitalData.maxTokenPerDay;
             if (hospitalData.unlimitedToken !== undefined) hospital.unlimitedToken = hospitalData.unlimitedToken;
+            
+            // Update hospital information if provided
+            if (hospitalData.about !== undefined) hospital.about = hospitalData.about;
+            if (hospitalData.services !== undefined) hospital.services = hospitalData.services;
 
             await hospital.save();
 
@@ -988,7 +1021,9 @@ class AdminService {
                         openAlways: hospital.openAlways,
                         maxTokenPerDay: hospital.maxTokenPerDay,
                         unlimitedToken: hospital.unlimitedToken
-                    }
+                    },
+                    about: hospital.about,
+                    services: hospital.services
                 },
                 updatedAt: hospital.updatedAt
             };
@@ -1251,6 +1286,10 @@ class AdminService {
                 {
                     $push: {
                         'documents.hospitalImages': newImage
+                    },
+                    // Also update the imageUrl field with the latest uploaded image
+                    $set: {
+                        imageUrl: fileUrl
                     }
                 },
                 { new: true }
@@ -1258,7 +1297,8 @@ class AdminService {
 
             return {
                 hospitalId: updatedHospital.hospitalId,
-                hospitalImages: updatedHospital.documents.hospitalImages
+                hospitalImages: updatedHospital.documents.hospitalImages,
+                imageUrl: updatedHospital.imageUrl
             };
         } catch (error) {
             throw error;

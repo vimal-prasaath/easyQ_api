@@ -69,6 +69,10 @@ const doctorSchema = new Schema({
         type: String,
         required: true
     },
+    profileImageUrl: {
+        type: String,
+        default: 'https://example.com/default-doctor.png',
+      },
 
     profileImage: {
         fileName: {
@@ -156,13 +160,7 @@ const doctorSchema = new Schema({
     }
 });
 
-// Virtual field for backward compatibility - profileImageUrl
-doctorSchema.virtual('profileImageUrl').get(function() {
-    return this.profileImage?.fileUrl || 'https://cdn.pixabay.com/photo/2017/01/29/21/16/nurse-2019420_640.jpg';
-});
-
 doctorSchema.set('toJSON', { 
-    virtuals: true,
     transform: function(doc, ret) {
         // Remove the nested profileImage object
         delete ret.profileImage;

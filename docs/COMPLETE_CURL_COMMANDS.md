@@ -70,6 +70,9 @@ curl -X PUT http://localhost:3000/api/admin/onboarding \
     "city": "Mumbai",
     "state": "Maharashtra",
     "pincode": "400001",
+    "location": {
+      "coordinates": [72.8777, 19.0760]
+    },
     "googleMapLink": "https://maps.google.com/?q=123+Medical+Center+Drive",
     "phoneNumber": "022-12345678",
     "alternativePhone": "022-12345679",
@@ -79,7 +82,9 @@ curl -X PUT http://localhost:3000/api/admin/onboarding \
     "endTime": "18:00",
     "openAlways": false,
     "maxTokenPerDay": 100,
-    "unlimitedToken": false
+    "unlimitedToken": false,
+    "about": "City General Hospital is a leading multi-specialty healthcare facility committed to providing comprehensive medical care with state-of-the-art technology and experienced medical professionals. We offer 24/7 emergency services and specialize in cardiology, neurology, orthopedics, and general medicine.",
+    "services": "Emergency Care, Cardiology, Neurology, Orthopedics, General Medicine, Pediatrics, Gynecology, Dermatology, Ophthalmology, ENT, Laboratory Services, Radiology, Pharmacy"
   }'
 ```
 
@@ -119,6 +124,9 @@ curl -X PUT http://localhost:3000/api/admin/hospital/complete-info \
     "city": "Mumbai",
     "state": "Maharashtra",
     "pincode": "400002",
+    "location": {
+      "coordinates": [72.8777, 19.0760]
+    },
     "googleMapLink": "https://maps.google.com/?q=456+Healthcare+Avenue",
     "phoneNumber": "022-98765432",
     "alternativePhone": "022-98765433",
@@ -128,7 +136,9 @@ curl -X PUT http://localhost:3000/api/admin/hospital/complete-info \
     "endTime": "20:00",
     "openAlways": false,
     "maxTokenPerDay": 150,
-    "unlimitedToken": false
+    "unlimitedToken": false,
+    "about": "City General Medical Center is a modern healthcare facility dedicated to providing exceptional medical care with cutting-edge technology and compassionate service. Our team of highly qualified doctors and medical staff work together to ensure the best possible outcomes for our patients.",
+    "services": "Emergency Care, Cardiology, Neurology, Orthopedics, General Medicine, Pediatrics, Gynecology, Dermatology, Ophthalmology, ENT, Laboratory Services, Radiology, Pharmacy, Physical Therapy, Mental Health Services"
   }'
 ```
 
@@ -529,7 +539,9 @@ curl -X POST http://localhost:3000/api/admin/dashboard \
           "fileUrl": "https://storage.googleapis.com/your-bucket/hospitals/H0001/logo-1234567890-123456789.png",
           "uploadedAt": "2024-01-15T10:30:00.000Z"
         }
-      }
+      },
+      "about": "City General Hospital is a leading multi-specialty healthcare facility committed to providing comprehensive medical care with state-of-the-art technology and experienced medical professionals. We offer 24/7 emergency services and specialize in cardiology, neurology, orthopedics, and general medicine.",
+      "services": "Emergency Care, Cardiology, Neurology, Orthopedics, General Medicine, Pediatrics, Gynecology, Dermatology, Ophthalmology, ENT, Laboratory Services, Radiology, Pharmacy"
     },
     "statistics": {
       "totalDoctors": 5,
@@ -687,6 +699,13 @@ your-bucket/
 - Supported formats: JPEG, PNG, PDF
 - Maximum file size: 5MB
 - Use multipart/form-data for file uploads
+
+### **Location Coordinates:**
+- **Format**: `[longitude, latitude]` (GeoJSON format)
+- **Example**: `[72.8777, 19.0760]` for Mumbai, India
+- **Default**: If not provided, coordinates default to `[0, 0]`
+- **Usage**: Used for location-based search and distance calculations
+- **Note**: Coordinates should be in decimal degrees format
 
 ### **Admin Verification:**
 - Only admins with `verificationStatus: "Approved"` can manage doctors
