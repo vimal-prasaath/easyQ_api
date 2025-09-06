@@ -385,6 +385,92 @@ curl -X PUT http://localhost:3000/api/doctor/update-image-url \
   }'
 ```
 
+### 17. Get Available Time Slots for Doctor
+```bash
+curl -X POST http://localhost:3000/api/doctor/available-time-slots \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
+  -d '{
+    "doctorId": "D0001",
+    "date": "2024-01-22"
+  }'
+```
+
+**Expected Response:**
+```json
+{
+  "success": true,
+  "message": "Available time slots retrieved successfully",
+  "data": {
+    "doctorId": "D0001",
+    "doctorName": "Dr. Sarah Johnson",
+    "date": "2024-01-22",
+    "day": "Monday",
+    "maxAppointment": "20",
+    "unlimitedToken": false,
+    "availableTimeSlots": [
+      {
+        "startTime": "09:00",
+        "endTime": "11:00",
+        "duration": 120,
+        "maxTokens": 20,
+        "bookedAppointments": 5,
+        "remainingSlots": 15,
+        "isAvailable": true
+      },
+      {
+        "startTime": "11:00",
+        "endTime": "13:00",
+        "duration": 120,
+        "maxTokens": 20,
+        "bookedAppointments": 20,
+        "remainingSlots": 0,
+        "isAvailable": false
+      },
+      {
+        "startTime": "13:00",
+        "endTime": "15:00",
+        "duration": 120,
+        "maxTokens": 20,
+        "bookedAppointments": 8,
+        "remainingSlots": 12,
+        "isAvailable": true
+      },
+      {
+        "startTime": "15:00",
+        "endTime": "17:00",
+        "duration": 120,
+        "maxTokens": 20,
+        "bookedAppointments": 3,
+        "remainingSlots": 17,
+        "isAvailable": true
+      },
+      {
+        "startTime": "17:00",
+        "endTime": "17:30",
+        "duration": 30,
+        "maxTokens": 5,
+        "bookedAppointments": 2,
+        "remainingSlots": 3,
+        "isAvailable": true
+      }
+    ]
+  }
+}
+```
+
+**Alternative Date Formats:**
+```bash
+# Using MM/DD/YYYY format
+curl -X POST http://localhost:3000/api/doctor/available-time-slots \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
+  -d '{
+    "doctorId": "D0001",
+    "date": "01/22/2024"
+  }'
+```
+
 ## 📱 **QR CODE SYSTEM**
 
 ### 16. Generate QR Code
@@ -397,6 +483,117 @@ curl -X POST http://localhost:3000/api/qrgenerator \
     "userId": "U0001",
     "hospitalId": "H0001"
   }'
+```
+
+## 📄 **APPOINTMENT DOCUMENT MANAGEMENT**
+
+### 20. Upload Appointment Documents (Multiple Files)
+```bash
+curl -X POST http://localhost:3000/api/appoitment/APT001/documents/upload \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
+  -F "documents=@/path/to/lab_report.pdf" \
+  -F "documents=@/path/to/xray_image.png" \
+  -F "documents=@/path/to/prescription.jpg"
+```
+
+**Expected Response:**
+```json
+{
+  "success": true,
+  "message": "Successfully uploaded 3 document(s).",
+  "data": {
+    "appointmentId": "APT001",
+    "uploadedDocuments": [
+      {
+        "fileName": "lab_report.pdf",
+        "mimeType": "application/pdf",
+        "size": 1024000,
+        "fileUrl": "https://storage.googleapis.com/your-bucket/appointments/APT001/documents/doc-1234567890-123456789.pdf",
+        "filePath": "appointments/APT001/documents/doc-1234567890-123456789.pdf",
+        "uploadedAt": "2025-01-15T10:30:00.000Z"
+      },
+      {
+        "fileName": "xray_image.png",
+        "mimeType": "image/png",
+        "size": 512000,
+        "fileUrl": "https://storage.googleapis.com/your-bucket/appointments/APT001/documents/doc-1234567891-123456790.png",
+        "filePath": "appointments/APT001/documents/doc-1234567891-123456790.png",
+        "uploadedAt": "2025-01-15T10:30:01.000Z"
+      },
+      {
+        "fileName": "prescription.jpg",
+        "mimeType": "image/jpeg",
+        "size": 256000,
+        "fileUrl": "https://storage.googleapis.com/your-bucket/appointments/APT001/documents/doc-1234567892-123456791.jpg",
+        "filePath": "appointments/APT001/documents/doc-1234567892-123456791.jpg",
+        "uploadedAt": "2025-01-15T10:30:02.000Z"
+      }
+    ],
+    "totalDocuments": 3,
+    "errors": []
+  },
+  "timestamp": "2025-01-15T10:30:03.000Z"
+}
+```
+
+### 21. Get Appointment Documents
+```bash
+curl -X GET http://localhost:3000/api/appoitment/APT001/documents \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
+```
+
+**Expected Response:**
+```json
+{
+  "success": true,
+  "message": "Appointment documents retrieved successfully.",
+  "data": {
+    "appointmentId": "APT001",
+    "documents": [
+      {
+        "documentId": 1,
+        "documentUrl": "https://storage.googleapis.com/your-bucket/appointments/APT001/documents/doc-1234567890-123456789.pdf",
+        "fileName": "doc-1234567890-123456789.pdf"
+      },
+      {
+        "documentId": 2,
+        "documentUrl": "https://storage.googleapis.com/your-bucket/appointments/APT001/documents/doc-1234567891-123456790.png",
+        "fileName": "doc-1234567891-123456790.png"
+      },
+      {
+        "documentId": 3,
+        "documentUrl": "https://storage.googleapis.com/your-bucket/appointments/APT001/documents/doc-1234567892-123456791.jpg",
+        "fileName": "doc-1234567892-123456791.jpg"
+      }
+    ],
+    "totalDocuments": 3
+  },
+  "timestamp": "2025-01-15T10:35:00.000Z"
+}
+```
+
+### 22. Delete Appointment Document
+```bash
+curl -X DELETE http://localhost:3000/api/appoitment/APT001/documents \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
+  -d '{
+    "documentUrl": "https://storage.googleapis.com/your-bucket/appointments/APT001/documents/doc-1234567890-123456789.pdf"
+  }'
+```
+
+**Expected Response:**
+```json
+{
+  "success": true,
+  "message": "Document deleted successfully.",
+  "data": {
+    "appointmentId": "APT001",
+    "deletedDocumentUrl": "https://storage.googleapis.com/your-bucket/appointments/APT001/documents/doc-1234567890-123456789.pdf",
+    "remainingDocuments": 2
+  },
+  "timestamp": "2025-01-15T10:40:00.000Z"
+}
 ```
 
 ### 17. QR Code Scan (Check-in/Check-out)
@@ -658,14 +855,26 @@ curl -X POST http://localhost:3000/api/admin/today-stats \
    curl -X GET "http://localhost:3000/api/qr/scan?userId=U0001&appointmentId=APT001" -H "Authorization: Bearer YOUR_JWT_TOKEN"
    ```
 
-
-
-4. **Dashboard**
+4. **Appointment Document Management**
    ```bash
-   # 9. Get dashboard data
+   # 9. Upload appointment documents (after checkout)
+   curl -X POST http://localhost:3000/api/appoitment/APT001/documents/upload -H "Authorization: Bearer YOUR_JWT_TOKEN" -F "documents=@/path/to/lab_report.pdf" -F "documents=@/path/to/xray.png"
+   
+   # 10. Get appointment documents
+   curl -X GET http://localhost:3000/api/appoitment/APT001/documents -H "Authorization: Bearer YOUR_JWT_TOKEN"
+   
+   # 11. Delete specific document
+   curl -X DELETE http://localhost:3000/api/appoitment/APT001/documents -H "Content-Type: application/json" -H "Authorization: Bearer YOUR_JWT_TOKEN" -d '{"documentUrl": "https://storage.googleapis.com/your-bucket/appointments/APT001/documents/doc-1234567890-123456789.pdf"}'
+   ```
+
+
+
+5. **Dashboard**
+   ```bash
+   # 12. Get dashboard data
    curl -X POST http://localhost:3000/api/admin/dashboard -H "Content-Type: application/json" -H "Authorization: Bearer YOUR_JWT_TOKEN" -d '{"adminId": "A0001"}'
    
-       # 10. Get date-specific statistics
+   # 13. Get date-specific statistics
     curl -X POST http://localhost:3000/api/admin/today-stats -H "Content-Type: application/json" -H "Authorization: Bearer YOUR_JWT_TOKEN" -d '{"adminId": "A0001", "date": "2024-01-27"}'
    ```
 
@@ -683,10 +892,16 @@ your-bucket/
 │           ├── D0001-1705315200000-123456789.jpg
 │           ├── D0002-1705315300000-987654321.png
 │           └── D0003-1705315400000-456789123.jpg
-└── owners/
-    └── A0001/
-        ├── aadharCard-1234567890-123456789.jpg
-        └── panCard-1234567890-123456789.jpg
+├── owners/
+│   └── A0001/
+│       ├── aadharCard-1234567890-123456789.jpg
+│       └── panCard-1234567890-123456789.jpg
+└── appointments/
+    └── APT001/
+        └── documents/
+            ├── doc-1234567890-123456789.pdf
+            ├── doc-1234567891-123456790.png
+            └── doc-1234567892-123456791.jpg
 ```
 
 ## ⚠️ **IMPORTANT NOTES**
@@ -698,9 +913,10 @@ your-bucket/
 
 ### **File Upload Requirements:**
 - Replace `/path/to/file` with actual file paths
-- Supported formats: JPEG, PNG, PDF
-- Maximum file size: 5MB
+- Supported formats: JPEG, PNG, PDF, Word docs, Excel files, text files
+- Maximum file size: 10MB per file (appointment documents), 5MB (other uploads)
 - Use multipart/form-data for file uploads
+- Uses busboy middleware for Firebase Functions compatibility
 
 ### **Location Coordinates:**
 - **Format**: `[longitude, latitude]` (GeoJSON format)
@@ -708,6 +924,15 @@ your-bucket/
 - **Default**: If not provided, coordinates default to `[0, 0]`
 - **Usage**: Used for location-based search and distance calculations
 - **Note**: Coordinates should be in decimal degrees format
+
+### **Time Slots API Features:**
+- **Slot Generation**: Automatically generates 2-hour time slots from doctor's working hours
+- **Partial Slots**: Handles edge cases (e.g., 17:00-17:30) with proportional token limits
+- **Token Limits**: Each slot has calculated limits based on `maxAppointment` and `unlimitedToken` settings
+- **Proportional Limits**: Partial slots get reduced token limits (e.g., 30-min slot = 25% of full limit)
+- **Availability Tracking**: Real-time appointment counting per time slot
+- **Date Formats**: Supports both ISO (YYYY-MM-DD) and MM/DD/YYYY formats
+- **Day Mapping**: Automatically maps dates to days of week for working hours lookup
 
 ### **Admin Verification:**
 - Only admins with `verificationStatus: "Approved"` can manage doctors
@@ -719,6 +944,16 @@ your-bucket/
 - **Date validation**: Only allows scanning on appointment date
 - **Audit trail**: Tracks who performed each scan
 - **Status management**: Not Checked-in → Checked-in → Checked-out
+
+### **Appointment Document Management:**
+- **Checkout Requirement**: Documents can only be uploaded after appointment checkout (checkInStatus = 'Checked-out')
+- **Multiple Files**: Supports up to 10 files per upload request
+- **File Types**: PDF, images (JPEG, PNG, GIF), Word docs (.doc, .docx), Excel files (.xls, .xlsx), text files (.txt)
+- **File Size**: Maximum 10MB per file
+- **Storage**: Files stored in Firebase Storage under `appointments/{appointmentId}/documents/`
+- **Database**: URLs stored in appointment.reportUrls array
+- **Deletion**: Removes files from both Firebase Storage and database
+- **Busboy**: Uses busboy middleware for Firebase Functions compatibility
 
 ### **Error Handling:**
 - All endpoints return structured error responses
@@ -737,10 +972,10 @@ your-bucket/
 - ✅ Complete admin onboarding workflow
 - ✅ Hospital and doctor management
 - ✅ QR code system for patient check-in/check-out
-
+- ✅ Appointment document management (upload/delete/view)
 - ✅ Real-time dashboard with statistics
 - ✅ Secure authentication and authorization
-- ✅ File upload and management
+- ✅ File upload and management (busboy + Firebase)
 - ✅ Comprehensive error handling
 - ✅ Counter-based ID generation
 - ✅ Firebase storage integration
@@ -750,3 +985,98 @@ your-bucket/
 - ✅ Performance optimization
 - ✅ Security measures
 - ✅ Audit logging
+
+## 8. Appointment Summary API
+
+### Get Appointments Summary (All Appointments)
+```bash
+curl -X POST "https://your-api.com/api/appointsummary" \
+  -H "Authorization: Bearer <admin_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"adminId": "ADMIN001"}'
+```
+
+**Expected Response:**
+```json
+{
+    "success": true,
+    "message": "Appointments summary retrieved successfully",
+    "data": {
+        "appointments": [
+            {
+                "_id": "appointment_id",
+                "appointmentId": "APT001",
+                "reportUrls": [
+                    "https://storage.googleapis.com/bucket/appointments/APT001/documents/doc-1234567890-123456789.pdf"
+                ],
+                "appointmentDate": "2024-01-15T10:00:00.000Z",
+                "checkInStatus": "Checked-in",
+                "checkOutStatus": "Checked-out",
+                "patientName": "John Doe",
+                "doctorName": "Dr. Smith"
+            }
+        ],
+        "totalCount": 1,
+        "date": "all dates"
+    }
+}
+```
+
+### Get Appointments Summary (Filtered by Date)
+```bash
+curl -X POST "https://your-api.com/api/appointsummary" \
+  -H "Authorization: Bearer <admin_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"adminId": "ADMIN001", "date": "2024-01-15"}'
+```
+
+**Expected Response:**
+```json
+{
+    "success": true,
+    "message": "Appointments summary retrieved successfully",
+    "data": {
+        "appointments": [
+            {
+                "_id": "appointment_id",
+                "appointmentId": "APT001",
+                "reportUrls": [
+                    "https://storage.googleapis.com/bucket/appointments/APT001/documents/doc-1234567890-123456789.pdf"
+                ],
+                "appointmentDate": "2024-01-15T10:00:00.000Z",
+                "checkInStatus": "Checked-in",
+                "checkOutStatus": "Checked-out",
+                "patientName": "John Doe",
+                "doctorName": "Dr. Smith"
+            }
+        ],
+        "totalCount": 1,
+        "date": "2024-01-15"
+    }
+}
+```
+
+### Error Response (Missing adminId)
+```bash
+curl -X POST "https://your-api.com/api/appointsummary" \
+  -H "Authorization: Bearer <admin_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"date": "2024-01-15"}'
+```
+
+### Error Response (Invalid Date Format)
+```bash
+curl -X POST "https://your-api.com/api/appointsummary" \
+  -H "Authorization: Bearer <admin_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"adminId": "ADMIN001", "date": "invalid-date"}'
+```
+
+**Expected Response:**
+```json
+{
+    "success": false,
+    "message": "Invalid date format. Please use YYYY-MM-DD format.",
+    "error": "ValidationError"
+}
+```

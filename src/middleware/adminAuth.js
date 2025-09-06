@@ -106,10 +106,12 @@ async function authenticateAdmin(req, res, next) {
 
         // === AUTHORIZATION LOGIC ===
         const authenticatedUserId = decodedPayload.data.userId;
-        
+        console.log({authenticatedUserId, path: req.path, isTrue: req.path.includes('/documents/upload')})
         // Skip authorization check for file upload routes since multer hasn't processed the form data yet
         // Authorization will be handled in the controller after multer processes the form data
-        if (req.path.includes('/hospital-documents') || req.path.includes('/owner-documents') || req.path.includes('/doctor/upload-image')) {
+        if (req.path.includes('/hospital-documents') || req.path.includes('/owner-documents') || req.path.includes('/doctor/upload-image')  || req.path.includes('/documents/upload') || (req.path.includes('/documents') && req.path.includes('/appoitment'))) {
+        console.log({authenticatedUserId, path: req.path, isTrue2: req.path.includes('/documents/upload')})
+           
             authLogger.info('Admin authenticated for file upload route - authorization will be handled in controller', {
                 adminId: authenticatedUserId,
                 path: req.path
@@ -119,7 +121,7 @@ async function authenticateAdmin(req, res, next) {
         
         // Get resource owner ID from different sources based on route
         let resourceOwnerId;
-        if (req.path.includes('/owner-info') || req.path.includes('/onboarding') || req.path.includes('/dashboard') || req.path.includes('/hospital/basic-info') || req.path.includes('/hospital/complete-info') || req.path.includes('/doctor/add') || req.path.includes('/doctor/delete') || req.path.includes('/doctor/update') || req.path.includes('/doctor/all') || req.path.includes('/today-stats') || req.path.includes('/hospital-logo-url') || req.path.includes('/hospital-images-url') || req.path.includes('/hospital-documents-url') || req.path.includes('/owner-documents-url') || req.path.includes('/update-image-url')) {
+        if (req.path.includes('/owner-info') || req.path.includes('/onboarding') || req.path.includes('/dashboard') || req.path.includes('/hospital/basic-info') || req.path.includes('/hospital/complete-info') || req.path.includes('/doctor/add') || req.path.includes('/doctor/delete') || req.path.includes('/doctor/update') || req.path.includes('/doctor/all') || req.path.includes('/today-stats') || req.path.includes('/hospital-logo-url') || req.path.includes('/hospital-images-url') || req.path.includes('/hospital-documents-url') || req.path.includes('/owner-documents-url') || req.path.includes('/update-image-url') || req.path.includes('/appointsummary') ) {
             // For admin owner-info/onboarding routes, get adminId from request body
             resourceOwnerId = req.body.adminId;
         } else {

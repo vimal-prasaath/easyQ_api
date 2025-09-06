@@ -380,4 +380,61 @@ export const updateDoctorImageUrl = async (req, res, next) => {
     }
 };
 
+// New endpoint for getting available time slots
+export const getAvailableTimeSlots = async (req, res, next) => {
+    const startTime = Date.now();
+    
+    // Log API request
+    logApiRequest(req, { action: 'get_available_time_slots' });
+
+    try {
+        const { doctorId, date } = req.body;
+        
+        // Validate required fields
+        if (!doctorId || !date) {
+            return res.status(httpStatusCode.BAD_REQUEST).json(
+                ResponseFormatter.formatErrorResponse({
+                    message: "doctorId and date are required",
+                    statusCode: httpStatusCode.BAD_REQUEST
+                })
+            );
+        }
+        
+        doctorLogger.info('Get available time slots started', {
+            userId: req.user?.userId,
+            doctorId: doctorId,
+            date: date
+        });
+
+        const result = await DoctorService.getAvailableTimeSlots(doctorId, date);
+
+        const response = ResponseFormatter.formatSuccessResponse({
+            message: "Available time slots retrieved successfully",
+            data: result,
+            statusCode: httpStatusCode.OK
+        });
+
+        doctorLogger.info('Available time slots retrieved successfully', {
+            userId: req.user?.userId,
+            doctorId: doctorId,
+            date: date,
+            slotsCount: result.availableTimeSlots?.length || 0
+        });
+
+        logApiResponse(req, response, Date.now() - startTime);
+        return res.status(httpStatusCode.OK).json(response);
+
+    } catch (error) {
+        logPerformance(req, Date.now() - startTime, 'get_available_time_slots');
+        doctorLogger.error('Get available time slots failed', {
+            userId: req.user?.userId,
+            doctorId: req.body?.doctorId,
+            date: req.body?.date,
+            error: error.message,
+            stack: error.stack
+        });
+        next(error);
+    }
+};
+
 

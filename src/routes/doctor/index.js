@@ -1,4 +1,4 @@
-import { createDoctor, getDoctor, deleteDoctor, getAllDoctor, updateDoctor, uploadDoctorImage } from "../../controller/doctor.js";
+import { createDoctor, getDoctor, deleteDoctor, getAllDoctor, updateDoctor, uploadDoctorImage, getAvailableTimeSlots } from "../../controller/doctor.js";
 import express from "express";
 import authorizeOwnerOrAdmin from "../../middleware/adminOwnerOrAdmin.js";
 import authorizeRoles from "../../middleware/authorization.js";
@@ -22,5 +22,8 @@ router.put('/upload-image',
 
 // New route for updating doctor profile image URL (frontend handles upload)
 router.put('/update-image-url', authenticateAdmin, updateDoctorImageUrl);
+
+// New route for getting available time slots
+router.post('/available-time-slots', getAvailableTimeSlots);
 
 export default router;

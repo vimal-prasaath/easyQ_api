@@ -286,3 +286,68 @@ export const uploadDoctorImage = async (
     throw error;
   }
 };
+
+// New function for appointment document uploads
+export const uploadAppointmentDocument = async (
+  fileBuffer,
+  originalname,
+  mimetype,
+  appointmentId,
+  patientId
+) => {
+  const sanitizedAppointmentId = appointmentId
+    ? appointmentId.replace(/[^a-zA-Z0-9-_.]/g, "_")
+    : "unknown";
+  const sanitizedPatientId = patientId
+    ? patientId.replace(/[^a-zA-Z0-9-_.]/g, "_")
+    : "unknown";
+  const fileExtension = path.extname(originalname);
+  const uniqueFileName = `doc-${Date.now()}-${Math.round(
+    Math.random() * 1e9
+  )}${fileExtension}`;
+
+  const filePathInStorage = `appointments/${sanitizedAppointmentId}/documents/${uniqueFileName}`;
+  const file = bucket.file(filePathInStorage);
+
+  try {
+    console.log(`Uploading appointment document: ${originalname} with MIME type: ${mimetype}`);
+    
+    await file.save(fileBuffer, {
+      contentType: mimetype,
+      metadata: {
+        metadata: {
+          fieldName: "file",
+          appointmentId: appointmentId || "unknown",
+          patientId: patientId || "unknown",
+          originalName: originalname,
+        },
+      },
+      public: true, // Make file publicly accessible
+    });
+
+    // Ensure the file is publicly accessible
+    await file.makePublic();
+
+    // Generate the public URL
+    const publicUrl = `https://storage.googleapis.com/${process.env.STORAGE_BUCKET_NAME}/${filePathInStorage}`;
+    
+    console.log(`Appointment document uploaded successfully. Public URL: ${publicUrl}`);
+    
+    // Verify the file is accessible
+    try {
+      const [exists] = await file.exists();
+      if (!exists) {
+        throw new Error('Appointment document was not saved properly');
+      }
+      console.log('Appointment document verification successful');
+    } catch (verifyError) {
+      console.error('Error verifying appointment document upload:', verifyError);
+      throw new Error('Appointment document upload verification failed');
+    }
+
+    return { url: publicUrl, path: filePathInStorage };
+  } catch (error) {
+    console.error("Error uploading appointment document to Firebase Storage:", error);
+    throw error;
+  }
+};

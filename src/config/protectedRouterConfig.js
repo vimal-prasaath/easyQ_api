@@ -33,7 +33,8 @@ import {
     getAllDoctor,
     updateDoctor,
     meetDoctor,
-    uploadDoctorImage
+    uploadDoctorImage,
+    getAvailableTimeSlots
 } from "../controller/doctor.js";
 
 import {
@@ -46,7 +47,11 @@ import {
     getAppointmentById,
     getAppointmentsByHospital,
     getAppointmentsByPatient,
-    safeCreateAppointment
+    safeCreateAppointment,
+    uploadAppointmentDocuments,
+    deleteAppointmentDocument,
+    getAppointmentDocuments,
+    getAppointmentsSummary
 } from "../controller/appointment.js"; 
 
 import { searchHospital } from '../controller/searchController.js'; 
@@ -79,7 +84,7 @@ import {
 } from '../controller/review.js';
 
 import { uploadFile, getFiles, deleteFile , downloadFile } from "../controller/uploadFile.js"; 
-import {uploadMiddleware , busboyErrorHandler} from './fileConfig.js'; 
+import {uploadMiddleware , busboyErrorHandler, uploadMultipleFilesMiddleware} from './fileConfig.js'; 
 import { searchRateLimit } from '../middleware/rateLimiter.js';
 import { updateOnboardingInfo, getAdminDetails, getAdminDashboard } from '../controller/admin.js';
 import authenticateAdmin from '../middleware/adminAuth.js';
@@ -137,16 +142,25 @@ const protectedRoutesConfig = [
     { path: '/doctor/meet', method: 'post', resourceType: 'doctor', action: 'read_all_in_hospital', resourceIdParamName: 'hospitalId', handlers: [meetDoctor] },
     { path: '/doctor/upload-image', method: 'put', resourceType: 'doctor', action: 'upload_image', handlers: [authenticateAdmin, adminVerificationCheck, uploadMiddleware, busboyErrorHandler, uploadDoctorImage] },
     { path: '/doctor/update-image-url', method: 'put', resourceType: 'doctor', action: 'update_image_url', handlers: [authenticateAdmin, updateDoctorImageUrl] },
+    { path: '/doctor/available-time-slots', method: 'post', resourceType: 'doctor', action: 'get_available_time_slots', handlers: [getAvailableTimeSlots] },
     // --- Appoitment ROUTES ---
     { path: '/appoitment', method: 'post', resourceType: 'appointment', action: 'create', handlers: [appointmentLimiter,createAppointment] },
     { path: '/appoitment/check', method: 'post', resourceType: 'appointment', action: 'create', handlers: [safeCreateAppointment] },
     { path: '/appoitment/process', method: 'post', resourceType: 'appointment', action: 'process_payment', handlers: [processAppointment] },
+    // --- APPOINTMENT SUMMARY ROUTE ---
+    { path: '/appointsummary', method: 'post', resourceType: 'appointment_summary', action: 'read', handlers: [authenticateAdmin, adminVerificationCheck, getAppointmentsSummary] },
+    
     { path: '/appoitment/:appointmentId', method: 'put', resourceType: 'appointment', action: 'update', resourceIdParamName: 'appointmentId', handlers: [updateAppointment] },
     { path: '/appoitment/:appointmentId', method: 'delete', resourceType: 'appointment', action: 'delete', resourceIdParamName: 'appointmentId', handlers: [deleteAppointment] },
     { path: '/appoitment/:appointmentId', method: 'get', resourceType: 'appointment', action: 'read', resourceIdParamName: 'appointmentId', handlers: [getAppointmentById] },
     { path: '/appoitment/doctor/:doctorId', method: 'get', resourceType: 'appointment', action: 'read_by_doctor', resourceIdParamName: 'doctorId', handlers: [getAppointmentsByDoctor] },
     { path: '/appoitment/hospital/:hospitalId', method: 'get', resourceType: 'appointment', action: 'read_by_hospital', resourceIdParamName: 'hospitalId', handlers: [getAppointmentsByHospital] },
     { path: '/appoitment/userId/:patientId', method: 'get', resourceType: 'appointment', action: 'read_by_patient', resourceIdParamName: 'patientId', handlers: [getAppointmentsByPatient] },
+    
+    // --- APPOINTMENT DOCUMENT ROUTES ---
+    { path: '/appoitment/:appointmentId/documents/upload', method: 'post', resourceType: 'appointment_documents', action: 'upload', resourceIdParamName: 'appointmentId', handlers: [authenticateAdmin, adminVerificationCheck, uploadMultipleFilesMiddleware, busboyErrorHandler, uploadAppointmentDocuments] },
+    { path: '/appoitment/:appointmentId/documents', method: 'get', resourceType: 'appointment_documents', action: 'read', resourceIdParamName: 'appointmentId', handlers: [authenticateAdmin, adminVerificationCheck, getAppointmentDocuments] },
+    { path: '/appoitment/:appointmentId/documents', method: 'delete', resourceType: 'appointment_documents', action: 'delete', resourceIdParamName: 'appointmentId', handlers: [authenticateAdmin, adminVerificationCheck, deleteAppointmentDocument] },
 
     // --- SEARCH Bar ROUTES ---
     { path: '/search', method: 'post', resourceType: 'search', action: 'search_hospital', handlers: [searchRateLimit,searchHospital] },

@@ -1,6 +1,7 @@
 
 import Doctor from '../model/doctor.js';
 import Hospital from '../model/hospital.js';
+import Appointment from '../model/appointment.js';
 import { EasyQError } from '../config/error.js';
 import { httpStatusCode } from '../util/statusCode.js';
 import { uploadDoctorImage } from '../config/fireBaseStorage.js';
@@ -872,4 +873,188 @@ export class DoctorService {
             throw error;
         }
     }
+
+    static async getAvailableTimeSlots(doctorId, date) {
+        try {
+            // ✅ Validate inputs
+            if (!doctorId) {
+                throw new EasyQError(
+                    'ValidationError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    'Doctor ID is required.'
+                );
+            }
+
+            if (!date) {
+                throw new EasyQError(
+                    'ValidationError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    'Date is required.'
+                );
+            }
+
+            // ✅ Get doctor with working hours
+            const doctor = await Doctor.findOne({ doctorId }).select('name maxAppointment unlimitedToken workingHours');
+            
+            if (!doctor) {
+                throw new EasyQError(
+                    'NotFoundError',
+                    httpStatusCode.NOT_FOUND,
+                    true,
+                    `Doctor with ID ${doctorId} not found.`
+                );
+            }
+
+            // ✅ Parse and validate date
+            let parsedDate;
+            try {
+                // Support multiple date formats
+                if (date.includes('/')) {
+                    // MM/DD/YYYY format
+                    const [month, day, year] = date.split('/');
+                    parsedDate = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
+                } else {
+                    // ISO format or YYYY-MM-DD
+                    parsedDate = new Date(date);
+                }
+                
+                if (isNaN(parsedDate.getTime())) {
+                    throw new Error('Invalid date');
+                }
+            } catch (error) {
+                throw new EasyQError(
+                    'ValidationError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    'Invalid date format. Please use YYYY-MM-DD or MM/DD/YYYY format.'
+                );
+            }
+
+            // ✅ Get day of week
+            const dayOfWeek = parsedDate.toLocaleDateString('en-US', { weekday: 'long' });
+            
+            // ✅ Find working hours for the day
+            const dayWorkingHours = doctor.workingHours.find(wh => wh.day === dayOfWeek);
+            
+            if (!dayWorkingHours || !dayWorkingHours.timeSlots || dayWorkingHours.timeSlots.length === 0) {
+                return {
+                    doctorId: doctor.doctorId,
+                    doctorName: doctor.name,
+                    date: date,
+                    day: dayOfWeek,
+                    maxAppointment: doctor.maxAppointment,
+                    unlimitedToken: doctor.unlimitedToken,
+                    availableTimeSlots: [],
+                    message: `No working hours found for ${dayOfWeek}.`
+                };
+            }
+
+            // ✅ Generate time slots from working hours
+            const availableTimeSlots = [];
+            
+            for (const timeSlot of dayWorkingHours.timeSlots) {
+                const slots = this.generateTimeSlots(timeSlot.startTime, timeSlot.endTime);
+                
+                for (const slot of slots) {
+                    // ✅ Count appointments for this specific time slot
+                    const startOfDay = new Date(parsedDate);
+                    startOfDay.setHours(0, 0, 0, 0);
+                    
+                    const endOfDay = new Date(parsedDate);
+                    endOfDay.setHours(23, 59, 59, 999);
+                    
+                    const appointmentCount = await Appointment.countDocuments({
+                        doctorId: doctorId,
+                        appointmentDate: { $gte: startOfDay, $lte: endOfDay },
+                        appointmentTime: slot.startTime
+                    });
+
+                    // ✅ Calculate slot limit (proportional for partial slots)
+                    const slotDuration = this.getTimeDifferenceInMinutes(slot.startTime, slot.endTime);
+                    const standardDuration = 120; // 2 hours
+                    const maxTokens = doctor.unlimitedToken ? 
+                        Infinity : 
+                        Math.max(1, Math.floor((slotDuration / standardDuration) * parseInt(doctor.maxAppointment)));
+
+                    // ✅ Check availability
+                    const isAvailable = doctor.unlimitedToken || appointmentCount < maxTokens;
+                    const remainingSlots = doctor.unlimitedToken ? 
+                        Infinity : 
+                        Math.max(0, maxTokens - appointmentCount);
+
+                    availableTimeSlots.push({
+                        startTime: slot.startTime,
+                        endTime: slot.endTime,
+                        duration: slotDuration,
+                        maxTokens: doctor.unlimitedToken ? 'unlimited' : maxTokens,
+                        bookedAppointments: appointmentCount,
+                        remainingSlots: doctor.unlimitedToken ? 'unlimited' : remainingSlots,
+                        isAvailable: isAvailable
+                    });
+                }
+            }
+
+            return {
+                doctorId: doctor.doctorId,
+                doctorName: doctor.name,
+                date: date,
+                day: dayOfWeek,
+                maxAppointment: doctor.maxAppointment,
+                unlimitedToken: doctor.unlimitedToken,
+                availableTimeSlots: availableTimeSlots
+            };
+
+        } catch (error) {
+            if (error.name === 'ValidationError' || error.name === 'NotFoundError') {
+                throw error;
+            }
+            throw new EasyQError(
+                'DatabaseError',
+                httpStatusCode.INTERNAL_SERVER_ERROR,
+                false,
+                `Failed to get available time slots: ${error.message}`
+            );
+        }
+    }
+
+    // ✅ Helper method to generate time slots
+    static generateTimeSlots(startTime, endTime, slotDuration = 120) {
+        const slots = [];
+        const startMinutes = this.timeToMinutes(startTime);
+        const endMinutes = this.timeToMinutes(endTime);
+        
+        let currentMinutes = startMinutes;
+        
+        while (currentMinutes < endMinutes) {
+            const nextMinutes = Math.min(currentMinutes + slotDuration, endMinutes);
+            slots.push({
+                startTime: this.minutesToTime(currentMinutes),
+                endTime: this.minutesToTime(nextMinutes)
+            });
+            currentMinutes = nextMinutes;
+        }
+        
+        return slots;
+    }
+
+    // ✅ Helper method to convert time to minutes
+    static timeToMinutes(time) {
+        const [hours, minutes] = time.split(':').map(Number);
+        return hours * 60 + minutes;
+    }
+
+    // ✅ Helper method to convert minutes to time
+    static minutesToTime(minutes) {
+        const hours = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+        return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
+    }
+
+    // ✅ Helper method to get time difference in minutes
+    static getTimeDifferenceInMinutes(startTime, endTime) {
+        return this.timeToMinutes(endTime) - this.timeToMinutes(startTime);
+    }
+
 }

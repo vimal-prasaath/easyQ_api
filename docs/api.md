@@ -509,6 +509,141 @@ Authorization: Bearer <token>
 }
 ```
 
+### Upload Appointment Documents
+**Status:** ✅ Available
+
+**Endpoint:** `POST /api/appoitment/{appointmentId}/documents/upload`
+
+**Headers:**
+```
+Authorization: Bearer <token>
+Content-Type: multipart/form-data
+```
+
+**Request Body:**
+```
+Form Data:
+- documents: File[] (multiple files, max 10 files, 10MB each)
+- Uses busboy middleware for Firebase compatibility
+```
+
+**Supported File Types:**
+- PDF documents
+- Images (JPEG, PNG, GIF)
+- Word documents (.doc, .docx)
+- Excel files (.xls, .xlsx)
+- Text files (.txt)
+
+**Response:**
+```json
+{
+    "success": true,
+    "message": "Successfully uploaded 2 document(s).",
+    "data": {
+        "appointmentId": "29351",
+        "uploadedDocuments": [
+            {
+                "fileName": "lab_report.pdf",
+                "mimeType": "application/pdf",
+                "size": 1024000,
+                "fileUrl": "https://storage.googleapis.com/bucket/appointments/29351/documents/doc-1234567890-123456789.pdf",
+                "filePath": "appointments/29351/documents/doc-1234567890-123456789.pdf",
+                "uploadedAt": "2025-01-15T10:30:00.000Z"
+            },
+            {
+                "fileName": "xray_image.png",
+                "mimeType": "image/png",
+                "size": 512000,
+                "fileUrl": "https://storage.googleapis.com/bucket/appointments/29351/documents/doc-1234567891-123456790.png",
+                "filePath": "appointments/29351/documents/doc-1234567891-123456790.png",
+                "uploadedAt": "2025-01-15T10:30:01.000Z"
+            }
+        ],
+        "totalDocuments": 4,
+        "errors": []
+    },
+    "timestamp": "2025-01-15T10:30:02.000Z"
+}
+```
+
+**Notes:**
+- Documents can only be uploaded after appointment checkout (checkInStatus = 'Checked-out')
+- Maximum 10 files per request
+- Each file limited to 10MB
+- Files are stored in Firebase Storage and URLs are saved in appointment.reportUrls
+- Uses busboy middleware for Firebase Functions compatibility (recommended by Firebase)
+
+### Get Appointment Documents
+**Status:** ✅ Available
+
+**Endpoint:** `GET /api/appoitment/{appointmentId}/documents`
+
+**Headers:**
+```
+Authorization: Bearer <token>
+```
+
+**Response:**
+```json
+{
+    "success": true,
+    "message": "Appointment documents retrieved successfully.",
+    "data": {
+        "appointmentId": "29351",
+        "documents": [
+            {
+                "documentId": 1,
+                "documentUrl": "https://storage.googleapis.com/bucket/appointments/29351/documents/doc-1234567890-123456789.pdf",
+                "fileName": "doc-1234567890-123456789.pdf"
+            },
+            {
+                "documentId": 2,
+                "documentUrl": "https://storage.googleapis.com/bucket/appointments/29351/documents/doc-1234567891-123456790.png",
+                "fileName": "doc-1234567891-123456790.png"
+            }
+        ],
+        "totalDocuments": 2
+    },
+    "timestamp": "2025-01-15T10:35:00.000Z"
+}
+```
+
+### Delete Appointment Document
+**Status:** ✅ Available
+
+**Endpoint:** `DELETE /api/appoitment/{appointmentId}/documents`
+
+**Headers:**
+```
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+    "documentUrl": "https://storage.googleapis.com/bucket/appointments/29351/documents/doc-1234567890-123456789.pdf"
+}
+```
+
+**Response:**
+```json
+{
+    "success": true,
+    "message": "Document deleted successfully.",
+    "data": {
+        "appointmentId": "29351",
+        "deletedDocumentUrl": "https://storage.googleapis.com/bucket/appointments/29351/documents/doc-1234567890-123456789.pdf",
+        "remainingDocuments": 1
+    },
+    "timestamp": "2025-01-15T10:40:00.000Z"
+}
+```
+
+**Notes:**
+- Document is deleted from both Firebase Storage and appointment.reportUrls array
+- If Firebase deletion fails, database is still updated
+
 ---
 
 ## Dashboard
@@ -561,6 +696,89 @@ All API calls require a Bearer token in the Authorization header:
 ```
 Authorization: Bearer <your_jwt_token>
 ```
+
+## 8. Appointment Summary API
+
+### Get Appointments Summary
+**Endpoint:** `POST /api/appointsummary`  
+**Authentication:** Admin Token Required  
+**Description:** Get appointments summary with patient name, report URLs, appointment ID, doctor name, appointment date, check-in and checkout status. Can filter by date.
+
+#### Request Body
+```json
+{
+    "adminId": "ADMIN001",
+    "date": "2024-01-15"
+}
+```
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `adminId` | string | Yes | Admin ID (mandatory) |
+| `date` | string | No | Date in YYYY-MM-DD format to filter appointments. If not provided, returns all appointments. |
+
+#### Headers
+```
+Authorization: Bearer <admin_token>
+Content-Type: application/json
+```
+
+#### Response
+**Success (200):**
+```json
+{
+    "success": true,
+    "message": "Appointments summary retrieved successfully",
+    "data": {
+        "appointments": [
+            {
+                "_id": "appointment_id",
+                "appointmentId": "APT001",
+                "reportUrls": [
+                    "https://storage.googleapis.com/bucket/appointments/APT001/documents/doc-1234567890-123456789.pdf"
+                ],
+                "appointmentDate": "2024-01-15T10:00:00.000Z",
+                "checkInStatus": "Checked-in",
+                "checkOutStatus": "Checked-out",
+                "patientName": "John Doe",
+                "doctorName": "Dr. Smith"
+            }
+        ],
+        "totalCount": 1,
+        "date": "2024-01-15"
+    }
+}
+```
+
+**Error (400):**
+```json
+{
+    "success": false,
+    "message": "Invalid date format. Please use YYYY-MM-DD format.",
+    "error": "ValidationError"
+}
+```
+
+#### Example Usage
+```bash
+# POST - Get all appointments
+curl -X POST "https://your-api.com/api/appointsummary" \
+  -H "Authorization: Bearer <admin_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"adminId": "ADMIN001"}'
+
+# POST - Get appointments for specific date
+curl -X POST "https://your-api.com/api/appointsummary" \
+  -H "Authorization: Bearer <admin_token>" \
+  -H "Content-Type: application/json" \
+  -d '{"adminId": "ADMIN001", "date": "2024-01-15"}'
+```
+
+#### Notes
+- Requires admin authentication
+- Date parameter is optional - if not provided, returns all appointments
+- Results are sorted by appointment date (newest first)
+- Returns appointments with patient and doctor information joined
 
 ## Response Format
 All APIs follow a consistent response format:

@@ -460,6 +460,91 @@ export class AppointmentService {
     };
 }
 
+    static async getAppointmentsSummary(date = null, hospitalId = null) {
+        try {
+            logInfo('Fetching appointments summary', { date, hospitalId });
+
+            // Build match condition
+            const matchCondition = {};
+            if (date) {
+                // Convert date string to start and end of day
+                const startDate = new Date(date);
+                startDate.setHours(0, 0, 0, 0);
+                
+                const endDate = new Date(date);
+                endDate.setHours(23, 59, 59, 999);
+                
+                matchCondition.appointmentDate = {
+                    $gte: startDate,
+                    $lte: endDate
+                };
+            }
+            
+            // Filter by hospital if provided
+            if (hospitalId) {
+                matchCondition.hospitalId = hospitalId;
+            }
+
+            console.log(matchCondition)
+
+            const pipeline = [
+                {
+                    $match: matchCondition
+                },
+                {
+                    $lookup: {
+                        from: 'users',
+                        localField: 'patientId',
+                        foreignField: 'userId',
+                        as: 'patientInfo'
+                    }
+                },
+                { $unwind: { path: '$patientInfo', preserveNullAndEmptyArrays: true } },
+                {
+                    $lookup: {
+                        from: 'doctors',
+                        localField: 'doctorId',
+                        foreignField: 'doctorId',
+                        as: 'doctorInfo'
+                    }
+                },
+                { $unwind: { path: '$doctorInfo', preserveNullAndEmptyArrays: true } },
+                {
+                    $project: {
+                        appointmentId: 1,
+                        reportUrls: 1,
+                        appointmentDate: 1,
+                        checkInStatus: 1,
+                        checkOutStatus: 1,
+                        patientName: '$patientInfo.name',
+                        doctorName: '$doctorInfo.name'
+                    }
+                },
+                {
+                    $sort: { appointmentDate: -1 }
+                }
+            ];
+
+            const appointments = await Appointment.aggregate(pipeline);
+
+            console.log('🔍 Raw appointments from aggregation:', JSON.stringify(appointments, null, 2));
+            
+            logInfo('Appointments summary fetched successfully', { 
+                count: appointments.length,
+                date: date || 'all dates'
+            });
+
+            return appointments;
+
+        } catch (error) {
+            logError('Error fetching appointments summary', {
+                error: error.message,
+                date
+            });
+            throw error;
+        }
+    }
+
 }
 
 
