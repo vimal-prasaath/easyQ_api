@@ -150,6 +150,11 @@ const doctorSchema = new Schema({
 
     maxAppointment:{type: String,default:20},
     
+    unlimitedToken: {
+        type: Boolean,
+        default: false
+    },
+    
     createdAt: {
         type: Date,
         default: Date.now

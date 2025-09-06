@@ -290,6 +290,7 @@ curl -X POST http://localhost:3000/api/doctor/add \
     "hospitalId": "6155",
     "consultantFee": 1500,
     "status": "Available",
+    "unlimitedToken": false,
     "workingHours": [
       {
         "day": "Monday",
@@ -348,6 +349,7 @@ curl -X PUT http://localhost:3000/api/doctor/update \
     "name": "Dr. Sarah Johnson-Smith",
     "consultantFee": 1800,
     "status": "Available",
+    "unlimitedToken": true,
     "qualification": ["MBBS", "MD Cardiology", "Fellowship in Interventional Cardiology", "PhD Cardiovascular Sciences"]
   }'
 ```
