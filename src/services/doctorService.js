@@ -74,6 +74,52 @@ export class DoctorService {
                 );
             }
 
+            // ✅ Validate permissions if provided
+            if (doctorData.permissions) {
+                const validPermissions = [
+                    'profile', 'tokenIssued', 'checkedIn', 'userLogs', 'documentsView',
+                    'doctorsList', 'addDoctor', 'editDoctor', 'deleteDoctor', 'todayLogs',
+                    'scanQr', 'uploadDocs'
+                ];
+                
+                for (const [permissionKey, permissionValue] of Object.entries(doctorData.permissions)) {
+                    if (!validPermissions.includes(permissionKey)) {
+                        throw new EasyQError(
+                            'ValidationError',
+                            httpStatusCode.BAD_REQUEST,
+                            true,
+                            `Invalid permission: ${permissionKey}. Valid permissions are: ${validPermissions.join(', ')}`
+                        );
+                    }
+                    
+                    if (permissionValue && typeof permissionValue === 'object') {
+                        if (permissionValue.enabled !== undefined && typeof permissionValue.enabled !== 'boolean') {
+                            throw new EasyQError(
+                                'ValidationError',
+                                httpStatusCode.BAD_REQUEST,
+                                true,
+                                `Permission ${permissionKey}.enabled must be a boolean value`
+                            );
+                        }
+                        if (permissionValue.viewOnly !== undefined && typeof permissionValue.viewOnly !== 'boolean') {
+                            throw new EasyQError(
+                                'ValidationError',
+                                httpStatusCode.BAD_REQUEST,
+                                true,
+                                `Permission ${permissionKey}.viewOnly must be a boolean value`
+                            );
+                        }
+                    } else {
+                        throw new EasyQError(
+                            'ValidationError',
+                            httpStatusCode.BAD_REQUEST,
+                            true,
+                            `Permission ${permissionKey} must be an object with enabled and viewOnly properties`
+                        );
+                    }
+                }
+            }
+
             // ✅ Validate hospital exists and is active
             const hospitalData = await Hospital.findOne({ hospitalId: doctorData.hospitalId });
             if (!hospitalData) {
@@ -265,6 +311,52 @@ export class DoctorService {
                     true,
                     `A doctor with mobile number ${updates.mobileNumber} already exists.`
                 );
+            }
+        }
+
+        // ✅ Validate permissions if being updated
+        if (updates.permissions) {
+            const validPermissions = [
+                'profile', 'tokenIssued', 'checkedIn', 'userLogs', 'documentsView',
+                'doctorsList', 'addDoctor', 'editDoctor', 'deleteDoctor', 'todayLogs',
+                'scanQr', 'uploadDocs'
+            ];
+            
+            for (const [permissionKey, permissionValue] of Object.entries(updates.permissions)) {
+                if (!validPermissions.includes(permissionKey)) {
+                    throw new EasyQError(
+                        'ValidationError',
+                        httpStatusCode.BAD_REQUEST,
+                        true,
+                        `Invalid permission: ${permissionKey}. Valid permissions are: ${validPermissions.join(', ')}`
+                    );
+                }
+                
+                if (permissionValue && typeof permissionValue === 'object') {
+                    if (permissionValue.enabled !== undefined && typeof permissionValue.enabled !== 'boolean') {
+                        throw new EasyQError(
+                            'ValidationError',
+                            httpStatusCode.BAD_REQUEST,
+                            true,
+                            `Permission ${permissionKey}.enabled must be a boolean value`
+                        );
+                    }
+                    if (permissionValue.viewOnly !== undefined && typeof permissionValue.viewOnly !== 'boolean') {
+                        throw new EasyQError(
+                            'ValidationError',
+                            httpStatusCode.BAD_REQUEST,
+                            true,
+                            `Permission ${permissionKey}.viewOnly must be a boolean value`
+                        );
+                    }
+                } else {
+                    throw new EasyQError(
+                        'ValidationError',
+                        httpStatusCode.BAD_REQUEST,
+                        true,
+                        `Permission ${permissionKey} must be an object with enabled and viewOnly properties`
+                    );
+                }
             }
         }
 

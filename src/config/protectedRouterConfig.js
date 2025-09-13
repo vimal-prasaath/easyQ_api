@@ -91,6 +91,8 @@ import authenticateAdmin from '../middleware/adminAuth.js';
 import adminVerificationCheck from '../middleware/adminVerificationCheck.js';
 
 import { updateDoctorImageUrl } from '../controller/doctor.js';
+import { doctorSignup, doctorLogin, getDoctorProfile } from '../controller/doctorAuth.js';
+import { authenticateDoctor } from '../middleware/doctorAuth.js';
 
 const protectedRoutesConfig = [
     //admin
@@ -143,6 +145,11 @@ const protectedRoutesConfig = [
     { path: '/doctor/upload-image', method: 'put', resourceType: 'doctor', action: 'upload_image', handlers: [authenticateAdmin, adminVerificationCheck, uploadMiddleware, busboyErrorHandler, uploadDoctorImage] },
     { path: '/doctor/update-image-url', method: 'put', resourceType: 'doctor', action: 'update_image_url', handlers: [authenticateAdmin, updateDoctorImageUrl] },
     { path: '/doctor/available-time-slots', method: 'post', resourceType: 'doctor', action: 'get_available_time_slots', handlers: [getAvailableTimeSlots] },
+    
+    // --- DOCTOR AUTHENTICATION ROUTES ---
+    { path: '/doctor/signup', method: 'post', resourceType: 'doctor_auth', action: 'signup', handlers: [doctorSignup] },
+    { path: '/doctor/login', method: 'post', resourceType: 'doctor_auth', action: 'login', handlers: [doctorLogin] },
+    { path: '/doctor/profile', method: 'get', resourceType: 'doctor_auth', action: 'get_profile', handlers: [authenticateDoctor, getDoctorProfile] },
     // --- Appoitment ROUTES ---
     { path: '/appoitment', method: 'post', resourceType: 'appointment', action: 'create', handlers: [appointmentLimiter,createAppointment] },
     { path: '/appoitment/check', method: 'post', resourceType: 'appointment', action: 'create', handlers: [safeCreateAppointment] },

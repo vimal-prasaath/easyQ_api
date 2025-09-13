@@ -270,6 +270,88 @@ curl -X PUT http://localhost:3000/api/admin/owner-documents-url \
 
 ## 👨‍⚕️ **DOCTOR MANAGEMENT**
 
+### **Doctor Permissions System**
+
+The doctor management system includes a comprehensive permissions system that allows admins to control what each doctor can access and do within the system. Each permission has two flags:
+
+- **`enabled`**: Whether the doctor has access to this feature
+- **`viewOnly`**: Whether the doctor can only view (read-only) or can also modify (read-write)
+
+#### **Available Permissions:**
+
+| Permission | Description | Use Case |
+|------------|-------------|----------|
+| `profile` | Access to doctor profile information | View/edit own profile |
+| `tokenIssued` | View/manage issued tokens | Track patient tokens |
+| `checkedIn` | View/manage patient check-ins | Monitor patient arrivals |
+| `userLogs` | Access to user activity logs | Audit patient activities |
+| `documentsView` | View patient documents | Access medical records |
+| `doctorsList` | View list of doctors | See other doctors in hospital |
+| `addDoctor` | Add new doctors | Create doctor accounts |
+| `editDoctor` | Edit doctor information | Modify doctor details |
+| `deleteDoctor` | Delete doctors | Remove doctor accounts |
+| `todayLogs` | View today's activity logs | Daily operations monitoring |
+| `scanQr` | Scan QR codes for check-in/out | Patient check-in operations |
+| `uploadDocs` | Upload patient documents | Add medical documents |
+
+#### **Permission Examples:**
+
+```json
+// Full access doctor (admin-level)
+{
+  "permissions": {
+    "profile": { "enabled": true, "viewOnly": false },
+    "tokenIssued": { "enabled": true, "viewOnly": false },
+    "checkedIn": { "enabled": true, "viewOnly": false },
+    "userLogs": { "enabled": true, "viewOnly": false },
+    "documentsView": { "enabled": true, "viewOnly": false },
+    "doctorsList": { "enabled": true, "viewOnly": false },
+    "addDoctor": { "enabled": true, "viewOnly": false },
+    "editDoctor": { "enabled": true, "viewOnly": false },
+    "deleteDoctor": { "enabled": true, "viewOnly": false },
+    "todayLogs": { "enabled": true, "viewOnly": false },
+    "scanQr": { "enabled": true, "viewOnly": false },
+    "uploadDocs": { "enabled": true, "viewOnly": false }
+  }
+}
+
+// Read-only doctor (limited access)
+{
+  "permissions": {
+    "profile": { "enabled": true, "viewOnly": true },
+    "tokenIssued": { "enabled": true, "viewOnly": true },
+    "checkedIn": { "enabled": true, "viewOnly": true },
+    "userLogs": { "enabled": false, "viewOnly": false },
+    "documentsView": { "enabled": true, "viewOnly": true },
+    "doctorsList": { "enabled": true, "viewOnly": true },
+    "addDoctor": { "enabled": false, "viewOnly": false },
+    "editDoctor": { "enabled": false, "viewOnly": false },
+    "deleteDoctor": { "enabled": false, "viewOnly": false },
+    "todayLogs": { "enabled": true, "viewOnly": true },
+    "scanQr": { "enabled": true, "viewOnly": false },
+    "uploadDocs": { "enabled": false, "viewOnly": false }
+  }
+}
+
+// Basic doctor (minimal access)
+{
+  "permissions": {
+    "profile": { "enabled": true, "viewOnly": false },
+    "tokenIssued": { "enabled": false, "viewOnly": false },
+    "checkedIn": { "enabled": false, "viewOnly": false },
+    "userLogs": { "enabled": false, "viewOnly": false },
+    "documentsView": { "enabled": true, "viewOnly": false },
+    "doctorsList": { "enabled": false, "viewOnly": false },
+    "addDoctor": { "enabled": false, "viewOnly": false },
+    "editDoctor": { "enabled": false, "viewOnly": false },
+    "deleteDoctor": { "enabled": false, "viewOnly": false },
+    "todayLogs": { "enabled": false, "viewOnly": false },
+    "scanQr": { "enabled": true, "viewOnly": false },
+    "uploadDocs": { "enabled": true, "viewOnly": false }
+  }
+}
+```
+
 ### 10. Create Doctor (Requires Approved Admin)
 ```bash
 curl -X POST http://localhost:3000/api/doctor/add \
@@ -315,8 +397,60 @@ curl -X POST http://localhost:3000/api/doctor/add \
         ]
       }
     ],
-    "maxAppointment": "20"
+    "maxAppointment": "20",
+    "permissions": {
+      "profile": { "enabled": true, "viewOnly": false },
+      "tokenIssued": { "enabled": true, "viewOnly": false },
+      "checkedIn": { "enabled": true, "viewOnly": false },
+      "userLogs": { "enabled": true, "viewOnly": true },
+      "documentsView": { "enabled": true, "viewOnly": false },
+      "doctorsList": { "enabled": true, "viewOnly": true },
+      "addDoctor": { "enabled": false, "viewOnly": false },
+      "editDoctor": { "enabled": false, "viewOnly": false },
+      "deleteDoctor": { "enabled": false, "viewOnly": false },
+      "todayLogs": { "enabled": true, "viewOnly": true },
+      "scanQr": { "enabled": true, "viewOnly": false },
+      "uploadDocs": { "enabled": true, "viewOnly": false }
+    }
   }'
+```
+
+**Expected Response:**
+```json
+{
+  "success": true,
+  "message": "Doctor created successfully",
+  "data": {
+    "doctor": {
+      "doctorId": "D0001",
+      "name": "Dr. Sarah Johnson",
+      "email": "sarah.johnson@hospital.com",
+      "mobileNumber": "9876543210",
+      "gender": "Female",
+      "specialization": "Cardiology",
+      "hospitalId": "6155",
+      "consultantFee": 1500,
+      "status": "Available",
+      "permissions": {
+        "profile": { "enabled": true, "viewOnly": false },
+        "tokenIssued": { "enabled": true, "viewOnly": false },
+        "checkedIn": { "enabled": true, "viewOnly": false },
+        "userLogs": { "enabled": true, "viewOnly": true },
+        "documentsView": { "enabled": true, "viewOnly": false },
+        "doctorsList": { "enabled": true, "viewOnly": true },
+        "addDoctor": { "enabled": false, "viewOnly": false },
+        "editDoctor": { "enabled": false, "viewOnly": false },
+        "deleteDoctor": { "enabled": false, "viewOnly": false },
+        "todayLogs": { "enabled": true, "viewOnly": true },
+        "scanQr": { "enabled": true, "viewOnly": false },
+        "uploadDocs": { "enabled": true, "viewOnly": false }
+      }
+    },
+    "adminId": "A0001",
+    "doctorId": "D0001",
+    "experience": 8
+  }
+}
 ```
 
 ### 11. Upload Doctor Profile Image (Requires Approved Admin)
@@ -350,8 +484,204 @@ curl -X PUT http://localhost:3000/api/doctor/update \
     "consultantFee": 1800,
     "status": "Available",
     "unlimitedToken": true,
-    "qualification": ["MBBS", "MD Cardiology", "Fellowship in Interventional Cardiology", "PhD Cardiovascular Sciences"]
+    "qualification": ["MBBS", "MD Cardiology", "Fellowship in Interventional Cardiology", "PhD Cardiovascular Sciences"],
+    "permissions": {
+      "profile": { "enabled": true, "viewOnly": false },
+      "tokenIssued": { "enabled": true, "viewOnly": false },
+      "checkedIn": { "enabled": true, "viewOnly": false },
+      "userLogs": { "enabled": true, "viewOnly": true },
+      "documentsView": { "enabled": true, "viewOnly": false },
+      "doctorsList": { "enabled": true, "viewOnly": true },
+      "addDoctor": { "enabled": true, "viewOnly": false },
+      "editDoctor": { "enabled": true, "viewOnly": false },
+      "deleteDoctor": { "enabled": false, "viewOnly": false },
+      "todayLogs": { "enabled": true, "viewOnly": true },
+      "scanQr": { "enabled": true, "viewOnly": false },
+      "uploadDocs": { "enabled": true, "viewOnly": false }
+    }
   }'
+```
+
+**Expected Response:**
+```json
+{
+  "success": true,
+  "message": "Doctor updated successfully",
+  "data": {
+    "doctor": {
+      "doctorId": "D0001",
+      "name": "Dr. Sarah Johnson-Smith",
+      "email": "sarah.johnson@hospital.com",
+      "mobileNumber": "9876543210",
+      "gender": "Female",
+      "specialization": "Cardiology",
+      "hospitalId": "6155",
+      "consultantFee": 1800,
+      "status": "Available",
+      "unlimitedToken": true,
+      "permissions": {
+        "profile": { "enabled": true, "viewOnly": false },
+        "tokenIssued": { "enabled": true, "viewOnly": false },
+        "checkedIn": { "enabled": true, "viewOnly": false },
+        "userLogs": { "enabled": true, "viewOnly": true },
+        "documentsView": { "enabled": true, "viewOnly": false },
+        "doctorsList": { "enabled": true, "viewOnly": true },
+        "addDoctor": { "enabled": true, "viewOnly": false },
+        "editDoctor": { "enabled": true, "viewOnly": false },
+        "deleteDoctor": { "enabled": false, "viewOnly": false },
+        "todayLogs": { "enabled": true, "viewOnly": true },
+        "scanQr": { "enabled": true, "viewOnly": false },
+        "uploadDocs": { "enabled": true, "viewOnly": false }
+      }
+    }
+  }
+}
+```
+
+### 13.1. Update Only Doctor Permissions
+```bash
+curl -X PUT http://localhost:3000/api/doctor/update \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
+  -d '{
+    "doctorId": "D0001",
+    "permissions": {
+      "addDoctor": { "enabled": true, "viewOnly": false },
+      "editDoctor": { "enabled": true, "viewOnly": false },
+      "deleteDoctor": { "enabled": true, "viewOnly": false }
+    }
+  }'
+```
+
+### 13.2. Disable Doctor Permissions
+```bash
+curl -X PUT http://localhost:3000/api/doctor/update \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
+  -d '{
+    "doctorId": "D0001",
+    "permissions": {
+      "scanQr": { "enabled": false, "viewOnly": false },
+      "uploadDocs": { "enabled": false, "viewOnly": false }
+    }
+  }'
+```
+
+### 13.3. Permission Validation Examples
+
+#### **Valid Permission Request:**
+```bash
+curl -X POST http://localhost:3000/api/doctor/add \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
+  -H "x-user-id: A0001" \
+  -d '{
+    "adminId": "A0001",
+    "name": "Dr. John Smith",
+    "email": "john.smith@hospital.com",
+    "mobileNumber": "9876543210",
+    "gender": "Male",
+    "specialization": "General Medicine",
+    "hospitalId": "H0001",
+    "consultantFee": 1000,
+    "permissions": {
+      "profile": { "enabled": true, "viewOnly": false },
+      "scanQr": { "enabled": true, "viewOnly": false }
+    }
+  }'
+```
+
+#### **Invalid Permission Request (Invalid Permission Key):**
+```bash
+curl -X POST http://localhost:3000/api/doctor/add \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
+  -H "x-user-id: A0001" \
+  -d '{
+    "adminId": "A0001",
+    "name": "Dr. John Smith",
+    "email": "john.smith@hospital.com",
+    "mobileNumber": "9876543210",
+    "gender": "Male",
+    "specialization": "General Medicine",
+    "hospitalId": "H0001",
+    "consultantFee": 1000,
+    "permissions": {
+      "invalidPermission": { "enabled": true, "viewOnly": false }
+    }
+  }'
+```
+
+**Expected Error Response:**
+```json
+{
+  "success": false,
+  "message": "Invalid permission: invalidPermission. Valid permissions are: profile, tokenIssued, checkedIn, userLogs, documentsView, doctorsList, addDoctor, editDoctor, deleteDoctor, todayLogs, scanQr, uploadDocs",
+  "error": "ValidationError",
+  "statusCode": 400
+}
+```
+
+#### **Invalid Permission Request (Invalid Data Type):**
+```bash
+curl -X POST http://localhost:3000/api/doctor/add \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
+  -H "x-user-id: A0001" \
+  -d '{
+    "adminId": "A0001",
+    "name": "Dr. John Smith",
+    "email": "john.smith@hospital.com",
+    "mobileNumber": "9876543210",
+    "gender": "Male",
+    "specialization": "General Medicine",
+    "hospitalId": "H0001",
+    "consultantFee": 1000,
+    "permissions": {
+      "profile": { "enabled": "true", "viewOnly": false }
+    }
+  }'
+```
+
+**Expected Error Response:**
+```json
+{
+  "success": false,
+  "message": "Permission profile.enabled must be a boolean value",
+  "error": "ValidationError",
+  "statusCode": 400
+}
+```
+
+#### **Invalid Permission Request (Missing Required Properties):**
+```bash
+curl -X POST http://localhost:3000/api/doctor/add \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
+  -H "x-user-id: A0001" \
+  -d '{
+    "adminId": "A0001",
+    "name": "Dr. John Smith",
+    "email": "john.smith@hospital.com",
+    "mobileNumber": "9876543210",
+    "gender": "Male",
+    "specialization": "General Medicine",
+    "hospitalId": "H0001",
+    "consultantFee": 1000,
+    "permissions": {
+      "profile": "invalid"
+    }
+  }'
+```
+
+**Expected Error Response:**
+```json
+{
+  "success": false,
+  "message": "Permission profile must be an object with enabled and viewOnly properties",
+  "error": "ValidationError",
+  "statusCode": 400
+}
 ```
 
 ### 14. Get All Doctors by Hospital

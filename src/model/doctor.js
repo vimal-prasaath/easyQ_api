@@ -155,6 +155,36 @@ const doctorSchema = new Schema({
         default: false
     },
     
+    // Authentication fields
+    password: {
+        type: String,
+        required: false,
+        select: false // Don't include in queries by default
+    },
+    isPasswordSet: {
+        type: Boolean,
+        default: false
+    },
+    lastLogin: {
+        type: Date,
+        default: null
+    },
+    
+    permissions: {
+        profile: { enabled: { type: Boolean, default: false }, viewOnly: { type: Boolean, default: false } },
+        tokenIssued: { enabled: { type: Boolean, default: false }, viewOnly: { type: Boolean, default: false } },
+        checkedIn: { enabled: { type: Boolean, default: false }, viewOnly: { type: Boolean, default: false } },
+        userLogs: { enabled: { type: Boolean, default: false }, viewOnly: { type: Boolean, default: false } },
+        documentsView: { enabled: { type: Boolean, default: false }, viewOnly: { type: Boolean, default: false } },
+        doctorsList: { enabled: { type: Boolean, default: false }, viewOnly: { type: Boolean, default: false } },
+        addDoctor: { enabled: { type: Boolean, default: false }, viewOnly: { type: Boolean, default: false } },
+        editDoctor: { enabled: { type: Boolean, default: false }, viewOnly: { type: Boolean, default: false } },
+        deleteDoctor: { enabled: { type: Boolean, default: false }, viewOnly: { type: Boolean, default: false } },
+        todayLogs: { enabled: { type: Boolean, default: false }, viewOnly: { type: Boolean, default: false } },
+        scanQr: { enabled: { type: Boolean, default: false }, viewOnly: { type: Boolean, default: false } },
+        uploadDocs: { enabled: { type: Boolean, default: false }, viewOnly: { type: Boolean, default: false } }
+    },
+    
     createdAt: {
         type: Date,
         default: Date.now
