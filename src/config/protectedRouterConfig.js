@@ -38,6 +38,16 @@ import {
 } from "../controller/doctor.js";
 
 import {
+    createNurse,
+    getNurse,
+    deleteNurse,
+    getAllNurse,
+    updateNurse,
+    uploadNurseImage,
+    updateNurseImageUrl
+} from "../controller/nurse.js";
+
+import {
     
     createAppointment,
     updateAppointment,
@@ -93,6 +103,9 @@ import adminVerificationCheck from '../middleware/adminVerificationCheck.js';
 import { updateDoctorImageUrl } from '../controller/doctor.js';
 import { doctorSignup, doctorLogin, getDoctorProfile } from '../controller/doctorAuth.js';
 import { authenticateDoctor } from '../middleware/doctorAuth.js';
+import { signup as commonSignup, login as commonLogin } from '../controller/commonAuth.js';
+import { nurseSignup, nurseLogin, getNurseProfile } from '../controller/nurseAuth.js';
+import { authenticateNurse } from '../middleware/nurseAuth.js';
 
 const protectedRoutesConfig = [
     //admin
@@ -150,6 +163,25 @@ const protectedRoutesConfig = [
     { path: '/doctor/signup', method: 'post', resourceType: 'doctor_auth', action: 'signup', handlers: [doctorSignup] },
     { path: '/doctor/login', method: 'post', resourceType: 'doctor_auth', action: 'login', handlers: [doctorLogin] },
     { path: '/doctor/profile', method: 'get', resourceType: 'doctor_auth', action: 'get_profile', handlers: [authenticateDoctor, getDoctorProfile] },
+    
+    // --- COMMON AUTHENTICATION ROUTES ---
+    { path: '/auth/signup', method: 'post', resourceType: 'common_auth', action: 'signup', handlers: [commonSignup] },
+    { path: '/auth/login', method: 'post', resourceType: 'common_auth', action: 'login', handlers: [commonLogin] },
+    
+    // --- NURSE ROUTES ---
+    { path: '/nurse/add', method: 'post', resourceType: 'nurse', action: 'create', handlers: [authenticateAdmin, adminVerificationCheck, createNurse] },
+    { path: '/nurse/get', method: 'post', resourceType: 'profile', action: 'read', handlers: [getNurse] },
+    { path: '/nurse/update', method: 'put', resourceType: 'profile', action: 'update', handlers: [updateNurse] },
+    { path: '/nurse/delete', method: 'delete', resourceType: 'nurse', action: 'delete', handlers: [authenticateAdmin, adminVerificationCheck, deleteNurse] },
+    { path: '/nurse/all/:hospitalId', method: 'get', resourceType: 'nurse', action: 'read_all_in_hospital', resourceIdParamName: 'hospitalId', handlers: [getAllNurse] },
+    { path: '/nurse/upload-image', method: 'put', resourceType: 'nurse', action: 'upload_image', handlers: [authenticateAdmin, adminVerificationCheck, uploadMiddleware, busboyErrorHandler, uploadNurseImage] },
+    { path: '/nurse/update-image-url', method: 'put', resourceType: 'nurse', action: 'update_image_url', handlers: [authenticateAdmin, updateNurseImageUrl] },
+    
+    // --- NURSE AUTHENTICATION ROUTES ---
+    { path: '/nurse/signup', method: 'post', resourceType: 'nurse_auth', action: 'signup', handlers: [nurseSignup] },
+    { path: '/nurse/login', method: 'post', resourceType: 'nurse_auth', action: 'login', handlers: [nurseLogin] },
+    { path: '/nurse/profile', method: 'get', resourceType: 'nurse_auth', action: 'get_profile', handlers: [authenticateNurse, getNurseProfile] },
+    
     // --- Appoitment ROUTES ---
     { path: '/appoitment', method: 'post', resourceType: 'appointment', action: 'create', handlers: [appointmentLimiter,createAppointment] },
     { path: '/appoitment/check', method: 'post', resourceType: 'appointment', action: 'create', handlers: [safeCreateAppointment] },

@@ -118,7 +118,7 @@ export class ValidationErrorHandler {
                 code: error.code,
                 path: req?.path,
                 method: req?.method,
-                userId: req?.user?.userId,
+                userId: req?.user?.data?.userId,
                 ip: req?.ip
             });
         }
@@ -155,9 +155,7 @@ export class ValidationErrorHandler {
             'InternalServerError',
             httpStatusCode.INTERNAL_SERVER_ERROR,
             false,
-            process.env.NODE_ENV === 'production' 
-                ? 'An unexpected error occurred. Please try again later.'
-                : error.message
+            error
         );
     }
 

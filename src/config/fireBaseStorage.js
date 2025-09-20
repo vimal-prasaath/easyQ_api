@@ -351,3 +351,68 @@ export const uploadAppointmentDocument = async (
     throw error;
   }
 };
+
+// Function for nurse image uploads
+export const uploadNurseImage = async (
+  fileBuffer,
+  originalname,
+  mimetype,
+  hospitalId,
+  nurseId
+) => {
+  const sanitizedHospitalId = hospitalId
+    ? hospitalId.replace(/[^a-zA-Z0-9-_.]/g, "_")
+    : "unknown";
+  const sanitizedNurseId = nurseId
+    ? nurseId.replace(/[^a-zA-Z0-9-_.]/g, "_")
+    : "unknown";
+  const fileExtension = path.extname(originalname);
+  const uniqueFileName = `${sanitizedNurseId}-${Date.now()}-${Math.round(
+    Math.random() * 1e9
+  )}${fileExtension}`;
+
+  const filePathInStorage = `hospitals/${sanitizedHospitalId}/nurses/${uniqueFileName}`;
+  const file = bucket.file(filePathInStorage);
+
+  try {
+    console.log(`Uploading nurse image: ${originalname} with MIME type: ${mimetype}`);
+    
+    await file.save(fileBuffer, {
+      contentType: mimetype,
+      metadata: {
+        metadata: {
+          fieldName: "file",
+          hospitalId: hospitalId || "unknown",
+          nurseId: nurseId,
+          originalName: originalname,
+        },
+      },
+      public: true, // Make file publicly accessible
+    });
+
+    // Ensure the file is publicly accessible
+    await file.makePublic();
+
+    // Generate the public URL
+    const publicUrl = `https://storage.googleapis.com/${process.env.STORAGE_BUCKET_NAME}/${filePathInStorage}`;
+    
+    console.log(`Nurse image uploaded successfully. Public URL: ${publicUrl}`);
+    
+    // Verify the file is accessible
+    try {
+      const [exists] = await file.exists();
+      if (!exists) {
+        throw new Error('Nurse image was not saved properly');
+      }
+      console.log('Nurse image verification successful');
+    } catch (verifyError) {
+      console.error('Error verifying nurse image upload:', verifyError);
+      throw new Error('Nurse image upload verification failed');
+    }
+
+    return { url: publicUrl, path: filePathInStorage };
+  } catch (error) {
+    console.error("Error uploading nurse image to Firebase Storage:", error);
+    throw error;
+  }
+};

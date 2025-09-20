@@ -57,32 +57,43 @@ async function authenticateAdmin(req, res, next) {
             path: req.path
         });
 
-        // Verify it's an admin token
-        if (!decodedPayload.data || decodedPayload.data.role !== 'admin') {
-            authLogger.warn('Admin authentication failed: Token is not for admin user', {
+        console.log({decodedPayload})
+
+        // Verify it's an admin or doctor token
+        if (!decodedPayload.data || (decodedPayload.data.role !== 'admin' && decodedPayload.data.role !== 'doctor')) {
+            authLogger.warn('Admin authentication failed: Token is not for admin or doctor user', {
                 role: decodedPayload.data?.role,
+                type: decodedPayload.type,
                 path: req.path
             });
             return next(new EasyQError(
                 'AuthenticationError',
                 httpStatusCode.UNAUTHORIZED,
                 true,
-                'Invalid token. Admin access required.'
+                'Invalid token. Admin or doctor access required.'
             ));
         }
 
-        // Find admin in database
-        const adminFromDb = await AdminProfile.findOne({ adminId: decodedPayload.data.userId });
-        if (!adminFromDb) {
-            authLogger.error('Admin authentication failed: Admin not found in DB.', { 
-                adminId: decodedPayload.data.userId, 
+        // Find admin or doctor in database
+        let userFromDb;
+        if (decodedPayload.data.role === 'admin') {
+            userFromDb = await AdminProfile.findOne({ adminId: decodedPayload.data.userId });
+        } else if (decodedPayload.data.role === 'doctor') {
+            const Doctor = (await import('../model/doctor.js')).default;
+            userFromDb = await Doctor.findOne({ doctorId: decodedPayload.data.userId });
+        }
+        
+        if (!userFromDb) {
+            authLogger.error('Authentication failed: User not found in DB.', { 
+                userId: decodedPayload.data.userId,
+                role: decodedPayload.data.role,
                 path: req.path 
             });
             return next(new EasyQError(
                 'AuthenticationError', 
                 httpStatusCode.UNAUTHORIZED, 
                 true, 
-                'Authenticated admin not found.'
+                'Authenticated user not found.'
             ));
         }
 
@@ -102,14 +113,16 @@ async function authenticateAdmin(req, res, next) {
 
         // Set user data in request
         req.user = decodedPayload;
-        req.isActive = adminFromDb.isActive;
+        req.isActive = userFromDb.isActive;
 
         // === AUTHORIZATION LOGIC ===
-        const authenticatedUserId = decodedPayload.data.userId;
+        const authenticatedUserId = decodedPayload.data.role === 'admin' ? decodedPayload.data.userId : req.body.adminId;
         console.log({authenticatedUserId, path: req.path, isTrue: req.path.includes('/documents/upload')})
         // Skip authorization check for file upload routes since multer hasn't processed the form data yet
         // Authorization will be handled in the controller after multer processes the form data
-        if (req.path.includes('/hospital-documents') || req.path.includes('/owner-documents') || req.path.includes('/doctor/upload-image')  || req.path.includes('/documents/upload') || (req.path.includes('/documents') && req.path.includes('/appoitment'))) {
+        
+        const imagePaths = ['nurse/upload-image','/hospital-documents','/owner-documents', '/doctor/upload-image', '/documents/upload']
+        if ( imagePaths.some(item => req.path.includes(item)) || (req.path.includes('/documents') && req.path.includes('/appoitment'))) {
         console.log({authenticatedUserId, path: req.path, isTrue2: req.path.includes('/documents/upload')})
            
             authLogger.info('Admin authenticated for file upload route - authorization will be handled in controller', {
@@ -121,8 +134,11 @@ async function authenticateAdmin(req, res, next) {
         
         // Get resource owner ID from different sources based on route
         let resourceOwnerId;
-        if (req.path.includes('/owner-info') || req.path.includes('/onboarding') || req.path.includes('/dashboard') || req.path.includes('/hospital/basic-info') || req.path.includes('/hospital/complete-info') || req.path.includes('/doctor/add') || req.path.includes('/doctor/delete') || req.path.includes('/doctor/update') || req.path.includes('/doctor/all') || req.path.includes('/today-stats') || req.path.includes('/hospital-logo-url') || req.path.includes('/hospital-images-url') || req.path.includes('/hospital-documents-url') || req.path.includes('/owner-documents-url') || req.path.includes('/update-image-url') || req.path.includes('/appointsummary') ) {
+
+        const resourcePath = ['nurse/upload-image','nurse/add','/appointsummary','/update-image-url','/owner-documents-url','/hospital-documents-url','/hospital-images-url','/hospital-logo-url','/today-stats','/doctor/all','/doctor/update','/doctor/delete','/doctor/add','/owner-info','/onboarding', '/dashboard', '/hospital/basic-info', '/hospital/complete-info']
+        if (resourcePath.some(item => req.path.includes(item))  ) {
             // For admin owner-info/onboarding routes, get adminId from request body
+            console.log(req.body)
             resourceOwnerId = req.body.adminId;
         } else {
             // For other routes, get from headers or params
@@ -133,6 +149,9 @@ async function authenticateAdmin(req, res, next) {
             authLogger.warn('Admin authorization warning: No specific resource owner ID found in request.', { path: req.path });
             return next(new EasyQError('AuthorizationError', httpStatusCode.BAD_REQUEST, true, 'Resource ID missing for owner/admin authorization check.'));
         }
+
+        console.log({req: req.headers['x-user-id'], new: req.params.adminId, authenticatedUserId, resourceOwnerId})
+
         
         // Check for ID mismatch (security check)
         if (resourceOwnerId !== authenticatedUserId) {

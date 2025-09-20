@@ -106,7 +106,8 @@ curl -X POST http://localhost:3000/api/doctor/login \
       }
     },
     "adminId": "A0001",
-    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+    "loggedInAs": "doctor"
   }
 }
 ```
@@ -170,7 +171,8 @@ curl -X GET http://localhost:3000/api/doctor/profile \
         "uploadDocs": { "enabled": true, "viewOnly": false }
       }
     },
-    "adminId": "A0001"
+    "adminId": "A0001",
+    "loggedInAs": "doctor"
   }
 }
 ```

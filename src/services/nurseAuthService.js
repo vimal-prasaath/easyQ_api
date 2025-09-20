@@ -1,4 +1,4 @@
-import Doctor from '../model/doctor.js';
+import Nurse from '../model/nurse.js';
 import Hospital from '../model/hospital.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
@@ -6,9 +6,9 @@ import { EasyQError } from '../config/error.js';
 import { httpStatusCode } from '../util/statusCode.js';
 import { logInfo, logError } from '../config/logger.js';
 
-export class DoctorAuthService {
+export class NurseAuthService {
     
-    static async doctorSignup(signupData) {
+    static async nurseSignup(signupData) {
         try {
             const { email, password, confirmPassword } = signupData;
 
@@ -42,58 +42,68 @@ export class DoctorAuthService {
                 );
             }
 
-            // Check if doctor exists with this email
-            const doctor = await Doctor.findOne({ email: email.toLowerCase() });
-            if (!doctor) {
+            // Check if nurse exists with this email
+            const nurse = await Nurse.findOne({ email: email.toLowerCase() });
+            if (!nurse) {
                 throw new EasyQError(
                     'NotFoundError',
                     httpStatusCode.NOT_FOUND,
                     true,
-                    'Doctor not found with this email address. Please contact your administrator.'
+                    'Nurse not found with this email address. Please contact your administrator.'
                 );
             }
 
             // Check if password is already set
-            if (doctor.isPasswordSet) {
+            if (nurse.isPasswordSet) {
                 throw new EasyQError(
                     'ConflictError',
                     httpStatusCode.CONFLICT,
                     true,
-                    'Password is already set for this doctor account.'
+                    'Password is already set for this nurse account.'
                 );
             }
 
             // Hash password
-            const saltRounds = parseInt(process.env.BCRYPT_ROUNDS) || 12;
+            const saltRounds = 10;
             const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-            // Update doctor with password
-            doctor.password = hashedPassword;
-            doctor.isPasswordSet = true;
-            await doctor.save();
+            // Update nurse with password
+            nurse.password = hashedPassword;
+            nurse.isPasswordSet = true;
+            await nurse.save();
 
-            logInfo('Doctor password set successfully', {
-                doctorId: doctor.doctorId,
-                email: doctor.email
+            logInfo('Nurse password set successfully', {
+                nurseId: nurse.nurseId,
+                email: nurse.email
             });
 
             return {
                 success: true,
-                message: 'Password set successfully. You can now login.',
-                doctorId: doctor.doctorId,
-                email: doctor.email
+                message: 'Nurse account activated successfully',
+                data: {
+                    nurseId: nurse.nurseId,
+                    email: nurse.email
+                }
             };
-
         } catch (error) {
-            logError('Error in doctor signup', {
+            if (error instanceof EasyQError) {
+                throw error;
+            }
+            logError('Nurse signup error', {
                 error: error.message,
-                email: signupData.email
+                stack: error.stack,
+                email: signupData?.email
             });
-            throw error;
+            throw new EasyQError(
+                'InternalServerError',
+                httpStatusCode.INTERNAL_SERVER_ERROR,
+                true,
+                'Failed to activate nurse account.'
+            );
         }
     }
 
-    static async doctorLogin(loginData) {
+    static async nurseLogin(loginData) {
         try {
             const { email, password } = loginData;
 
@@ -107,10 +117,10 @@ export class DoctorAuthService {
                 );
             }
 
-            // Find doctor with password field included
-            const doctor = await Doctor.findOne({ email: email.toLowerCase() }).select('+password');
+            // Find nurse with password field included
+            const nurse = await Nurse.findOne({ email: email.toLowerCase() }).select('+password');
             
-            if (!doctor) {
+            if (!nurse) {
                 throw new EasyQError(
                     'NotFoundError',
                     httpStatusCode.NOT_FOUND,
@@ -120,7 +130,7 @@ export class DoctorAuthService {
             }
 
             // Check if password is set
-            if (!doctor.isPasswordSet || !doctor.password) {
+            if (!nurse.isPasswordSet || !nurse.password) {
                 throw new EasyQError(
                     'ValidationError',
                     httpStatusCode.BAD_REQUEST,
@@ -130,7 +140,7 @@ export class DoctorAuthService {
             }
 
             // Verify password
-            const isPasswordValid = await bcrypt.compare(password, doctor.password);
+            const isPasswordValid = await bcrypt.compare(password, nurse.password);
             if (!isPasswordValid) {
                 throw new EasyQError(
                     'UnauthorizedError',
@@ -141,90 +151,112 @@ export class DoctorAuthService {
             }
 
             // Update last login
-            doctor.lastLogin = new Date();
-            await doctor.save();
+            nurse.lastLogin = new Date();
+            await nurse.save();
 
             // Get hospital adminId
-            const hospital = await Hospital.findOne({ hospitalId: doctor.hospitalId }).select('adminId');
+            const hospital = await Hospital.findOne({ hospitalId: nurse.hospitalId }).select('adminId');
             const adminId = hospital?.adminId || null;
 
             // Generate JWT token
             const token = jwt.sign(
-                { 
+                {
+                    type: 'nurse',
                     data: {
-                        userId: doctor.doctorId,
-                        email: doctor.email,
-                        role: 'doctor'
-                    },
-                    type: 'doctor'
+                        userId: nurse.nurseId,
+                        role: 'nurse',
+                        email: nurse.email,
+                        hospitalId: nurse.hospitalId,
+                        adminId: adminId
+                    }
                 },
                 process.env.JWT_SECRET,
-                { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
+                { expiresIn: '24h' }
             );
 
-            // Remove password from response
-            const doctorResponse = doctor.toObject();
-            delete doctorResponse.password;
-
-            logInfo('Doctor logged in successfully', {
-                doctorId: doctor.doctorId,
-                email: doctor.email,
-                adminId: adminId
+            logInfo('Nurse login successful', {
+                nurseId: nurse.nurseId,
+                email: nurse.email,
+                hospitalId: nurse.hospitalId
             });
 
             return {
                 success: true,
-                message: 'Doctor logged in successfully',
+                message: 'Login successful',
                 data: {
-                    doctor: doctorResponse,
+                    nurse: {
+                        nurseId: nurse.nurseId,
+                        name: nurse.name,
+                        email: nurse.email,
+                        hospitalId: nurse.hospitalId,
+                        permissions: nurse.permissions
+                    },
                     adminId: adminId,
                     token: token,
-                    loggedInAs: "doctor"
+                    loggedInAs: "nurse"
                 }
             };
-
         } catch (error) {
-            logError('Error in doctor login', {
+            if (error instanceof EasyQError) {
+                throw error;
+            }
+            logError('Nurse login error', {
                 error: error.message,
-                email: loginData.email
+                stack: error.stack,
+                email: loginData?.email
             });
-            throw error;
+            throw new EasyQError(
+                'InternalServerError',
+                httpStatusCode.INTERNAL_SERVER_ERROR,
+                true,
+                'Failed to login nurse.'
+            );
         }
     }
 
-    static async getDoctorProfile(doctorId) {
+    static async getNurseProfile(nurseId) {
         try {
-            const doctor = await Doctor.findOne({ doctorId });
-            
-            if (!doctor) {
+            const nurse = await Nurse.findOne({ nurseId })
+                .select('-_id -__v -password')
+                .lean();
+
+            if (!nurse) {
                 throw new EasyQError(
                     'NotFoundError',
                     httpStatusCode.NOT_FOUND,
                     true,
-                    'Doctor not found.'
+                    'Nurse not found with the provided ID.'
                 );
             }
 
             // Get hospital adminId
-            const hospital = await Hospital.findOne({ hospitalId: doctor.hospitalId }).select('adminId');
+            const hospital = await Hospital.findOne({ hospitalId: nurse.hospitalId }).select('adminId');
             const adminId = hospital?.adminId || null;
 
             return {
                 success: true,
-                message: 'Doctor profile retrieved successfully',
+                message: 'Nurse profile retrieved successfully',
                 data: { 
-                    doctor,
+                    nurse,
                     adminId: adminId,
-                    loggedInAs: "doctor"
+                    loggedInAs: "nurse"
                 }
             };
-
         } catch (error) {
-            logError('Error retrieving doctor profile', {
+            if (error instanceof EasyQError) {
+                throw error;
+            }
+            logError('Get nurse profile error', {
                 error: error.message,
-                doctorId
+                stack: error.stack,
+                nurseId
             });
-            throw error;
+            throw new EasyQError(
+                'InternalServerError',
+                httpStatusCode.INTERNAL_SERVER_ERROR,
+                true,
+                'Failed to retrieve nurse profile.'
+            );
         }
     }
 }

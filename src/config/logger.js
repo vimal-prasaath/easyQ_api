@@ -105,6 +105,7 @@ export const dbLogger = logger.child({ module: 'DATABASE' });
 export const apiLogger = logger.child({ module: 'API' });
 export const hospitalLogger = logger.child({ module: 'HOSPITAL' });
 export const doctorLogger = logger.child({ module: 'DOCTOR' });
+export const nurseLogger = logger.child({ module: 'NURSE' });
 export const appointmentLogger = logger.child({ module: 'APPOINTMENT' });
 export const qrLogger = logger.child({ module: 'QR_GENERATOR' });
 export const uploadLogger = logger.child({ module: 'FILE_UPLOAD' });

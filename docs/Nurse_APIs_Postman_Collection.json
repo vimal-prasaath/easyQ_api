@@ -1,0 +1,700 @@
+{
+    "info": {
+        "name": "EasyQ Nurse APIs",
+        "description": "Complete collection of Nurse APIs for EasyQ system including authentication, CRUD operations, and image management",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "version": "1.0.0"
+    },
+    "auth": {
+        "type": "bearer",
+        "bearer": [
+            {
+                "key": "token",
+                "value": "{{jwt_token}}",
+                "type": "string"
+            }
+        ]
+    },
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:3000/api",
+            "type": "string"
+        },
+        {
+            "key": "jwt_token",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "admin_jwt_token",
+            "value": "",
+            "type": "string"
+        },
+        {
+            "key": "nurse_id",
+            "value": "N0001",
+            "type": "string"
+        },
+        {
+            "key": "hospital_id",
+            "value": "H0001",
+            "type": "string"
+        },
+        {
+            "key": "admin_id",
+            "value": "A0001",
+            "type": "string"
+        }
+    ],
+    "item": [
+        {
+            "name": "Nurse Authentication",
+            "item": [
+                {
+                    "name": "Nurse Signup",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"nurse@example.com\",\n  \"password\": \"password123\",\n  \"confirmPassword\": \"password123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/nurse/signup",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "nurse",
+                                "signup"
+                            ]
+                        },
+                        "description": "Complete nurse registration with password setup"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Nurse Login",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    const response = pm.response.json();",
+                                    "    if (response.success && response.data.token) {",
+                                    "        pm.collectionVariables.set('jwt_token', response.data.token);",
+                                    "        pm.collectionVariables.set('nurse_id', response.data.nurse.nurseId);",
+                                    "        console.log('JWT Token saved:', response.data.token);",
+                                    "    }",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"nurse@example.com\",\n  \"password\": \"password123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/nurse/login",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "nurse",
+                                "login"
+                            ]
+                        },
+                        "description": "Authenticate nurse and get JWT token"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Nurse Profile",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{jwt_token}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/nurse/profile",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "nurse",
+                                "profile"
+                            ]
+                        },
+                        "description": "Get authenticated nurse's profile data"
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Nurse authentication related APIs"
+        },
+        {
+            "name": "Nurse Management",
+            "item": [
+                {
+                    "name": "Create Nurse",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{admin_jwt_token}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"adminId\": \"{{admin_id}}\",\n  \"name\": \"Jane Nurse\",\n  \"email\": \"jane.nurse@example.com\",\n  \"mobileNumber\": \"9876543210\",\n  \"gender\": \"Female\",\n  \"dateOfBirth\": \"1990-01-01\",\n  \"qualification\": [\"B.Sc Nursing\", \"M.Sc Nursing\"],\n  \"serviceStartDate\": \"2020-01-01\",\n  \"hospitalId\": \"{{hospital_id}}\",\n  \"status\": \"Available\",\n  \"workingHours\": [\n    {\n      \"day\": \"Monday\",\n      \"date\": \"01/01/2024\",\n      \"available\": \"morning\",\n      \"timeSlots\": [\n        {\n          \"startTime\": \"09:00\",\n          \"endTime\": \"17:00\"\n        }\n      ]\n    }\n  ],\n  \"permissions\": {\n    \"profile\": { \"enabled\": true, \"viewOnly\": false },\n    \"tokenIssued\": { \"enabled\": true, \"viewOnly\": false }\n  }\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/nurse/add",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "nurse",
+                                "add"
+                            ]
+                        },
+                        "description": "Create new nurse (Admin only)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Nurse",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"nurseId\": \"{{nurse_id}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/nurse/get",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "nurse",
+                                "get"
+                            ]
+                        },
+                        "description": "Get specific nurse details"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Nurse",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"nurseId\": \"{{nurse_id}}\",\n  \"name\": \"Jane Smith Nurse\",\n  \"status\": \"On Duty\",\n  \"workingHours\": [\n    {\n      \"day\": \"Monday\",\n      \"date\": \"01/01/2024\",\n      \"available\": \"morning\",\n      \"timeSlots\": [\n        {\n          \"startTime\": \"08:00\",\n          \"endTime\": \"16:00\"\n        }\n      ]\n    }\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/nurse/update",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "nurse",
+                                "update"
+                            ]
+                        },
+                        "description": "Update nurse information"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete Nurse",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{admin_jwt_token}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"nurseId\": \"{{nurse_id}}\",\n  \"adminId\": \"{{admin_id}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/nurse/delete",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "nurse",
+                                "delete"
+                            ]
+                        },
+                        "description": "Delete nurse (Admin only)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get All Nurses by Hospital",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/nurse/all/{{hospital_id}}?page=1&limit=10&status=Available&search=Jane",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "nurse",
+                                "all",
+                                "{{hospital_id}}"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                },
+                                {
+                                    "key": "status",
+                                    "value": "Available"
+                                },
+                                {
+                                    "key": "search",
+                                    "value": "Jane"
+                                }
+                            ]
+                        },
+                        "description": "Get all nurses for a specific hospital with optional filtering"
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Nurse CRUD operations"
+        },
+        {
+            "name": "Common Authentication",
+            "item": [
+                {
+                    "name": "Common Signup",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 201) {",
+                                    "    const response = pm.response.json();",
+                                    "    if (response.success && response.data.userId) {",
+                                    "        pm.collectionVariables.set('user_id', response.data.userId);",
+                                    "        pm.collectionVariables.set('user_type', response.data.userType);",
+                                    "        console.log('User ID saved:', response.data.userId);",
+                                    "        console.log('User Type:', response.data.userType);",
+                                    "    }",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\",\n  \"confirmPassword\": \"password123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/signup",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "signup"
+                            ]
+                        },
+                        "description": "Unified signup for both doctors and nurses"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Common Login",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "if (pm.response.code === 200) {",
+                                    "    const response = pm.response.json();",
+                                    "    if (response.success && response.data.token) {",
+                                    "        pm.collectionVariables.set('jwt_token', response.data.token);",
+                                    "        pm.collectionVariables.set('user_id', response.data.user.userId);",
+                                    "        pm.collectionVariables.set('user_type', response.data.user.userType);",
+                                    "        console.log('JWT Token saved:', response.data.token);",
+                                    "        console.log('User Type:', response.data.user.userType);",
+                                    "    }",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/auth/login",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "auth",
+                                "login"
+                            ]
+                        },
+                        "description": "Unified login for both doctors and nurses"
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Common authentication APIs for both doctors and nurses"
+        },
+        {
+            "name": "Image Management",
+            "item": [
+                {
+                    "name": "Upload Nurse Image",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{admin_jwt_token}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "PUT",
+                        "header": [],
+                        "body": {
+                            "mode": "formdata",
+                            "formdata": [
+                                {
+                                    "key": "adminId",
+                                    "value": "{{admin_id}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "nurseId",
+                                    "value": "{{nurse_id}}",
+                                    "type": "text"
+                                },
+                                {
+                                    "key": "file",
+                                    "type": "file",
+                                    "src": []
+                                }
+                            ]
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/nurse/upload-image",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "nurse",
+                                "upload-image"
+                            ]
+                        },
+                        "description": "Upload nurse profile image (Admin only)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Nurse Image URL",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{admin_jwt_token}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"adminId\": \"{{admin_id}}\",\n  \"nurseId\": \"{{nurse_id}}\",\n  \"fileUrl\": \"https://example.com/nurse-image.jpg\",\n  \"fileName\": \"nurse-image.jpg\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/nurse/update-image-url",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "nurse",
+                                "update-image-url"
+                            ]
+                        },
+                        "description": "Update nurse image URL when frontend handles upload (Admin only)"
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Nurse image management APIs"
+        },
+        {
+            "name": "Error Examples",
+            "item": [
+                {
+                    "name": "Validation Error - Create Nurse",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{admin_jwt_token}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"adminId\": \"{{admin_id}}\",\n  \"name\": \"\",\n  \"email\": \"invalid-email\",\n  \"mobileNumber\": \"123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/nurse/add",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "nurse",
+                                "add"
+                            ]
+                        },
+                        "description": "Example of validation error when creating nurse with invalid data"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Unauthorized Error - Get Profile",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/nurse/profile",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "nurse",
+                                "profile"
+                            ]
+                        },
+                        "description": "Example of unauthorized error when accessing protected endpoint without token"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Not Found Error - Get Nurse",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"nurseId\": \"N9999\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/nurse/get",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "nurse",
+                                "get"
+                            ]
+                        },
+                        "description": "Example of not found error when getting non-existent nurse"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Conflict Error - Create Nurse",
+                    "request": {
+                        "auth": {
+                            "type": "bearer",
+                            "bearer": [
+                                {
+                                    "key": "token",
+                                    "value": "{{admin_jwt_token}}",
+                                    "type": "string"
+                                }
+                            ]
+                        },
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"adminId\": \"{{admin_id}}\",\n  \"name\": \"Another Nurse\",\n  \"email\": \"nurse@example.com\",\n  \"mobileNumber\": \"9876543210\",\n  \"gender\": \"Female\",\n  \"serviceStartDate\": \"2020-01-01\",\n  \"hospitalId\": \"{{hospital_id}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/nurse/add",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "nurse",
+                                "add"
+                            ]
+                        },
+                        "description": "Example of conflict error when creating nurse with existing email"
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Error scenario examples for testing"
+        }
+    ],
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// Set default values if not already set",
+                    "if (!pm.collectionVariables.get('base_url')) {",
+                    "    pm.collectionVariables.set('base_url', 'http://localhost:3000/api');",
+                    "}",
+                    "",
+                    "// Log current variables",
+                    "console.log('Base URL:', pm.collectionVariables.get('base_url'));",
+                    "console.log('JWT Token:', pm.collectionVariables.get('jwt_token') ? 'Set' : 'Not Set');",
+                    "console.log('Admin JWT Token:', pm.collectionVariables.get('admin_jwt_token') ? 'Set' : 'Not Set');"
+                ]
+            }
+        },
+        {
+            "listen": "test",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// Global test script for all requests",
+                    "pm.test('Response time is less than 5000ms', function () {",
+                    "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+                    "});",
+                    "",
+                    "pm.test('Response has success field', function () {",
+                    "    const response = pm.response.json();",
+                    "    pm.expect(response).to.have.property('success');",
+                    "});",
+                    "",
+                    "// Log response for debugging",
+                    "console.log('Response Status:', pm.response.status);",
+                    "console.log('Response Body:', pm.response.text());"
+                ]
+            }
+        }
+    ]
+}

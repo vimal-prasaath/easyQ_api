@@ -381,23 +381,14 @@ export class DoctorService {
             }
         }
 
-        // ✅ Handle workingHours separately
-        if (updates.workingHours && Array.isArray(updates.workingHours)) {
-            for (const updateSlot of updates.workingHours) {
-                const { day, timeSlots } = updateSlot;
-                const existingIndex = doctor.workingHours.findIndex(entry => entry.day === day);
-
-                if (existingIndex !== -1) {
-                    // Overwrite existing timeSlots for that day
-                    doctor.workingHours[existingIndex].timeSlots = timeSlots;
-                } else {
-                    // Add new entry
-                    doctor.workingHours.push({ day, timeSlots });
-                }
-            }
-
-            // Remove workingHours from update payload to avoid overwrite
-            delete updates.workingHours;
+        // ✅ Validate workingHours if provided
+        if (updates.workingHours !== undefined && updates.workingHours !== null && !Array.isArray(updates.workingHours)) {
+            throw new EasyQError(
+                'ValidationError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                'workingHours must be an array or null.'
+            );
         }
 
         // ✅ Handle profile image updates to ensure profileImageUrl is also updated
@@ -408,6 +399,7 @@ export class DoctorService {
         // ✅ Apply all other general updates like name, email, status, etc.
         Object.assign(doctor, updates);
 
+        // ✅ Update the doctor in database (workingHours already handled separately)
         await Doctor.findOneAndUpdate({ doctorId }, updates, { new: true });
 
         // Return cleaned object
