@@ -6,14 +6,14 @@ const MONGO_URL = process.env.MONGO_URI;
 export const dbConnect = async () => {
     try {
         await mongoose.connect(MONGO_URL, {
-            dbName: "easyQ",
+            dbName: "easyQ_test",
             useNewUrlParser: true,
             useUnifiedTopology: true,
         });
         
         dbLogger.info("✅ Database connected successfully!", {
             url: MONGO_URL,
-            database: "easyQ"
+            database: "easyQ_test"
         });
 
         // Log database connection events

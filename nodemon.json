@@ -1,0 +1,32 @@
+{
+    "watch": [
+        "src/",
+        "package.json",
+        ".env",
+        ".env.local",
+        ".env.development"
+    ],
+    "ignore": [
+        "node_modules/",
+        ".git/",
+        "logs/",
+        "db data/",
+        ".vscode/",
+        "*.log",
+        "*.tmp",
+        "*.swp",
+        "*.swo",
+        ".DS_Store"
+    ],
+    "ext": "js,json,env",
+    "env": {
+        "NODE_ENV": "development"
+    },
+    "delay": "1500",
+    "verbose": true,
+    "colours": true,
+    "restartable": "rs",
+    "legacyWatch": false,
+    "pollingInterval": 1000,
+    "exec": "node src/server.js"
+}

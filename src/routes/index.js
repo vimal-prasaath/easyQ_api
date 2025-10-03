@@ -7,7 +7,6 @@ const router = express.Router();
 const policyProtectedRouter = express.Router();
 setupProtectedRoutes(policyProtectedRouter, protectedRoutesConfig);
 
-router.use('/',authenticate, policyProtectedRouter);
+router.use("/", policyProtectedRouter);
 
 export default router;
-

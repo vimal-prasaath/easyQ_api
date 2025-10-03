@@ -7,7 +7,9 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node src/index.js",
     "deploy": "firebase deploy --only functions:api2",
-    "dev": "concurrently \"\\\"C:/Program Files/MongoDB/Server/8.0/bin/mongod.exe\\\" --dbpath=C:/data/db\" \"nodemon src/server.js\""
+    "deploy:qa": "firebase deploy --only functions:api3",
+    "dev": "nodemon",
+    "dev:server": "nodemon"
   },
   "keywords": [],
   "author": "",
@@ -15,7 +17,9 @@
   "description": "",
   "dependencies": {
     "aws-sdk": "^2.1692.0",
+    "axios": "^1.11.0",
     "bcrypt": "^6.0.0",
+    "busboy": "^1.6.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
@@ -24,6 +28,8 @@
     "firebase": "^11.10.0",
     "firebase-admin": "^13.4.0",
     "firebase-functions": "^6.4.0",
+    "form-data": "^4.0.4",
+    "formidable": "^3.5.4",
     "generate-unique-id": "^2.0.3",
     "googleapis": "^150.0.1",
     "helmet": "^8.1.0",

@@ -75,7 +75,7 @@ export async function getDoctorProfile(req, res, next) {
     logApiRequest(req, { action: 'get_doctor_profile' });
 
     try {
-        const { doctorId } = req.user; // From JWT token
+        const doctorId = req.user.doctorId || req.user.data?.userId; // From JWT token
         
         const result = await DoctorAuthService.getDoctorProfile(doctorId);
 

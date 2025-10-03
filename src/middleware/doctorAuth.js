@@ -32,7 +32,7 @@ export const authenticateDoctor = async (req, res, next) => {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         
         // Check if token is for doctor type
-        if (decoded.type !== 'doctor') {
+        if (decoded.type !== 'doctor' || !decoded.data || decoded.data.role !== 'doctor') {
             throw new EasyQError(
                 'UnauthorizedError',
                 httpStatusCode.UNAUTHORIZED,
@@ -43,7 +43,7 @@ export const authenticateDoctor = async (req, res, next) => {
 
         // Check if doctor exists and is active
         const doctor = await Doctor.findOne({ 
-            doctorId: decoded.doctorId,
+            doctorId: decoded.data.userId,
             isPasswordSet: true 
         });
 
@@ -62,7 +62,11 @@ export const authenticateDoctor = async (req, res, next) => {
             email: doctor.email,
             name: doctor.name,
             hospitalId: doctor.hospitalId,
-            permissions: doctor.permissions
+            permissions: doctor.permissions,
+            data: {
+                userId: doctor.doctorId,
+                role: 'doctor'
+            }
         };
 
         next();

@@ -13,6 +13,8 @@ import dotenv from "dotenv";
 import sign from "./routes/sign/index.js";
 import login from "./routes/login/index.js";
 import admin from "./routes/admin/index.js";
+import userAppointments from "./routes/userAppointments.js";
+import fcmToken from "./routes/fcmToken.js";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpecs from "./config/swagger.js";
 import "./config/sheduler.js";
@@ -144,10 +146,14 @@ app.get(
   }
 );
 
-// 12. API routes (authentication will be applied per route basis)
+// 12. Open API routes (no authentication required)
+app.use("/api", userAppointments);
+app.use("/api/fcm", fcmToken);
+
+// 13. API routes (authentication will be applied per route basis)
 app.use("/api", apiRoutes);
 
-// 13. Health check endpoint (public)
+// 14. Health check endpoint (public)
 app.get("/health", (req, res) => {
   res.status(200).json({
     status: "OK",
@@ -157,7 +163,7 @@ app.get("/health", (req, res) => {
   });
 });
 
-// 14. 404 handler
+// 15. 404 handler
 app.use((req, res, next) => {
   logError(new Error(`Route not found: ${req.originalUrl}`), {
     method: req.method,
@@ -176,7 +182,7 @@ app.use((req, res, next) => {
   );
 });
 
-// 15. Global error handler
+// 16. Global error handler
 app.use((err, req, res, next) => {
   // Process the error using our centralized error handler
   const processedError = ValidationErrorHandler.processError(err, req);
