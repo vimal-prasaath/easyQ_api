@@ -42,9 +42,15 @@ async function authenticate(req, res, next) {
     const token = tokenParts[1];
     let decodedPayload = null;
 
+    // console.log("token", token)
+
+
     try {
+        // console.log("{decodedPayload}");
+
         // --- Attempt Firebase ID Token verification first ---
         decodedPayload = await admin.auth().verifyIdToken(token);
+        // console.log({decodedPayload});
 
         let userFromDb = await User.findOne({ phoneNumber: decodedPayload.phone_number, });
         if (!userFromDb) {
@@ -52,6 +58,7 @@ async function authenticate(req, res, next) {
                 phoneNumber: decodedPayload.phone_number,
                 isActive: true,
                 profileUpdate: false,
+                // Don't include addresses field to avoid index conflict
             });
             userFromDb = newUser;
            authLogger.info('New user created from Firebase login.', { userId: newUser.userId });
@@ -65,6 +72,7 @@ async function authenticate(req, res, next) {
         });
         next()
     } catch (firebaseError) {
+        console.log({firebaseError})
         authLogger.warn('Firebase ID Token verification failed, attempting custom JWT verification.', {
             errorName: firebaseError.name,
             errorMessage: firebaseError.message,

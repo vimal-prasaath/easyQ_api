@@ -64,7 +64,11 @@ const appointmentSchema = new Schema({
         validate: {
             validator: function(v) {
                 if (v instanceof Date) {
-                    return v > new Date();
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const appointmentDate = new Date(v);
+                    appointmentDate.setHours(0, 0, 0, 0);
+                    return appointmentDate >= today;
                 }
 
                 if (typeof v === 'string') {
@@ -101,7 +105,7 @@ const appointmentSchema = new Schema({
                 if (props.reason && props.reason.message) {
                     return props.reason.message;
                 }
-                return 'Appointment date must be in the future and in MM/DD/YYYY format.';
+                return 'Appointment date must be today or in the future and in MM/DD/YYYY format.';
             }
         }
     },
@@ -143,7 +147,24 @@ const appointmentSchema = new Schema({
     },
     reminderSent: {
         type: Boolean,
-        default: false 
+        default: false
+    },
+    
+    // Batch orchestration fields
+    batchNumber: {
+        type: Number,
+        min: 1,
+        sparse: true
+    },
+    batchStatus: {
+        type: String,
+        enum: ['pending', 'sent', 'arrived', 'no_show'],
+        default: 'pending',
+        sparse: true
+    },
+    suggestedArrivalAt: {
+        type: Date,
+        sparse: true
     },
     patientNotes: {
         type: String,
@@ -244,7 +265,60 @@ const appointmentSchema = new Schema({
             timestamp: { type: Date, default: Date.now },
             changedBy: { type: String, ref: 'User' } 
         }
-    ]
+    ],
+    
+    // Token numbering system
+    slotNumber: {
+        type: Number,
+        min: 1,
+        sparse: true
+    },
+    tokenNumber: {
+        type: Number,
+        min: 1,
+        sparse: true
+    },
+    tokenDisplay: {
+        type: String,
+        sparse: true,
+        validate: {
+            validator: function(v) {
+                if (!v) return true; // Allow empty for backward compatibility
+                return /^S\d+T\d{3}$/.test(v);
+            },
+            message: 'Token display must be in format S{slotNumber}T{tokenNumber} (e.g., S1T001)'
+        }
+    },
+    
+    // Patient address for ETA calculations
+    patientAddress: {
+        addressId: {
+            type: String,
+            sparse: true
+        },
+        addressName: {
+            type: String,
+            trim: true,
+            maxlength: [100, 'Address name cannot exceed 100 characters']
+        },
+        origin: {
+            lat: {
+                type: Number,
+                min: [-90, 'Latitude must be between -90 and 90'],
+                max: [90, 'Latitude must be between -90 and 90']
+            },
+            lng: {
+                type: Number,
+                min: [-180, 'Longitude must be between -180 and 180'],
+                max: [180, 'Longitude must be between -180 and 180']
+            }
+        },
+        fullAddress: {
+            type: String,
+            trim: true,
+            maxlength: [500, 'Full address cannot exceed 500 characters']
+        }
+    }
 });
 
 appointmentSchema.index({ patientId: 1 });
@@ -254,6 +328,8 @@ appointmentSchema.index({ appointmentDate: 1, appointmentTime: 1 });
 appointmentSchema.index({ doctorId: 1, appointmentDate: 1, status: 1 }); 
 appointmentSchema.index({ status: 1 });
 appointmentSchema.index({ paymentStatus: 1 });
+appointmentSchema.index({ doctorId: 1, appointmentDate: 1, slotNumber: 1, tokenNumber: 1 });
+appointmentSchema.index({ tokenDisplay: 1 });
 
 
 appointmentSchema.pre('save', function(next) {

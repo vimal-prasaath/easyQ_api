@@ -10,7 +10,11 @@ export const updateObjectPayload = (data) => {
         'ambulanceNumber',
         'location',
         'address',
-        'departments'
+        'departments',
+        // New address fields for Google Maps integration
+        'addressName',
+        'origin',
+        'fullAddress'
     ];
     return constructObject({}, allowedUpdates, data);
 
@@ -21,7 +25,7 @@ const constructObject = (updateData, allowedUpdates, data) => {
     for (const key of Object.keys(data)) {
         if (allowedUpdates.includes(key)) {
             if (typeof data[key] === 'object' && data[key] !== null && !Array.isArray(data[key]) &&
-                (key === 'address' || key === 'location' || key === 'departments')) {
+                (key === 'address' || key === 'location' || key === 'departments' || key === 'origin')) {
                 updateData[key] = {};
                 constructObject(updateData[key], allowedUpdates, data[key]);
             } else {

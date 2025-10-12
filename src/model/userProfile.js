@@ -92,6 +92,47 @@ const userSchema = new Schema({
         trim: true,
         maxlength: [100, 'Location cannot exceed 100 characters']
     },
+    addresses: [{
+        addressId: {
+            type: String,
+            required: false,
+            sparse: true
+        },
+        addressName: {
+            type: String,
+            required: false,
+            trim: true,
+            maxlength: [100, 'Address name cannot exceed 100 characters']
+        },
+        origin: {
+            lat: {
+                type: Number,
+                required: false,
+                min: [-90, 'Latitude must be between -90 and 90'],
+                max: [90, 'Latitude must be between -90 and 90']
+            },
+            lng: {
+                type: Number,
+                required: false,
+                min: [-180, 'Longitude must be between -180 and 180'],
+                max: [180, 'Longitude must be between -180 and 180']
+            }
+        },
+        fullAddress: {
+            type: String,
+            required: false,
+            trim: true,
+            maxlength: [500, 'Full address cannot exceed 500 characters']
+        },
+        isDefault: {
+            type: Boolean,
+            default: false
+        },
+        createdAt: {
+            type: Date,
+            default: Date.now
+        }
+    }],
     accessToken: { 
         type: String,
         select: false

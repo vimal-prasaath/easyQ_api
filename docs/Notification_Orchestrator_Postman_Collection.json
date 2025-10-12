@@ -1,0 +1,694 @@
+{
+    "info": {
+        "name": "Notification Orchestrator APIs",
+        "description": "Complete collection of Notification Orchestrator APIs for testing FCM notifications, batch orchestration, and location services",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "version": "1.0.0"
+    },
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:3000",
+            "type": "string"
+        }
+    ],
+    "item": [
+        {
+            "name": "Google Maps Integration",
+            "description": "APIs for ETA calculation and Places autocomplete",
+            "item": [
+                {
+                    "name": "Calculate ETA",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"origin\": {\n    \"lat\": 12.9716,\n    \"lng\": 77.5946\n  },\n  \"destination\": {\n    \"lat\": 12.9352,\n    \"lng\": 77.6245\n  },\n  \"mode\": \"driving\",\n  \"departureTime\": \"now\",\n  \"includePolyline\": true,\n  \"includeRaw\": false\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/orchestrator/eta",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "orchestrator",
+                                "eta"
+                            ]
+                        },
+                        "description": "Calculate ETA and distance between two points using Google Maps Directions API"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Places Autocomplete",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"input\": \"St. John Hospital\",\n  \"sessionToken\": \"{{$randomUUID}}\",\n  \"locationBias\": {\n    \"lat\": 12.9716,\n    \"lng\": 77.5946\n  },\n  \"radiusMeters\": 50000,\n  \"country\": \"IN\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/orchestrator/places/autocomplete",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "orchestrator",
+                                "places",
+                                "autocomplete"
+                            ]
+                        },
+                        "description": "Get place suggestions with coordinates for address autocomplete"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "User Address Management",
+            "description": "APIs for managing user addresses with coordinates",
+            "item": [
+                {
+                    "name": "Add New Address",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"userId\": \"P0001\",\n  \"addressName\": \"Home\",\n  \"origin\": {\n    \"lat\": 12.9716,\n    \"lng\": 77.5946\n  },\n  \"fullAddress\": \"123 Main Street, Bangalore, Karnataka, India\",\n  \"isDefault\": true\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/user/address",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "user",
+                                "address"
+                            ]
+                        },
+                        "description": "Add a new address to user's address list"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get All User Addresses",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/user/address/P0001",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "user",
+                                "address",
+                                "P0001"
+                            ]
+                        },
+                        "description": "Retrieve all addresses for a user"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Update Specific Address",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"addressName\": \"Updated Home\",\n  \"origin\": {\n    \"lat\": 12.9800,\n    \"lng\": 77.6000\n  },\n  \"fullAddress\": \"Updated address\",\n  \"isDefault\": true\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/user/address/P0001/{{address_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "user",
+                                "address",
+                                "P0001",
+                                "{{address_id}}"
+                            ]
+                        },
+                        "description": "Update a specific address for a user"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delete Address",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/user/address/P0001/{{address_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "user",
+                                "address",
+                                "P0001",
+                                "{{address_id}}"
+                            ]
+                        },
+                        "description": "Delete a specific address for a user"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Token Management",
+            "description": "APIs for managing appointment token numbers",
+            "item": [
+                {
+                    "name": "Migrate Existing Appointments",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/token/migrate",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "token",
+                                "migrate"
+                            ]
+                        },
+                        "description": "Migrate existing appointments to add token numbers"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Token Statistics",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/token/stats/D0001",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "token",
+                                "stats",
+                                "D0001"
+                            ]
+                        },
+                        "description": "Get token usage statistics for a doctor"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Doctor Delay Management",
+            "description": "APIs for managing doctor delays and availability",
+            "item": [
+                {
+                    "name": "Set Doctor Delay",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"doctorId\": \"D0001\",\n  \"date\": \"2024-01-22\",\n  \"startTime\": \"14:00\",\n  \"durationMinutes\": 30,\n  \"reason\": \"Emergency case in progress\",\n  \"createdBy\": \"admin\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/doctor/delay",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctor",
+                                "delay"
+                            ]
+                        },
+                        "description": "Set a delay for a doctor at a specific time"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Doctor Delays",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/doctor/delay/D0001?date=2024-01-22",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctor",
+                                "delay",
+                                "D0001"
+                            ],
+                            "query": [
+                                {
+                                    "key": "date",
+                                    "value": "2024-01-22"
+                                }
+                            ]
+                        },
+                        "description": "Get active delays for a doctor on a specific date"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Clear Doctor Delays",
+                    "request": {
+                        "method": "DELETE",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/doctor/delay/D0001?date=2024-01-22",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctor",
+                                "delay",
+                                "D0001"
+                            ],
+                            "query": [
+                                {
+                                    "key": "date",
+                                    "value": "2024-01-22"
+                                }
+                            ]
+                        },
+                        "description": "Clear all delays for a doctor on a specific date"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Reset Doctor Availability",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/doctor/reset-availability",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctor",
+                                "reset-availability"
+                            ]
+                        },
+                        "description": "Reset availability for all doctors (clear all delays)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Adjusted Appointment Time",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/doctor/adjusted-time?doctorId=D0001&appointmentDate=2024-01-22&originalTime=14:00",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctor",
+                                "adjusted-time"
+                            ],
+                            "query": [
+                                {
+                                    "key": "doctorId",
+                                    "value": "D0001"
+                                },
+                                {
+                                    "key": "appointmentDate",
+                                    "value": "2024-01-22"
+                                },
+                                {
+                                    "key": "originalTime",
+                                    "value": "14:00"
+                                }
+                            ]
+                        },
+                        "description": "Get adjusted appointment time considering doctor delays"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Manual Notification Testing",
+            "description": "APIs for manually testing different notification scenarios",
+            "item": [
+                {
+                    "name": "Send 2-Hour Reminder",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"patientId\": \"P0001\",\n  \"appointmentId\": \"12345\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/orchestrator/notifications/2hour-reminder",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "orchestrator",
+                                "notifications",
+                                "2hour-reminder"
+                            ]
+                        },
+                        "description": "Manually trigger a 2-hour reminder notification"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Send Location-Based Notification",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"patientId\": \"P0001\",\n  \"appointmentId\": \"12345\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/orchestrator/notifications/location-based",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "orchestrator",
+                                "notifications",
+                                "location-based"
+                            ]
+                        },
+                        "description": "Manually trigger a location-based departure notification with ETA calculation"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Send Doctor Delay Notification",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"doctorId\": \"D0001\",\n  \"delayMinutes\": 30,\n  \"reason\": \"Emergency case in progress\",\n  \"date\": \"2024-01-22\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/orchestrator/notifications/doctor-delay",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "orchestrator",
+                                "notifications",
+                                "doctor-delay"
+                            ]
+                        },
+                        "description": "Manually trigger doctor delay notifications to all affected patients"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Batch Orchestration",
+            "description": "APIs for testing batch orchestration and management",
+            "item": [
+                {
+                    "name": "Process ETA-Based Batches",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/orchestrator/batch/process-eta",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "orchestrator",
+                                "batch",
+                                "process-eta"
+                            ]
+                        },
+                        "description": "Manually trigger ETA-based batch processing to check for appointments that need departure notifications"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Detect No-Shows",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/orchestrator/batch/detect-noshow",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "orchestrator",
+                                "batch",
+                                "detect-noshow"
+                            ]
+                        },
+                        "description": "Manually trigger no-show detection and batch advancement"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Handle Check-In",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"appointmentId\": \"12345\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/orchestrator/batch/checkin",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "orchestrator",
+                                "batch",
+                                "checkin"
+                            ]
+                        },
+                        "description": "Manually handle a patient check-in event and potentially advance to the next batch"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Advance to Next Batch",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"doctorId\": \"D0001\",\n  \"appointmentDate\": \"2024-01-22\",\n  \"appointmentTime\": \"14:00\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/orchestrator/batch/advance",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "orchestrator",
+                                "batch",
+                                "advance"
+                            ]
+                        },
+                        "description": "Manually advance to the next batch for a specific doctor and time slot"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "FCM Token Management",
+            "description": "APIs for managing FCM tokens and sending test notifications",
+            "item": [
+                {
+                    "name": "Send Test Notification",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"userId\": \"P0001\",\n  \"title\": \"Test Notification\",\n  \"body\": \"This is a test notification from the orchestrator\",\n  \"data\": {\n    \"type\": \"test\",\n    \"timestamp\": \"{{$timestamp}}\"\n  },\n  \"actions\": [\n    {\n      \"action\": \"yes\",\n      \"title\": \"Yes\"\n    },\n    {\n      \"action\": \"no\",\n      \"title\": \"No\"\n    }\n  ],\n  \"category\": \"test_category\",\n  \"dataOnly\": false\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/fcm/test",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "fcm",
+                                "test"
+                            ]
+                        },
+                        "description": "Send a test FCM notification with optional actions and category"
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Appointment Management",
+            "description": "APIs for creating appointments with address and token information",
+            "item": [
+                {
+                    "name": "Create Appointment with Address",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"patientId\": \"P0001\",\n  \"doctorId\": \"D0001\",\n  \"hospitalId\": \"H0001\",\n  \"appointmentDate\": \"2024-01-22\",\n  \"appointmentTime\": \"14:00\",\n  \"patientAddress\": {\n    \"addressId\": \"uuid-home-address\"\n  },\n  \"reasonForAppointment\": \"Regular checkup\",\n  \"appointmentType\": \"Consultation\",\n  \"status\": \"Scheduled\",\n  \"paymentStatus\": \"Paid\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/appointment",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "appointment"
+                            ]
+                        },
+                        "description": "Create a new appointment with patient address for ETA calculations"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create Appointment with Full Address",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"patientId\": \"P0001\",\n  \"doctorId\": \"D0001\",\n  \"hospitalId\": \"H0001\",\n  \"appointmentDate\": \"2024-01-22\",\n  \"appointmentTime\": \"14:00\",\n  \"patientAddress\": {\n    \"addressName\": \"Home\",\n    \"origin\": {\n      \"lat\": 12.9716,\n      \"lng\": 77.5946\n    },\n    \"fullAddress\": \"123 Main Street, Bangalore, Karnataka, India\"\n  },\n  \"reasonForAppointment\": \"Regular checkup\",\n  \"appointmentType\": \"Consultation\",\n  \"status\": \"Scheduled\",\n  \"paymentStatus\": \"Paid\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/appointment",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "appointment"
+                            ]
+                        },
+                        "description": "Create a new appointment with full address information"
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ],
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// Set random UUID for session tokens",
+                    "pm.globals.set('randomUUID', pm.variables.replaceIn('{{$randomUUID}}'));"
+                ]
+            }
+        }
+    ]
+}

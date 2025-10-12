@@ -192,7 +192,44 @@ const doctorSchema = new Schema({
     updatedAt: {
         type: Date,
         default: Date.now
-    }
+    },
+    
+    // Doctor delay management
+    delays: [{
+        date: {
+            type: Date,
+            required: true
+        },
+        startTime: {
+            type: String,
+            required: true,
+            match: [/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/, 'Start time must be in HH:MM format']
+        },
+        durationMinutes: {
+            type: Number,
+            required: true,
+            min: [1, 'Duration must be at least 1 minute'],
+            max: [480, 'Duration cannot exceed 8 hours']
+        },
+        reason: {
+            type: String,
+            required: true,
+            trim: true,
+            maxlength: [500, 'Reason cannot exceed 500 characters']
+        },
+        isActive: {
+            type: Boolean,
+            default: true
+        },
+        createdAt: {
+            type: Date,
+            default: Date.now
+        },
+        createdBy: {
+            type: String,
+            required: true
+        }
+    }]
 });
 
 doctorSchema.set('toJSON', { 

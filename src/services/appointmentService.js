@@ -8,6 +8,7 @@ import { EasyQError } from '../config/error.js';
 import { httpStatusCode } from '../util/statusCode.js';
 import { logInfo, logError, logWarn } from '../config/logger.js';
 import { constructPipeLine , getAppointmentByIdPipe, getAppointmentByAppointmentIdPipe } from '../controller/util.js';
+import { TokenAssignmentService } from './tokenAssignmentService.js';
 
 export class AppointmentService {
 
@@ -20,8 +21,88 @@ export class AppointmentService {
                 appointmentDate: appointmentData.appointmentDate
             });
 
+            // Assign token number before creating appointment
+            const appointmentDate = new Date(appointmentData.appointmentDate);
+            const tokenInfo = await TokenAssignmentService.assignToken(
+                appointmentData.doctorId,
+                appointmentDate,
+                appointmentData.appointmentTime
+            );
+
+            // Get patient address if provided
+            let patientAddress = null;
+            if (appointmentData.patientAddress) {
+                // If full address object is provided
+                if (appointmentData.patientAddress.origin) {
+                    patientAddress = {
+                        addressId: appointmentData.patientAddress.addressId || null,
+                        addressName: appointmentData.patientAddress.addressName,
+                        origin: {
+                            lat: appointmentData.patientAddress.origin.lat,
+                            lng: appointmentData.patientAddress.origin.lng
+                        },
+                        fullAddress: appointmentData.patientAddress.fullAddress
+                    };
+                }
+                // If only addressId is provided, fetch from user profile
+                else if (appointmentData.patientAddress.addressId) {
+                    const user = await User.findOne({ userId: appointmentData.patientId }).select('addresses');
+                    if (user?.addresses) {
+                        const selectedAddress = user.addresses.find(addr => addr.addressId === appointmentData.patientAddress.addressId);
+                        if (selectedAddress) {
+                            patientAddress = {
+                                addressId: selectedAddress.addressId,
+                                addressName: selectedAddress.addressName,
+                                origin: {
+                                    lat: selectedAddress.origin.lat,
+                                    lng: selectedAddress.origin.lng
+                                },
+                                fullAddress: selectedAddress.fullAddress
+                            };
+                        }
+                    }
+                }
+            } else if (appointmentData.patientId) {
+                // Try to get default address from user profile
+                const user = await User.findOne({ userId: appointmentData.patientId }).select('addresses');
+                if (user?.addresses) {
+                    const defaultAddress = user.addresses.find(addr => addr.isDefault) || user.addresses[0];
+                    if (defaultAddress) {
+                        patientAddress = {
+                            addressId: defaultAddress.addressId,
+                            addressName: defaultAddress.addressName,
+                            origin: {
+                                lat: defaultAddress.origin.lat,
+                                lng: defaultAddress.origin.lng
+                            },
+                            fullAddress: defaultAddress.fullAddress
+                        };
+                    }
+                }
+            }
+
+            // Assign batch number
+            const { BatchOrchestrator } = await import('./batchOrchestrator.js');
+            const batchNumber = await BatchOrchestrator.assignBatchNumber(
+                appointmentData.doctorId,
+                appointmentDate,
+                appointmentData.appointmentTime,
+                tokenInfo.tokenNumber
+            );
+
+            // Add token information, patient address, and batch info to appointment data
+            const appointmentWithToken = {
+                ...appointmentData,
+                slotNumber: tokenInfo.slotNumber,
+                tokenNumber: tokenInfo.tokenNumber,
+                tokenDisplay: tokenInfo.tokenDisplay,
+                batchNumber,
+                batchStatus: 'pending',
+                patientAddress
+            };
+
             // Create appointment with schema validation
-            const newAppointment = await Appointment.create(appointmentData);
+            const newAppointment = await Appointment.create(appointmentWithToken);
 
             // Get user for Google Calendar integration
             const user = await User.findOne({ userId: appointmentData.patientId });
@@ -55,7 +136,11 @@ export class AppointmentService {
 
             logInfo('Appointment created successfully', {
                 appointmentId: newAppointment.appointmentId,
-                patientId: appointmentData.patientId
+                patientId: appointmentData.patientId,
+                tokenDisplay: newAppointment.tokenDisplay,
+                slotNumber: newAppointment.slotNumber,
+                tokenNumber: newAppointment.tokenNumber,
+                hasPatientAddress: !!newAppointment.patientAddress
             });
 
             return newAppointment;

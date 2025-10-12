@@ -1,5 +1,5 @@
 import express from 'express';
-import { saveFCMToken, getUserFCMTokens, deactivateFCMToken } from '../controller/fcmToken.js';
+import { saveFCMToken, getUserFCMTokens, deactivateFCMToken, sendTestNotification } from '../controller/fcmToken.js';
 
 const router = express.Router();
 
@@ -272,6 +272,69 @@ router.get('/user/:userId/tokens', getUserFCMTokens);
  *         description: Internal server error
  */
 router.put('/token/:tokenId/deactivate', deactivateFCMToken);
+
+/**
+ * @swagger
+ * /api/fcm/test:
+ *   post:
+ *     summary: Send a test push notification to a user
+ *     description: Open API to send a sample test notification to the user's most recent active device
+ *     tags: [FCM]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - userId
+ *             properties:
+ *               userId:
+ *                 type: string
+ *                 example: "P0001"
+ *               title:
+ *                 type: string
+ *                 example: "Test Notification"
+ *               body:
+ *                 type: string
+ *                 example: "Hi, this is a test notification."
+ *               data:
+ *                 type: object
+ *                 additionalProperties: true
+ *               actions:
+ *                 type: array
+ *                 description: Platform-defined actions for the app to render
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       example: "confirm_yes"
+ *                     title:
+ *                       type: string
+ *                       example: "Yes"
+ *                     deeplink:
+ *                       type: string
+ *                       example: "app://appointment/123?action=yes"
+ *               category:
+ *                 type: string
+ *                 description: iOS category identifier to map actions
+ *                 example: "arrival_confirm"
+ *               dataOnly:
+ *                 type: boolean
+ *                 description: If true, send data-only (Android renders locally)
+ *                 example: true
+ *     responses:
+ *       200:
+ *         description: Notification sent successfully
+ *       400:
+ *         description: Validation error
+ *       404:
+ *         description: No active tokens found for user
+ *       500:
+ *         description: Failed to send notification
+ */
+router.post('/test', sendTestNotification);
 
 export default router;
 

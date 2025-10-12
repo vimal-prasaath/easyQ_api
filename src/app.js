@@ -17,10 +17,17 @@ import userAppointments from "./routes/userAppointments.js";
 import fcmToken from "./routes/fcmToken.js";
 import swaggerUi from "swagger-ui-express";
 import swaggerSpecs from "./config/swagger.js";
-import "./config/sheduler.js";
 import { EasyQError } from "./config/error.js";
 import { httpStatusCode } from "./util/statusCode.js";
 import { logError, logInfo } from "./config/logger.js";
+import orchestratorRoutes from "./notificationOrchestrator/routes/index.js";
+import tokenRoutes from "./routes/token/index.js";
+import doctorDelayRoutes from "./routes/doctorDelay/index.js";
+import userAddressRoutes from "./routes/userAddress/index.js";
+
+// Import schedulers
+import "./config/sheduler.js"; // 2-hour reminder scheduler
+import "./config/batchScheduler.js"; // Batch orchestration schedulers
 
 dotenv.config();
 
@@ -149,6 +156,10 @@ app.get(
 // 12. Open API routes (no authentication required)
 app.use("/api", userAppointments);
 app.use("/api/fcm", fcmToken);
+app.use("/api/orchestrator", orchestratorRoutes);
+app.use("/api/token", tokenRoutes);
+app.use("/api/doctor", doctorDelayRoutes);
+app.use("/api/user", userAddressRoutes);
 
 // 13. API routes (authentication will be applied per route basis)
 app.use("/api", apiRoutes);

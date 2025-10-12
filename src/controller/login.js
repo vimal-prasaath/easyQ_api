@@ -6,9 +6,8 @@ import { logApiRequest, logApiResponse } from '../config/logger.js';
 import { constructResponse } from '../util/responseFormatter.js';
 
 export async function login(req, res, next) {
-    const {phoneNumber } = req.body;
+    const { phoneNumber } = req.body;
    
-    
     // Log API request
     logApiRequest(req, { action: 'login_attempt', phoneNumber });
 

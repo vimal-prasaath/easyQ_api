@@ -104,6 +104,30 @@ const hospitalSchema = new Schema({
     trim: true
   },
   
+  // New address fields for Google Maps integration
+  addressName: {
+    type: String,
+    trim: true,
+    maxlength: [100, 'Address name cannot exceed 100 characters']
+  },
+  origin: {
+    lat: {
+      type: Number,
+      min: [-90, 'Latitude must be between -90 and 90'],
+      max: [90, 'Latitude must be between -90 and 90']
+    },
+    lng: {
+      type: Number,
+      min: [-180, 'Longitude must be between -180 and 180'],
+      max: [180, 'Longitude must be between -180 and 180']
+    }
+  },
+  fullAddress: {
+    type: String,
+    trim: true,
+    maxlength: [500, 'Full address cannot exceed 500 characters']
+  },
+  
   // Enhanced Contact Details
   alternativePhone: {
     type: String,

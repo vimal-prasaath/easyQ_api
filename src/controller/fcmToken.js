@@ -2,6 +2,7 @@ import FCMToken from '../model/fcmToken.js';
 import { logInfo, logError } from '../config/logger.js';
 import { EasyQError } from '../config/error.js';
 import { httpStatusCode } from '../util/statusCode.js';
+import admin from '../config/firebaseAdmin.js';
 
 /**
  * Save or update FCM token for a user
@@ -151,7 +152,6 @@ export const getUserFCMTokens = async (req, res, next) => {
         }
 
         const tokens = await FCMToken.findActiveTokensByUserId(userId);
-
         res.status(200).json({
             status: 'success',
             message: 'FCM tokens retrieved successfully',
@@ -247,6 +247,123 @@ export const deactivateFCMToken = async (req, res, next) => {
             httpStatusCode.INTERNAL_SERVER_ERROR,
             true,
             'Failed to deactivate FCM token'
+        ));
+    }
+};
+
+/**
+ * Send a test push notification to the user's most recent active device
+ * Open API (no auth) for testing purposes
+ * body: { userId: string, title?: string, body?: string, data?: object }
+ */
+export const sendTestNotification = async (req, res, next) => {
+    try {
+        const { userId, title, body, data, actions, category, dataOnly } = req.body || {};
+
+        if (!userId) {
+            throw new EasyQError(
+                'ValidationError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                'userId is required'
+            );
+        }
+
+        // Get most recent active token for this user (active device only)
+        const tokens = await FCMToken.findActiveTokensByUserId(userId);
+        if (!tokens || tokens.length === 0) {
+            throw new EasyQError(
+                'NotFoundError',
+                httpStatusCode.NOT_FOUND,
+                true,
+                'No active FCM tokens found for this user'
+            );
+        }
+
+        const primaryToken = tokens[0];
+
+        const payloadData = Object.assign({}, data);
+        if (Array.isArray(actions) && actions.length > 0) {
+            // Serialize actions array for transport in data-only payloads
+            try { payloadData.actions = JSON.stringify(actions); } catch (_) {}
+        }
+        if (category) {
+            payloadData.category = String(category);
+        }
+
+        const message = {
+            token: primaryToken.fcmToken,
+            data: payloadData
+        };
+
+        if (!dataOnly) {
+            message.notification = {
+                title: title || 'Test Notification',
+                body: body || 'Hi, this is a test notification.'
+            };
+        }
+
+        const response = await admin.messaging().send(message);
+
+        logInfo('Test notification sent', {
+            userId,
+            tokenId: primaryToken._id,
+            messageId: response
+        });
+
+        return res.status(httpStatusCode.OK).json({
+            status: 'success',
+            message: 'Notification sent successfully',
+            data: {
+                userId,
+                tokenId: primaryToken._id,
+                messageId: response
+            }
+        });
+    } catch (error) {
+        // Handle invalid token errors by deactivating the token
+        const tokenErrorCodes = new Set([
+            'messaging/invalid-argument',
+            'messaging/registration-token-not-registered'
+        ]);
+
+        if (error && error.code && tokenErrorCodes.has(error.code)) {
+            try {
+                const { userId } = req.body || {};
+                const tokens = userId ? await FCMToken.findActiveTokensByUserId(userId) : [];
+                const primary = tokens && tokens[0];
+                if (primary) {
+                    primary.isActive = false;
+                    await primary.save();
+                    logInfo('Deactivated invalid FCM token', { tokenId: primary._id, userId });
+                }
+                
+                // Return success response even if token was invalid
+                return res.status(httpStatusCode.OK).json({
+                    status: 'success',
+                    message: 'Token was invalid and has been deactivated. Please refresh your app token.',
+                    data: {
+                        userId,
+                        tokenDeactivated: true,
+                        reason: error.code
+                    }
+                });
+            } catch (deactivateErr) {
+                logError(deactivateErr);
+            }
+        }
+
+        logError(error, { userId: req.body?.userId });
+
+        if (error instanceof EasyQError) {
+            return next(error);
+        }
+
+        next(new EasyQError(
+            'InternalServerError',
+            httpStatusCode.INTERNAL_SERVER_ERROR,
+            true,
+            'Failed to send notification'
         ));
     }
 };

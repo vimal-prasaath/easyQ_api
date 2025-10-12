@@ -16,6 +16,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@googlemaps/google-maps-services-js": "^3.4.2",
     "aws-sdk": "^2.1692.0",
     "axios": "^1.11.0",
     "bcrypt": "^6.0.0",
@@ -44,6 +45,7 @@
     "qrcode": "^1.5.4",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
+    "uuid": "^13.0.0",
     "winston": "^3.17.0",
     "winston-daily-rotate-file": "^5.0.0"
   },
