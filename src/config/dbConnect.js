@@ -9,6 +9,9 @@ export const dbConnect = async () => {
             dbName: "easyQ_test",
             useNewUrlParser: true,
             useUnifiedTopology: true,
+            serverSelectionTimeoutMS: 10000, // 10 seconds timeout
+            connectTimeoutMS: 10000, // 10 seconds timeout
+            socketTimeoutMS: 10000, // 10 seconds timeout
         });
         
         dbLogger.info("✅ Database connected successfully!", {

@@ -63,7 +63,10 @@ export const getUserAppointments = async (req, res) => {
                 doctorName: appointment.doctorName,
                 appointmentDate: appointment.appointmentDate,
                 appointmentId: appointment.appointmentId,
-                status: appointment.status
+                status: appointment.status,
+                slotNumber: appointment.slotNumber,
+                tokenNumber: appointment.tokenNumber,
+                tokenDisplay: appointment.tokenDisplay
             };
         });
 

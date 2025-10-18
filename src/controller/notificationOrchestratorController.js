@@ -124,6 +124,57 @@ export const sendLocationBasedNotification = async (req, res, next) => {
 };
 
 /**
+ * Send appointment navigation notification
+ * POST /api/orchestrator/notifications/appointment-navigation
+ */
+export const sendAppointmentNavigationNotification = async (req, res, next) => {
+    try {
+        const { appointmentId } = req.body;
+
+        if (!appointmentId) {
+            throw new EasyQError(
+                'ValidationError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                'appointmentId is required'
+            );
+        }
+
+        const result = await NotificationOrchestrator.sendAppointmentNavigationNotification(appointmentId);
+
+        logInfo('Appointment navigation notification API called', {
+            appointmentId,
+            patientId: result.data.patientId,
+            hospitalName: result.data.navigationData.hospitalName,
+            travelTimeMinutes: result.data.navigationData.travelTimeMinutes
+        });
+
+        return res.status(httpStatusCode.OK).json({
+            status: 'success',
+            message: result.message,
+            data: result.data
+        });
+
+    } catch (error) {
+        logError(error, { 
+            endpoint: '/api/orchestrator/notifications/appointment-navigation',
+            appointmentId: req.body?.appointmentId
+        });
+        
+        if (error instanceof EasyQError) {
+            return next(error);
+        }
+        
+        next(new EasyQError(
+            'InternalServerError',
+            httpStatusCode.INTERNAL_SERVER_ERROR,
+            true,
+            'Failed to send appointment navigation notification'
+        ));
+    }
+};
+
+/**
  * Send doctor delay notification
  * POST /api/orchestrator/notifications/doctor-delay
  */

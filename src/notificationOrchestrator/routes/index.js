@@ -2,7 +2,7 @@ import express from 'express';
 import { etaController } from '../controller/etaController.js';
 import { autocompleteController } from '../controller/placesController.js';
 import { placeReviewsController } from '../controller/placeReviewsController.js';
-import { sendManual2HourReminder, sendLocationBasedNotification, sendDoctorDelayNotification } from '../../controller/notificationOrchestratorController.js';
+import { sendManual2HourReminder, sendLocationBasedNotification, sendAppointmentNavigationNotification, sendDoctorDelayNotification } from '../../controller/notificationOrchestratorController.js';
 import { processETABatches, detectNoShows, handleCheckIn, advanceToNextBatch } from '../../controller/batchOrchestratorController.js';
 import { orchestratorRateLimit } from '../middleware/rateLimit.js';
 
@@ -16,6 +16,7 @@ router.post('/place-reviews', orchestratorRateLimit, placeReviewsController);
 // Manual notification testing APIs
 router.post('/notifications/2hour-reminder', orchestratorRateLimit, sendManual2HourReminder);
 router.post('/notifications/location-based', orchestratorRateLimit, sendLocationBasedNotification);
+router.post('/notifications/appointment-navigation', orchestratorRateLimit, sendAppointmentNavigationNotification);
 router.post('/notifications/doctor-delay', orchestratorRateLimit, sendDoctorDelayNotification);
 
 // Batch orchestration APIs

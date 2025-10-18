@@ -57,6 +57,9 @@ export const getUserDocuments = async (req, res, next) => {
                 hospital: appointment.hospitalName || 'Unknown Hospital',
                 doctorId: appointment.doctorId,
                 doctorName: appointment.doctorName || 'Unknown Doctor',
+                slotNumber: appointment.slotNumber,
+                tokenNumber: appointment.tokenNumber,
+                tokenDisplay: appointment.tokenDisplay,
                 reports: reports
             };
         });

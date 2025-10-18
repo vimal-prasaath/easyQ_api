@@ -213,6 +213,153 @@ export class NotificationOrchestrator {
     }
 
     /**
+     * Send appointment navigation notification
+     * @param {string} appointmentId - Appointment ID
+     */
+    static async sendAppointmentNavigationNotification(appointmentId) {
+        try {
+            // Find appointment
+            const appointment = await appointments.findOne({ appointmentId });
+            
+            if (!appointment) {
+                throw new Error(`Appointment not found: ${appointmentId}`);
+            }
+
+            // Get hospital location
+            const hospital = await Hospital.findOne({ hospitalId: appointment.hospitalId });
+            if (!hospital?.location?.coordinates) {
+                throw new Error(`Hospital location not found for ${appointment.hospitalId}`);
+            }
+
+            // Get patient address
+            let patientAddress = appointment.patientAddress;
+            if (!patientAddress && appointment.patientId) {
+                const user = await User.findOne({ userId: appointment.patientId }).select('addresses');
+                if (user?.addresses) {
+                    const defaultAddress = user.addresses.find(addr => addr.isDefault) || user.addresses[0];
+                    if (defaultAddress) {
+                        patientAddress = {
+                            origin: defaultAddress.origin,
+                            addressName: defaultAddress.addressName
+                        };
+                    }
+                }
+            }
+
+            if (!patientAddress?.origin) {
+                throw new Error(`Patient address not found for appointment ${appointmentId}`);
+            }
+
+            // Calculate ETA
+            const etaResult = await getEta({
+                origin: patientAddress.origin,
+                destination: {
+                    lat: hospital.location.coordinates[1],
+                    lng: hospital.location.coordinates[0]
+                },
+                mode: 'driving',
+                departureTime: 'now'
+            });
+
+            // Calculate suggested departure time
+            const appointmentDateTime = new Date(appointment.appointmentDate);
+            const [hours, minutes] = appointment.appointmentTime.split(':');
+            appointmentDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+            
+            const travelTimeMinutes = Math.ceil(etaResult.durationSeconds / 60);
+            const bufferMinutes = 5; // 5 minute buffer
+            const suggestedDepartureTime = new Date(appointmentDateTime.getTime() - (travelTimeMinutes + bufferMinutes) * 60000);
+
+            // Find user FCM tokens
+            const userTokens = await UserToken.find({ userId: appointment.patientId, isActive: true });
+            
+            if (userTokens.length === 0) {
+                throw new Error(`No active FCM tokens found for patient ${appointment.patientId}`);
+            }
+
+            // Prepare navigation data
+            const navigationData = {
+                sourceLocation: {
+                    lat: patientAddress.origin.lat,
+                    lng: patientAddress.origin.lng
+                },
+                destinationLocation: {
+                    lat: hospital.location.coordinates[1],
+                    lng: hospital.location.coordinates[0]
+                },
+                hospitalName: hospital.name,
+                appointmentTime: appointment.appointmentTime,
+                travelTimeMinutes
+            };
+
+            // Prepare FCM data with navigation coordinates
+            const fcmData = {
+                appointmentId: appointment.appointmentId,
+                type: 'location_based_departure',
+                travelTimeMinutes: travelTimeMinutes.toString(),
+                suggestedDepartureTime: suggestedDepartureTime.toISOString(),
+                hospitalName: hospital.name,
+                deeplink: `app://appointment/${appointment.appointmentId}`,
+                sourceLat: patientAddress.origin.lat.toString(),
+                sourceLng: patientAddress.origin.lng.toString(),
+                destinationLat: hospital.location.coordinates[1].toString(),
+                destinationLng: hospital.location.coordinates[0].toString()
+            };
+
+            // Send notification to all active tokens
+            for (const tokenDoc of userTokens) {
+                await admin.messaging().send({
+                    token: tokenDoc.fcmToken,
+                    notification: {
+                        title: 'Time to Leave!',
+                        body: `Leave now to reach ${hospital.name} in ~${travelTimeMinutes} minutes. Your appointment is at ${appointment.appointmentTime}.`
+                    },
+                    data: fcmData
+                });
+            }
+
+            // Update appointment with suggested arrival time
+            await appointments.updateOne(
+                { appointmentId: appointment.appointmentId },
+                { 
+                    suggestedArrivalAt: new Date(appointmentDateTime.getTime() - bufferMinutes * 60000),
+                    batchStatus: 'sent'
+                }
+            );
+
+            logInfo('Appointment navigation notification sent', {
+                appointmentId: appointment.appointmentId,
+                patientId: appointment.patientId,
+                travelTimeMinutes,
+                tokensSent: userTokens.length
+            });
+
+            return {
+                success: true,
+                message: 'Location-based navigation notification sent successfully',
+                data: {
+                    appointmentId: appointment.appointmentId,
+                    patientId: appointment.patientId,
+                    notification: {
+                        title: 'Time to Leave!',
+                        body: `Leave now to reach ${hospital.name} in ~${travelTimeMinutes} minutes. Your appointment is at ${appointment.appointmentTime}.`
+                    },
+                    navigationData,
+                    fcmData,
+                    tokensSent: userTokens.length
+                }
+            };
+
+        } catch (error) {
+            logError('Failed to send appointment navigation notification', {
+                appointmentId,
+                error: error.message
+            });
+            throw error;
+        }
+    }
+
+    /**
      * Send doctor delay notification
      * @param {string} doctorId - Doctor ID
      * @param {number} delayMinutes - Delay in minutes
