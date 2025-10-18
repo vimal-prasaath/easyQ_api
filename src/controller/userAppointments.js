@@ -1,6 +1,7 @@
 import Appointment from '../model/appointment.js';
 import User from '../model/userProfile.js';
 import Hospital from '../model/hospital.js';
+import { calculateUserHospitalDistance, calculateApproximateTravelTime } from '../util/distanceCalculator.js';
 
 /**
  * Get user appointments with detailed information
@@ -50,9 +51,15 @@ export const getUserAppointments = async (req, res) => {
             hospitalMap[hospital.hospitalId] = hospital;
         });
 
-        // Format the response data
-        const formattedAppointments = appointments.map(appointment => {
+        // Format the response data with distance and travel time
+        const formattedAppointments = await Promise.all(appointments.map(async appointment => {
             const hospital = hospitalMap[appointment.hospitalId];
+            
+            // Calculate distance between user and hospital
+            const distance = hospital ? calculateUserHospitalDistance(user, hospital) : null;
+            
+            // Calculate approximate travel time
+            const approximateTime = hospital ? await calculateApproximateTravelTime(user, hospital) : null;
             
             return {
                 userId: appointment.patientId,
@@ -66,9 +73,11 @@ export const getUserAppointments = async (req, res) => {
                 status: appointment.status,
                 slotNumber: appointment.slotNumber,
                 tokenNumber: appointment.tokenNumber,
-                tokenDisplay: appointment.tokenDisplay
+                tokenDisplay: appointment.tokenDisplay,
+                distance: distance, // Distance in kilometers
+                approximateTime: approximateTime // Travel time range like "10-15 min"
             };
-        });
+        }));
 
         return res.status(200).json({
             success: true,

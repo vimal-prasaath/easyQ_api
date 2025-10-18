@@ -6,11 +6,13 @@ import Favourite from "../model/hospitalFavourite.js"
 import Doctor from "../model/doctor.js"
 import Appointment from "../model/appointment.js"
 import HospitalDetails from "../model/facility.js"
+import User from "../model/userProfile.js"
 import { updateObjectPayload, updateFacilityPayload, updateComment, searchBylocation } from './update_controller.js'
 import { EasyQError } from "../config/error.js"
 import { httpStatusCode } from "../util/statusCode.js"
 import {logInfo, logError} from "../config/logger.js"
 import { deleteFolderFromFirebase } from "../config/fireBaseStorage.js"
+import { calculateUserHospitalDistance, calculateApproximateTravelTime } from '../util/distanceCalculator.js'
 
 export async function createHospital(req, res, next) {
 
@@ -459,12 +461,19 @@ export async function getHospitalDetails(req, res, next) {
             isFavouriteStatus = matchedHospital.isFavourite;
         }
 
+        // Calculate distance and travel time between user and hospital
+        const user = await User.findOne({ userId: userId });
+        const distance = user ? calculateUserHospitalDistance(user, hospital) : null;
+        const approximateTime = user ? await calculateApproximateTravelTime(user, hospital) : null;
+
         res.status(httpStatusCode.OK).json({
             message: 'Successfully retrieved hospital details',
             hospital: hospital,
             facilities: facilities,
             review: review,
-            isfavourite: isFavouriteStatus
+            isfavourite: isFavouriteStatus,
+            distance: distance, // Distance in kilometers
+            approximateTime: approximateTime // Travel time range like "10-15 min"
         });
 
     } catch (error) {
@@ -499,13 +508,137 @@ export async function getHospitalDetailsBylocation(req, res, next) {
             ));
         }
 
-        const allHospitals = await Hospital.find({ ...query, isActive: true });
+        const allHospitals = await Hospital.find({ ...query, isActive: true }).lean();
+        
+        // Add distance and travel time calculation
+        let userForCalculation = null;
+        
+        // Priority 1: Use patientId from request body to get user's address
+        if (req.body.patientId) {
+            logInfo('Looking up patient for distance calculation', {
+                patientId: req.body.patientId
+            });
+            
+            const user = await User.findOne({ userId: req.body.patientId });
+            
+            if (user) {
+                userForCalculation = user;
+                logInfo('Using patient address for distance calculation', {
+                    patientId: req.body.patientId,
+                    hasDefaultAddress: !!user.addresses?.find(addr => addr.isDefault),
+                    totalAddresses: user.addresses?.length || 0,
+                    addresses: user.addresses?.map(addr => ({
+                        isDefault: addr.isDefault,
+                        hasOrigin: !!addr.origin,
+                        origin: addr.origin
+                    })) || []
+                });
+            } else {
+                logWarn('Patient not found, falling back to location coordinates', {
+                    patientId: req.body.patientId
+                });
+            }
+        }
+        
+        // Priority 2: Fallback to location coordinates from request body
+        if (!userForCalculation && req.body.location && req.body.location.coordinates && Array.isArray(req.body.location.coordinates) && req.body.location.coordinates.length === 2) {
+            const [lng, lat] = req.body.location.coordinates; // GeoJSON format: [longitude, latitude]
+            
+            // Create a mock user object with the provided coordinates
+            userForCalculation = {
+                addresses: [{
+                    isDefault: true,
+                    origin: { lat, lng }
+                }]
+            };
+            
+            logInfo('Using location coordinates for distance calculation', {
+                coordinates: [lng, lat]
+            });
+        }
+        
+        // Calculate distance and travel time if we have user data or coordinates
+        if (userForCalculation) {
+            logInfo('Starting distance and travel time calculation', {
+                hospitalCount: allHospitals.length,
+                calculationMethod: req.body.patientId ? 'patient_address' : 'location_coordinates',
+                userAddresses: userForCalculation.addresses?.length || 0
+            });
+            
+            // Process all hospitals in parallel and add distance/time information
+            await Promise.all(allHospitals.map(async (hospital, index) => {
+                try {
+                    // Convert Decimal128 coordinates to regular numbers
+                    if (hospital.location?.coordinates) {
+                        hospital.location.coordinates = hospital.location.coordinates.map(coord => 
+                            coord.toString ? parseFloat(coord.toString()) : coord
+                        );
+                    }
+                    
+                    const distance = calculateUserHospitalDistance(userForCalculation, hospital);
+                    let approximateTime = null;
+                    
+                    // Try to get travel time, but don't fail if it doesn't work
+                    try {
+                        approximateTime = await calculateApproximateTravelTime(userForCalculation, hospital);
+                    } catch (etaError) {
+                        logWarn('ETA calculation failed, using distance only', {
+                            hospitalId: hospital.hospitalId,
+                            error: etaError.message
+                        });
+                        // Set a fallback time based on distance (rough estimate: 1km = 2 minutes)
+                        if (distance) {
+                            const estimatedMinutes = Math.ceil(distance * 2);
+                            if (estimatedMinutes <= 1) approximateTime = "1-5 min";
+                            else if (estimatedMinutes <= 5) approximateTime = "1-5 min";
+                            else if (estimatedMinutes <= 10) approximateTime = "5-10 min";
+                            else if (estimatedMinutes <= 15) approximateTime = "10-15 min";
+                            else if (estimatedMinutes <= 30) approximateTime = "15-30 min";
+                            else if (estimatedMinutes <= 45) approximateTime = "30-45 min";
+                            else if (estimatedMinutes <= 60) approximateTime = "45-60 min";
+                            else if (estimatedMinutes <= 75) approximateTime = "60-75 min";
+                            else approximateTime = "75+ min";
+                        }
+                    }
+                    
+                    // Add distance and time to the hospital object (mutating the original array)
+                    allHospitals[index].distance = distance;
+                    allHospitals[index].approximateTime = approximateTime;
+                    logInfo('Distance calculation result for hospital', {
+                        hospitalId: hospital.hospitalId,
+                        hospitalName: hospital.name,
+                        distance: distance,
+                        approximateTime: approximateTime
+                    });
+                } catch (error) {
+                    logError('Error calculating distance for hospital', {
+                        hospitalId: hospital.hospitalId,
+                        error: error.message
+                    });
+                    allHospitals[index].distance = null;
+                    allHospitals[index].approximateTime = null;
+                }
+            }));
+
+            logInfo('Distance and travel time calculation completed', {
+                hospitalCount: allHospitals.length,
+                calculationMethod: req.body.patientId ? 'patient_address' : 'location_coordinates'
+            });
+        } else {
+            logInfo('No distance calculation performed - no patientId or location coordinates provided');
+        }
+        
         res.status(httpStatusCode.OK).json({
             message: 'Hospitals fetch successfully',
             count: allHospitals.length,
             data: allHospitals
         });
     } catch (error) {
+        logError('Error in getHospitalDetailsBylocation', {
+            error: error.message,
+            patientId: req.body?.patientId,
+            hasLocation: !!req.body?.location
+        });
         next(new EasyQError(
             'DatabaseError',
             httpStatusCode.INTERNAL_SERVER_ERROR,

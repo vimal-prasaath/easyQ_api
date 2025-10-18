@@ -4,6 +4,8 @@ import { httpStatusCode } from '../util/statusCode.js';
 import { logApiRequest, logApiResponse, logInfo, logError } from '../config/logger.js';
 import { constructResponse,ResponseFormatter } from '../util/responseFormatter.js';
 import { uploadAppointmentDocument, deleteFileFromFirebase, extractFilePathFromUrl } from '../config/fireBaseStorage.js';
+import { calculateUserHospitalDistance, calculateApproximateTravelTime } from '../util/distanceCalculator.js';
+import User from '../model/userProfile.js';
 
 export async function createAppointment(req, res, next) {
     const data = req.body;
@@ -38,6 +40,34 @@ export async function getAppointmentsByPatient(req, res, next) {
 
     try {
         const appointments = await AppointmentService.getAppointmentsByPatient(patientId);
+        
+        // Add distance and travel time calculation for each appointment
+        if (appointments && appointments.length > 0) {
+            // Get user data for distance calculation
+            const user = await User.findOne({ userId: patientId });
+            
+            if (user) {
+                // Get unique hospital IDs to fetch hospital data
+                const hospitalIds = [...new Set(appointments.map(apt => apt.hospitalId))];
+                const Hospital = (await import('../model/hospital.js')).default;
+                const hospitals = await Hospital.find({ hospitalId: { $in: hospitalIds } });
+                const hospitalMap = {};
+                hospitals.forEach(hospital => {
+                    hospitalMap[hospital.hospitalId] = hospital;
+                });
+
+                // Add distance and travel time to each appointment
+                await Promise.all(appointments.map(async appointment => {
+                    const hospital = hospitalMap[appointment.hospitalId];
+                    if (hospital) {
+                        const distance = calculateUserHospitalDistance(user, hospital);
+                        const approximateTime = await calculateApproximateTravelTime(user, hospital);
+                        appointment.distance = distance; // Add distance to the appointment data
+                        appointment.approximateTime = approximateTime; // Add travel time to the appointment data
+                    }
+                }));
+            }
+        }
         
         const response = constructResponse(
             true,
@@ -88,6 +118,32 @@ export async function getAppointmentsByHospital(req, res, next) {
 
     try {
         const appointments = await AppointmentService.getAppointmentsByHospital(hospitalId);
+        
+        // Add distance calculation for each appointment
+        if (appointments && appointments.length > 0) {
+            // Get unique patient IDs to fetch user data
+            const patientIds = [...new Set(appointments.map(apt => apt.patientId))];
+            const users = await User.find({ userId: { $in: patientIds } });
+            const userMap = {};
+            users.forEach(user => {
+                userMap[user.userId] = user;
+            });
+
+            // Get hospital data for distance calculation
+            const Hospital = (await import('../model/hospital.js')).default;
+            const hospital = await Hospital.findOne({ hospitalId });
+
+            // Add distance and travel time to each appointment
+            await Promise.all(appointments.map(async appointment => {
+                const user = userMap[appointment.patientId];
+                if (user && hospital) {
+                    const distance = calculateUserHospitalDistance(user, hospital);
+                    const approximateTime = await calculateApproximateTravelTime(user, hospital);
+                    appointment.distance = distance; // Add distance to the appointment data
+                    appointment.approximateTime = approximateTime; // Add travel time to the appointment data
+                }
+            }));
+        }
         
         const response = constructResponse(
             true,
@@ -187,6 +243,21 @@ export async function getAppointmentById(req, res, next) {
 
     try {
         const appointment = await AppointmentService.getAppointmentById(appointmentId);
+        
+        // Add distance calculation if appointment data is available
+        if (appointment && appointment.length > 0) {
+            const appointmentData = appointment[0];
+            
+            // Get user data for distance calculation
+            const user = await User.findOne({ userId: appointmentData.patientId });
+            
+            if (user && appointmentData.hospitalInfo) {
+                const distance = calculateUserHospitalDistance(user, appointmentData.hospitalInfo);
+                const approximateTime = await calculateApproximateTravelTime(user, appointmentData.hospitalInfo);
+                appointmentData.distance = distance; // Add distance to the appointment data
+                appointmentData.approximateTime = approximateTime; // Add travel time to the appointment data
+            }
+        }
         
         const response = constructResponse(
             true,

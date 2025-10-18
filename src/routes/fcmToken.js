@@ -1,5 +1,5 @@
 import express from 'express';
-import { saveFCMToken, getUserFCMTokens, deactivateFCMToken, sendTestNotification, sendTestAppointmentBookingNotification } from '../controller/fcmToken.js';
+import { saveFCMToken, getUserFCMTokens, deactivateFCMToken, sendTestNotification, sendTestAppointmentBookingNotification, testDistanceCalculation } from '../controller/fcmToken.js';
 
 const router = express.Router();
 
@@ -379,6 +379,41 @@ router.post('/test', sendTestNotification);
  *         description: Failed to send notification
  */
 router.post('/test-appointment-booking', sendTestAppointmentBookingNotification);
+
+/**
+ * @swagger
+ * /api/fcm/test-distance:
+ *   post:
+ *     summary: Test distance calculation between user and hospital
+ *     description: Open API to test distance calculation between a user's address and hospital location
+ *     tags: [FCM]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - userId
+ *               - hospitalId
+ *             properties:
+ *               userId:
+ *                 type: string
+ *                 example: "P0001"
+ *               hospitalId:
+ *                 type: string
+ *                 example: "H0001"
+ *     responses:
+ *       200:
+ *         description: Distance calculation test completed successfully
+ *       400:
+ *         description: Validation error
+ *       404:
+ *         description: User or hospital not found
+ *       500:
+ *         description: Failed to calculate distance
+ */
+router.post('/test-distance', testDistanceCalculation);
 
 export default router;
 

@@ -419,3 +419,85 @@ export const sendTestAppointmentBookingNotification = async (req, res, next) => 
     }
 };
 
+/**
+ * Test distance calculation between user and hospital
+ * Open API (no auth) for testing purposes
+ * body: { userId: string, hospitalId: string }
+ */
+export const testDistanceCalculation = async (req, res, next) => {
+    try {
+        const { userId, hospitalId } = req.body || {};
+
+        if (!userId || !hospitalId) {
+            throw new EasyQError(
+                'ValidationError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                'userId and hospitalId are required'
+            );
+        }
+
+        const { calculateUserHospitalDistance, calculateApproximateTravelTime } = await import('../util/distanceCalculator.js');
+        const User = (await import('../model/userProfile.js')).default;
+        const Hospital = (await import('../model/hospital.js')).default;
+
+        // Get user and hospital data
+        const user = await User.findOne({ userId });
+        const hospital = await Hospital.findOne({ hospitalId });
+
+        if (!user) {
+            throw new EasyQError(
+                'NotFoundError',
+                httpStatusCode.NOT_FOUND,
+                true,
+                `User ${userId} not found`
+            );
+        }
+
+        if (!hospital) {
+            throw new EasyQError(
+                'NotFoundError',
+                httpStatusCode.NOT_FOUND,
+                true,
+                `Hospital ${hospitalId} not found`
+            );
+        }
+
+        // Calculate distance and travel time
+        const distance = calculateUserHospitalDistance(user, hospital);
+        const approximateTime = await calculateApproximateTravelTime(user, hospital);
+
+        return res.status(httpStatusCode.OK).json({
+            status: 'success',
+            message: 'Distance and time calculation test completed',
+            data: {
+                userId,
+                hospitalId,
+                userAddress: user.addresses?.find(addr => addr.isDefault) || user.addresses?.[0] || null,
+                hospitalLocation: hospital.location,
+                distance: distance, // Distance in kilometers
+                distanceUnit: 'km',
+                approximateTime: approximateTime // Travel time range like "10-15 min"
+            }
+        });
+
+    } catch (error) {
+        logError('Failed to test distance and time calculation', {
+            error: error.message,
+            userId: req.body?.userId,
+            hospitalId: req.body?.hospitalId
+        });
+
+        if (error instanceof EasyQError) {
+            return next(error);
+        }
+
+        next(new EasyQError(
+            'InternalServerError',
+            httpStatusCode.INTERNAL_SERVER_ERROR,
+            false,
+            'Failed to test distance and time calculation'
+        ));
+    }
+};
+
