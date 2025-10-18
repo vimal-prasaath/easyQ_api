@@ -110,12 +110,32 @@ const adminSchema = new Schema({
     // ===== VERIFICATION STATUS =====
     verificationStatus: {
         type: String,
-        enum: ['Pending', 'Approved', 'Rejected'],
+        enum: ['Pending', 'Approved', 'Rejected', 'On Hold'],
         default: 'Pending'
     },
     isActive: {
         type: Boolean,
         default: true // Set to true for testing
+    },
+
+    // ===== HOLD INFORMATION =====
+    holdInfo: {
+        holdReason: {
+            type: String,
+            trim: true,
+            maxlength: [500, 'Hold reason cannot exceed 500 characters']
+        },
+        holdDate: {
+            type: Date
+        },
+        holdBy: {
+            type: String, // superAdminId
+            trim: true
+        },
+        canBeApprovedLater: {
+            type: Boolean,
+            default: true
+        }
     },
 
     // ===== TIMESTAMPS =====

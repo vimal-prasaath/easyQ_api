@@ -1,0 +1,638 @@
+{
+    "info": {
+        "_postman_id": "super-admin-management-collection",
+        "name": "Super Admin Management APIs",
+        "description": "Comprehensive collection for Super Admin authentication, admin management, and user management APIs",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "🔐 Super Admin Authentication",
+            "item": [
+                {
+                    "name": "Super Admin Signup",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"username\": \"superadmin\",\n  \"email\": \"admin@easyq.com\",\n  \"password\": \"password123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/auth/signup",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "auth",
+                                "signup"
+                            ]
+                        },
+                        "description": "Create a new super admin account"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Super Admin Login",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"username\": \"superadmin\",\n  \"password\": \"password123\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/auth/login",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "auth",
+                                "login"
+                            ]
+                        },
+                        "description": "Login super admin and get JWT token"
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Authentication endpoints for super admin"
+        },
+        {
+            "name": "👥 Admin Management",
+            "item": [
+                {
+                    "name": "Get All Admins",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/admins",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "admins"
+                            ]
+                        },
+                        "description": "Retrieve all admins regardless of status"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Pending Admins",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/admins?status=pending",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "admins"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "pending"
+                                }
+                            ]
+                        },
+                        "description": "Retrieve only pending admins"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Approved Admins",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/admins?status=approved",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "admins"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "approved"
+                                }
+                            ]
+                        },
+                        "description": "Retrieve only approved admins"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Rejected Admins",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/admins?status=rejected",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "admins"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "rejected"
+                                }
+                            ]
+                        },
+                        "description": "Retrieve only rejected admins"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get On Hold Admins",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/admins?status=on_hold",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "admins"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "on_hold"
+                                }
+                            ]
+                        },
+                        "description": "Retrieve only admins on hold"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Hold Admin",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"holdReason\": \"Missing documentation\",\n  \"holdBy\": \"SA0001\",\n  \"canBeApprovedLater\": true\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/admins/A0001/hold",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "admins",
+                                "A0001",
+                                "hold"
+                            ]
+                        },
+                        "description": "Put an admin on hold with reason"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Approve Admin",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"approvedBy\": \"SA0001\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/admins/A0001/approve",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "admins",
+                                "A0001",
+                                "approve"
+                            ]
+                        },
+                        "description": "Approve an admin account"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Reject Admin",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"rejectedBy\": \"SA0001\",\n  \"reason\": \"Incomplete documentation\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/admins/A0001/reject",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "admins",
+                                "A0001",
+                                "reject"
+                            ]
+                        },
+                        "description": "Reject an admin account"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Activate Admin (Existing API)",
+                    "request": {
+                        "method": "PUT",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"isActive\": true\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}{{sub_url}}/admin/user/activate/A0001",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "{{sub_url}}",
+                                "admin",
+                                "user",
+                                "activate",
+                                "A0001"
+                            ]
+                        },
+                        "description": "Activate an admin user (existing API)"
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Admin management endpoints for super admin"
+        },
+        {
+            "name": "👤 User Management",
+            "item": [
+                {
+                    "name": "Get All Users (Page 1)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/users?page=1&limit=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "users"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                }
+                            ]
+                        },
+                        "description": "Retrieve users with pagination (page 1, 10 per page)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get All Users (Page 2)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/users?page=2&limit=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "users"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "2"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                }
+                            ]
+                        },
+                        "description": "Retrieve users with pagination (page 2, 10 per page)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get All Users (Large Page)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/users?page=1&limit=50",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "users"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "50"
+                                }
+                            ]
+                        },
+                        "description": "Retrieve users with pagination (page 1, 50 per page)"
+                    },
+                    "response": []
+                }
+            ],
+            "description": "User management endpoints for super admin"
+        },
+        {
+            "name": "📅 User Appointments History",
+            "item": [
+                {
+                    "name": "Get User All Appointments",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/users/P0001/appointments",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "users",
+                                "P0001",
+                                "appointments"
+                            ]
+                        },
+                        "description": "Retrieve all appointments for a user"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get User Appointments by Date",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/users/P0001/appointments?date=2024-01-01",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "users",
+                                "P0001",
+                                "appointments"
+                            ],
+                            "query": [
+                                {
+                                    "key": "date",
+                                    "value": "2024-01-01"
+                                }
+                            ]
+                        },
+                        "description": "Retrieve user appointments for a specific date"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get User Appointments by Status",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/users/P0001/appointments?status=Completed",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "users",
+                                "P0001",
+                                "appointments"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "Completed"
+                                }
+                            ]
+                        },
+                        "description": "Retrieve user appointments by status"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get User Appointments by Multiple Status",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/users/P0001/appointments?status=Completed,Scheduled",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "users",
+                                "P0001",
+                                "appointments"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "Completed,Scheduled"
+                                }
+                            ]
+                        },
+                        "description": "Retrieve user appointments by multiple statuses"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get User Appointments by Date Range",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/users/P0001/appointments?startDate=2024-01-01&endDate=2024-01-31",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "users",
+                                "P0001",
+                                "appointments"
+                            ],
+                            "query": [
+                                {
+                                    "key": "startDate",
+                                    "value": "2024-01-01"
+                                },
+                                {
+                                    "key": "endDate",
+                                    "value": "2024-01-31"
+                                }
+                            ]
+                        },
+                        "description": "Retrieve user appointments within a date range"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get User Appointments with Combined Filters",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/users/P0001/appointments?startDate=2024-01-01&endDate=2024-01-31&status=Completed",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "users",
+                                "P0001",
+                                "appointments"
+                            ],
+                            "query": [
+                                {
+                                    "key": "startDate",
+                                    "value": "2024-01-01"
+                                },
+                                {
+                                    "key": "endDate",
+                                    "value": "2024-01-31"
+                                },
+                                {
+                                    "key": "status",
+                                    "value": "Completed"
+                                }
+                            ]
+                        },
+                        "description": "Retrieve user appointments with combined filters (date range + status)"
+                    },
+                    "response": []
+                }
+            ],
+            "description": "User appointment history endpoints for super admin"
+        }
+    ],
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    ""
+                ]
+            }
+        },
+        {
+            "listen": "test",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    ""
+                ]
+            }
+        }
+    ],
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:3000",
+            "type": "string"
+        },
+        {
+            "key": "sub_url",
+            "value": "/api",
+            "type": "string"
+        }
+    ]
+}

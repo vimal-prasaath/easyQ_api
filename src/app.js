@@ -26,6 +26,7 @@ import doctorDelayRoutes from "./routes/doctorDelay/index.js";
 import userAddressRoutes from "./routes/userAddress/index.js";
 import userDocumentsRoutes from "./routes/userDocuments/index.js";
 import followUpAppointmentRoutes from "./routes/followUpAppointment/index.js";
+import superAdminRoutes from "./routes/superAdmin/index.js"; // Super Admin routes
 
 // Import schedulers
 import "./config/sheduler.js"; // 2-hour reminder scheduler
@@ -165,6 +166,7 @@ app.use("/api/doctor", doctorDelayRoutes);
 app.use("/api/user", userAddressRoutes);
 app.use("/api/user", userDocumentsRoutes);
 app.use("/api/follow-up", followUpAppointmentRoutes);
+app.use("/api/super-admin", superAdminRoutes);
 
 // 13. API routes (authentication will be applied per route basis)
 app.use("/api", apiRoutes);
