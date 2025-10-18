@@ -62,15 +62,11 @@ const doctorSchema = new Schema({
     },
     registrationNumber: {
         type: String,
-        required: [true, 'Registration number is required'],
-        trim: true,
-        unique: true
+        trim: true
     },
     doctorType: {
         type: String,
-        required: [true, 'Doctor type is required'],
-        enum: ['General Practitioner', 'Specialist', 'Consultant', 'Senior Consultant', 'Resident Doctor', 'Intern'],
-        default: 'General Practitioner'
+        trim: true
     },
     serviceStartDate: {
         type: Date,
