@@ -218,6 +218,25 @@ export class FollowUpAppointmentService {
                 // Don't throw - appointment creation should succeed even if notification fails
             }
 
+            // Send appointment booking notification for follow-up
+            try {
+                const { NotificationOrchestrator } = await import('./notificationOrchestrator.js');
+                await NotificationOrchestrator.sendAppointmentBookingNotification(
+                    patientId,
+                    newFollowUpAppointment.appointmentId,
+                    hospital.name,
+                    appointmentDate,
+                    appointmentTime
+                );
+            } catch (notificationError) {
+                logError('Failed to send follow-up appointment booking notification', {
+                    appointmentId: newFollowUpAppointment.appointmentId,
+                    patientId,
+                    error: notificationError.message
+                });
+                // Don't throw - appointment creation should succeed even if notification fails
+            }
+
             return newFollowUpAppointment;
 
         } catch (error) {

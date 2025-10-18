@@ -446,6 +446,119 @@ export class NotificationOrchestrator {
     }
 
     /**
+     * Send appointment booking confirmation notification
+     * @param {string} patientId - Patient ID
+     * @param {string} appointmentId - Appointment ID
+     * @param {string} hospitalName - Hospital name
+     * @param {string} appointmentDate - Appointment date
+     * @param {string} appointmentTime - Appointment time
+     */
+    static async sendAppointmentBookingNotification(patientId, appointmentId, hospitalName, appointmentDate, appointmentTime) {
+        try {
+            // Find user FCM tokens
+            const userTokens = await UserToken.find({ userId: patientId, isActive: true });
+
+            if (userTokens.length === 0) {
+                return {
+                    success: true,
+                    message: `No active FCM tokens found for patient ${patientId}`,
+                    notificationsSent: 0,
+                    tokensDeactivated: 0
+                };
+            }
+
+            let totalTokensSent = 0;
+            let totalTokensDeactivated = 0;
+            const tokenErrorCodes = new Set([
+                'messaging/invalid-argument',
+                'messaging/registration-token-not-registered'
+            ]);
+
+            // Format the date for display
+            const dateObj = new Date(appointmentDate);
+            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+            const formattedDate = dateObj.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+
+            const notificationMessage = `Appointment has been booked to ${hospitalName} at ${dayName} ${formattedDate} ${appointmentTime}`;
+
+            for (const tokenDoc of userTokens) {
+                try {
+                    await admin.messaging().send({
+                        token: tokenDoc.fcmToken,
+                        notification: {
+                            title: 'Appointment Booked Successfully',
+                            body: notificationMessage
+                        },
+                        data: {
+                            appointmentId: appointmentId,
+                            type: 'appointment_booked',
+                            hospitalName: hospitalName,
+                            appointmentDate: appointmentDate,
+                            appointmentTime: appointmentTime,
+                            dayName: dayName,
+                            formattedDate: formattedDate,
+                            deeplink: `app://appointment/${appointmentId}`
+                        }
+                    });
+                    totalTokensSent++;
+                } catch (tokenError) {
+                    if (tokenError.code && tokenErrorCodes.has(tokenError.code)) {
+                        // Deactivate invalid token
+                        tokenDoc.isActive = false;
+                        await tokenDoc.save();
+                        totalTokensDeactivated++;
+                        logInfo('Deactivated invalid FCM token during appointment booking notification send', {
+                            tokenId: tokenDoc._id,
+                            userId: patientId,
+                            error: tokenError.message
+                        });
+                    } else {
+                        logError('Failed to send appointment booking notification to token', {
+                            appointmentId,
+                            patientId,
+                            tokenId: tokenDoc._id,
+                            error: tokenError.message
+                        });
+                    }
+                }
+            }
+
+            const message = `Appointment booking notification sent to ${totalTokensSent} tokens. Deactivated ${totalTokensDeactivated} invalid tokens.`;
+            logInfo('Appointment booking notification summary', {
+                patientId,
+                appointmentId,
+                hospitalName,
+                appointmentDate,
+                appointmentTime,
+                totalTokensSent,
+                totalTokensDeactivated
+            });
+
+            return {
+                success: true,
+                message,
+                notificationsSent: totalTokensSent,
+                tokensDeactivated: totalTokensDeactivated
+            };
+
+        } catch (error) {
+            logError('Failed to send appointment booking notification', {
+                patientId,
+                appointmentId,
+                hospitalName,
+                appointmentDate,
+                appointmentTime,
+                error: error.message
+            });
+            throw error;
+        }
+    }
+
+    /**
      * Send follow-up appointment notification
      * @param {string} patientId - Patient ID
      * @param {string} appointmentId - Follow-up appointment ID
@@ -537,6 +650,92 @@ export class NotificationOrchestrator {
                 patientId,
                 appointmentId,
                 followUpReason,
+                error: error.message
+            });
+            throw error;
+        }
+    }
+
+    /**
+     * Send test appointment booking notification
+     * @param {string} patientId - Patient ID
+     * @param {string} hospitalName - Hospital name
+     * @param {string} appointmentDate - Appointment date
+     * @param {string} appointmentTime - Appointment time
+     */
+    static async sendTestAppointmentBookingNotification(patientId, hospitalName, appointmentDate, appointmentTime) {
+        try {
+            // Find user FCM tokens
+            const userTokens = await UserToken.find({ userId: patientId, isActive: true });
+
+            if (userTokens.length === 0) {
+                return {
+                    success: false,
+                    message: `No active FCM tokens found for patient ${patientId}`,
+                    notificationsSent: 0
+                };
+            }
+
+            // Format the date for display
+            const dateObj = new Date(appointmentDate);
+            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+            const formattedDate = dateObj.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+
+            const notificationMessage = `Appointment has been booked to ${hospitalName} at ${dayName} ${formattedDate} ${appointmentTime}`;
+
+            // Send to first token only for testing
+            const tokenDoc = userTokens[0];
+            await admin.messaging().send({
+                token: tokenDoc.fcmToken,
+                notification: {
+                    title: 'Test: Appointment Booked Successfully',
+                    body: notificationMessage
+                },
+                data: {
+                    appointmentId: 'TEST_APPOINTMENT_ID',
+                    type: 'test_appointment_booked',
+                    hospitalName: hospitalName,
+                    appointmentDate: appointmentDate,
+                    appointmentTime: appointmentTime,
+                    dayName: dayName,
+                    formattedDate: formattedDate,
+                    deeplink: `app://appointment/TEST_APPOINTMENT_ID`
+                }
+            });
+
+            logInfo('Test appointment booking notification sent', {
+                patientId,
+                hospitalName,
+                appointmentDate,
+                appointmentTime,
+                tokenId: tokenDoc._id
+            });
+
+            return {
+                success: true,
+                message: 'Test appointment booking notification sent successfully',
+                notificationsSent: 1,
+                data: {
+                    patientId,
+                    hospitalName,
+                    appointmentDate,
+                    appointmentTime,
+                    dayName,
+                    formattedDate,
+                    notificationMessage
+                }
+            };
+
+        } catch (error) {
+            logError('Failed to send test appointment booking notification', {
+                patientId,
+                hospitalName,
+                appointmentDate,
+                appointmentTime,
                 error: error.message
             });
             throw error;

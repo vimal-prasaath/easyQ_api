@@ -1,5 +1,5 @@
 import express from 'express';
-import { saveFCMToken, getUserFCMTokens, deactivateFCMToken, sendTestNotification } from '../controller/fcmToken.js';
+import { saveFCMToken, getUserFCMTokens, deactivateFCMToken, sendTestNotification, sendTestAppointmentBookingNotification } from '../controller/fcmToken.js';
 
 const router = express.Router();
 
@@ -335,6 +335,50 @@ router.put('/token/:tokenId/deactivate', deactivateFCMToken);
  *         description: Failed to send notification
  */
 router.post('/test', sendTestNotification);
+
+/**
+ * @swagger
+ * /api/fcm/test-appointment-booking:
+ *   post:
+ *     summary: Send a test appointment booking notification
+ *     description: Open API to send a test appointment booking notification to a user
+ *     tags: [FCM]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - userId
+ *               - hospitalName
+ *               - appointmentDate
+ *               - appointmentTime
+ *             properties:
+ *               userId:
+ *                 type: string
+ *                 example: "P0001"
+ *               hospitalName:
+ *                 type: string
+ *                 example: "City General Hospital"
+ *               appointmentDate:
+ *                 type: string
+ *                 format: date
+ *                 example: "2024-01-25"
+ *               appointmentTime:
+ *                 type: string
+ *                 example: "10:30"
+ *     responses:
+ *       200:
+ *         description: Test appointment booking notification sent successfully
+ *       400:
+ *         description: Validation error
+ *       404:
+ *         description: No active tokens found for user
+ *       500:
+ *         description: Failed to send notification
+ */
+router.post('/test-appointment-booking', sendTestAppointmentBookingNotification);
 
 export default router;
 

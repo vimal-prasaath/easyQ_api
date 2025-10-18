@@ -128,6 +128,25 @@ export class AppointmentService {
                 }
             }
 
+            // Send FCM notification for appointment booking
+            try {
+                const { NotificationOrchestrator } = await import('./notificationOrchestrator.js');
+                await NotificationOrchestrator.sendAppointmentBookingNotification(
+                    appointmentData.patientId,
+                    newAppointment.appointmentId,
+                    appointmentData.hospitalName,
+                    appointmentData.appointmentDate,
+                    appointmentData.appointmentTime
+                );
+            } catch (notificationError) {
+                logWarn('FCM notification failed', {
+                    appointmentId: newAppointment.appointmentId,
+                    patientId: appointmentData.patientId,
+                    error: notificationError.message
+                });
+                // Don't throw - appointment creation should succeed even if notification fails
+            }
+
               await this.updateDoctorAndHospitalWithPatient(
                 appointmentData.doctorId,
                 appointmentData.patientId,

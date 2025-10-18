@@ -368,3 +368,54 @@ export const sendTestNotification = async (req, res, next) => {
     }
 };
 
+/**
+ * Send a test appointment booking notification
+ * Open API (no auth) for testing purposes
+ * body: { userId: string, hospitalName: string, appointmentDate: string, appointmentTime: string }
+ */
+export const sendTestAppointmentBookingNotification = async (req, res, next) => {
+    try {
+        const { userId, hospitalName, appointmentDate, appointmentTime } = req.body || {};
+
+        if (!userId || !hospitalName || !appointmentDate || !appointmentTime) {
+            throw new EasyQError(
+                'ValidationError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                'userId, hospitalName, appointmentDate, and appointmentTime are required'
+            );
+        }
+
+        const { NotificationOrchestrator } = await import('../services/notificationOrchestrator.js');
+        const result = await NotificationOrchestrator.sendTestAppointmentBookingNotification(
+            userId,
+            hospitalName,
+            appointmentDate,
+            appointmentTime
+        );
+
+        return res.status(httpStatusCode.OK).json({
+            status: 'success',
+            message: 'Test appointment booking notification sent successfully',
+            data: result
+        });
+
+    } catch (error) {
+        logError('Failed to send test appointment booking notification', {
+            error: error.message,
+            userId: req.body?.userId
+        });
+
+        if (error instanceof EasyQError) {
+            return next(error);
+        }
+
+        next(new EasyQError(
+            'InternalServerError',
+            httpStatusCode.INTERNAL_SERVER_ERROR,
+            false,
+            'Failed to send test appointment booking notification'
+        ));
+    }
+};
+

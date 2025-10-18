@@ -295,7 +295,7 @@ export const updateOwnerDocuments = async (req, res, next) => {
         }
 
         // Validate document type
-        const allowedDocumentTypes = ['aadharCard', 'panCard'];
+        const allowedDocumentTypes = ['aadharCard', 'panCard', 'voterId' , 'drivingLicense'];
         if (!allowedDocumentTypes.includes(documentType)) {
             return next(new EasyQError(
                 'ValidationError',

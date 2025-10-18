@@ -149,7 +149,7 @@ const doctorSchema = new Schema({
         },
             available:{
                 type: String,
-                enum: ['earyMorning', 'morning', 'afternoon', 'night']
+                enum: ['earlyMorning', 'morning', 'afternoon', 'evening', 'night']
             },
             timeSlots: [
                 {
