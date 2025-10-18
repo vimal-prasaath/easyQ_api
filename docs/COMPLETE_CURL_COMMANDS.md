@@ -1,5 +1,176 @@
 # Complete Admin Portal - All Curl Commands
 
+### FCM — Send Test Notification (Open API)
+
+Send a test push notification to the user's most recent active device.
+
+```bash
+curl -X POST "{{BASE_URL}}/api/fcm/test" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": "P0001",
+    "title": "Test Notification",
+    "body": "Hi, this is a test notification.",
+    "data": { "env": "dev" }
+  }'
+```
+
+Notes:
+- Provide a valid `userId` that has at least one active FCM token.
+- Only the most recent active token is used.
+- On invalid/expired token, it is deactivated automatically.
+
+### Notification Orchestrator — ETA/Distance (Open API)
+
+Calculate travel time and distance between two points using Google Maps.
+
+```bash
+curl -X POST "{{BASE_URL}}/api/orchestrator/eta" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "origin": { "lat": 12.9716, "lng": 77.5946 },
+    "destination": { "lat": 12.9352, "lng": 77.6245 },
+    "mode": "driving",
+    "departureTime": "now",
+    "includePolyline": false
+  }'
+```
+
+Response includes distance, duration (with traffic), origin/destination names, and optional polyline.
+
+### Notification Orchestrator — Places Autocomplete (Open API)
+
+Get place suggestions with lat/lng coordinates from text input.
+
+```bash
+curl -X POST "{{BASE_URL}}/api/orchestrator/places/autocomplete" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "input": "St Johns Bengaluru",
+    "sessionToken": "optional-session-token",
+    "country": "IN"
+  }'
+```
+
+Response includes up to 5 predictions with placeId, description, name, address, and location coordinates.
+
+### Notification Orchestrator — Place Reviews & Ratings (Open API)
+
+Get reviews and ratings for a place using address and coordinates.
+
+```bash
+curl -X POST "{{BASE_URL}}/api/orchestrator/place-reviews" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "origin": {
+      "lat": 11.672718,
+      "lng": 78.1339232
+    },
+    "description": "Meyyanur Main Road, Salem, Tamil Nadu, India",
+    "fullAddress": "Meyyanur Main Road, Salem, Tamil Nadu 636004, India",
+    "street": "Meyyanur Main Road",
+    "city": "Salem",
+    "state": "Tamil Nadu",
+    "pincode": "636004"
+  }'
+```
+
+**Expected Response:**
+```json
+{
+  "status": "success",
+  "data": {
+    "placeId": "ChIJn24QsUbwqzsRkiQk-72yFXk",
+    "name": "Meyyanur Main Road",
+    "formattedAddress": "Meyyanur Main Road, Salem, Tamil Nadu 636004, India",
+    "rating": 4.2,
+    "userRatingsTotal": 156
+  }
+}
+```
+
+**Required Fields:**
+- `origin`: Object with `lat` and `lng` coordinates
+- `description`: Address description string (from autocomplete response)
+
+**Optional Fields:**
+- `fullAddress`: Complete formatted address string
+- `street`: Street address
+- `city`: City name
+- `state`: State/province
+- `pincode`: Postal code
+
+### Notification Orchestrator — User Documents by Appointment (Open API)
+
+Get all documents for a user grouped by appointment ID.
+
+```bash
+curl -X GET "{{BASE_URL}}/api/user/documents/P0001"
+```
+
+**Expected Response:**
+```json
+{
+  "status": "success",
+  "message": "User documents retrieved successfully",
+  "data": {
+    "userId": "P0001",
+    "appointments": [
+      {
+        "appId": "84528",
+        "date": "2024-01-15T00:00:00.000Z",
+        "hospital": "City General Hospital",
+        "doctorId": "D0001",
+        "doctorName": "Dr. John Smith",
+        "reports": [
+          {
+            "documentId": 1,
+            "documentUrl": "https://storage.googleapis.com/bucket/appointments/84528/documents/doc-1234567890-123456789.pdf",
+            "fileName": "lab_report.pdf"
+          },
+          {
+            "documentId": 2,
+            "documentUrl": "https://storage.googleapis.com/bucket/appointments/84528/documents/doc-1234567891-123456790.png",
+            "fileName": "xray_image.png"
+          }
+        ]
+      },
+      {
+        "appId": "84529",
+        "date": "2024-01-10T00:00:00.000Z",
+        "hospital": "City General Hospital",
+        "doctorId": "D0002",
+        "doctorName": "Dr. Jane Doe",
+        "reports": [
+          {
+            "documentId": 1,
+            "documentUrl": "https://storage.googleapis.com/bucket/appointments/84529/documents/doc-1234567892-123456791.jpg",
+            "fileName": "prescription.jpg"
+          }
+        ]
+      }
+    ],
+    "totalAppointments": 2,
+    "totalDocuments": 3
+  }
+}
+```
+
+**Response Fields:**
+- `userId`: User ID
+- `appointments`: Array of appointments with documents
+  - `appId`: Appointment ID
+  - `date`: Appointment date
+  - `hospital`: Hospital name
+  - `doctorId`: Doctor ID
+  - `doctorName`: Doctor name
+  - `reports`: Array of documents for this appointment
+    - `documentId`: Document sequence number
+    - `documentUrl`: Full URL to the document
+    - `fileName`: Original file name
+- `totalAppointments`: Total number of appointments with documents
+- `totalDocuments`: Total number of documents across all appointments
+
 ## Overview
 This document provides complete `curl` commands for testing the entire admin portal system. The implementation includes:
 
@@ -74,6 +245,14 @@ curl -X PUT http://localhost:3000/api/admin/onboarding \
       "coordinates": [72.8777, 19.0760]
     },
     "googleMapLink": "https://maps.google.com/?q=123+Medical+Center+Drive",
+    "addressName": "City General Hospital Main Building",
+    "origin": {
+      "lat": 19.0760,
+      "lng": 72.8777
+    },
+    "fullAddress": "123 Medical Center Drive, Mumbai, Maharashtra 400001, India",
+    "rating": 4.5,
+    "userRatingsTotal": 234,
     "phoneNumber": "022-12345678",
     "alternativePhone": "022-12345679",
     "emailAddress": "info@citygeneral.com",
@@ -352,7 +531,13 @@ The doctor management system includes a comprehensive permissions system that al
 }
 ```
 
-### 10. Create Doctor (Requires Approved Admin)
+### 10. Create Doctor (Requires Approved Admin) - Enhanced Specialization Support
+
+**NEW: Support for Multiple Departments (Comma-separated)**
+- Valid departments: General Medicine, General Checkup, Pediatrics, Gynecology, Cardiology, Dermatology, Dental, Diabetology, Eye Care, Orthopedics, Gastroenterology, Pulmonology, Neurology, Urology, Physiotherapy, Emergency Care
+- Input: Single department (e.g., "Cardiology") or multiple departments (e.g., "Cardiology,General Medicine,Emergency Care")
+- Invalid departments are automatically filtered out
+- Empty specialization defaults to "General Medicine"
 ```bash
 curl -X POST http://localhost:3000/api/doctor/add \
   -H "Content-Type: application/json" \
@@ -365,7 +550,7 @@ curl -X POST http://localhost:3000/api/doctor/add \
     "mobileNumber": "9876543210",
     "gender": "Female",
     "dateOfBirth": "1985-06-15",
-    "specialization": "Cardiology",
+    "specialization": "Cardiology,General Medicine,Emergency Care",
     "qualification": ["MBBS", "MD Cardiology", "Fellowship in Interventional Cardiology"],
     "serviceStartDate": "2015-03-01",
     "isHeadOfDepartment": false,
@@ -414,6 +599,80 @@ curl -X POST http://localhost:3000/api/doctor/add \
     }
   }'
 ```
+
+#### **Example 1: Single Department (Backward Compatible)**
+```bash
+curl -X POST http://localhost:3000/api/doctor/add \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
+  -H "x-user-id: A0001" \
+  -d '{
+    "adminId": "A0001",
+    "name": "Dr. John Smith",
+    "email": "john.smith@hospital.com",
+    "mobileNumber": "9876543210",
+    "gender": "Male",
+    "specialization": "Cardiology",
+    "hospitalId": "H0001",
+    "consultantFee": 1000
+  }'
+```
+
+#### **Example 2: Multiple Departments (New Feature)**
+```bash
+curl -X POST http://localhost:3000/api/doctor/add \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
+  -H "x-user-id: A0001" \
+  -d '{
+    "adminId": "A0001",
+    "name": "Dr. Jane Doe",
+    "email": "jane.doe@hospital.com",
+    "mobileNumber": "9876543211",
+    "gender": "Female",
+    "specialization": "Pediatrics,General Medicine,Emergency Care",
+    "hospitalId": "H0001",
+    "consultantFee": 1200
+  }'
+```
+
+#### **Example 3: Invalid Departments (Auto-filtered)**
+```bash
+curl -X POST http://localhost:3000/api/doctor/add \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
+  -H "x-user-id: A0001" \
+  -d '{
+    "adminId": "A0001",
+    "name": "Dr. Mike Wilson",
+    "email": "mike.wilson@hospital.com",
+    "mobileNumber": "9876543212",
+    "gender": "Male",
+    "specialization": "Cardiology,InvalidDept,General Medicine",
+    "hospitalId": "H0001",
+    "consultantFee": 1100
+  }'
+```
+**Result:** Invalid department "InvalidDept" is filtered out, stored as "Cardiology,General Medicine"
+
+#### **Example 4: Empty Specialization (Auto-default)**
+```bash
+curl -X POST http://localhost:3000/api/doctor/add \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
+  -H "x-user-id: A0001" \
+  -d '{
+    "adminId": "A0001",
+    "name": "Dr. Lisa Brown",
+    "email": "lisa.brown@hospital.com",
+    "mobileNumber": "9876543213",
+    "gender": "Female",
+    "specialization": "",
+    "hospitalId": "H0001",
+    "consultantFee": 900
+  }'
+```
+**Result:** Empty specialization defaults to "General Medicine"
 
 **Expected Response:**
 ```json
@@ -473,7 +732,14 @@ curl -X POST http://localhost:3000/api/doctor/get \
   }'
 ```
 
-### 13. Update Doctor Information
+### 13. Update Doctor Information - Enhanced Specialization Support
+
+**NEW: Enhanced Specialization Updates with Hospital Department Sync**
+- Supports updating to single or multiple departments
+- Invalid departments are automatically filtered out
+- Empty specialization defaults to "General Medicine"
+- **Hospital departments are automatically synced** when specialization changes
+- **Empty departments are automatically cleaned up**
 ```bash
 curl -X PUT http://localhost:3000/api/doctor/update \
   -H "Content-Type: application/json" \
@@ -502,6 +768,31 @@ curl -X PUT http://localhost:3000/api/doctor/update \
   }'
 ```
 
+#### **Example 1: Update to Multiple Departments**
+```bash
+curl -X PUT http://localhost:3000/api/doctor/update \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
+  -d '{
+    "doctorId": "D0001",
+    "specialization": "Cardiology,General Medicine,Emergency Care",
+    "consultantFee": 1500
+  }'
+```
+
+#### **Example 2: Update with Invalid Departments (Auto-filtered)**
+```bash
+curl -X PUT http://localhost:3000/api/doctor/update \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
+  -d '{
+    "doctorId": "D0001",
+    "specialization": "Cardiology,InvalidDept,General Medicine",
+    "consultantFee": 1400
+  }'
+```
+**Result:** Invalid department "InvalidDept" is filtered out, stored as "Cardiology,General Medicine"
+
 **Expected Response:**
 ```json
 {
@@ -514,7 +805,7 @@ curl -X PUT http://localhost:3000/api/doctor/update \
       "email": "sarah.johnson@hospital.com",
       "mobileNumber": "9876543210",
       "gender": "Female",
-      "specialization": "Cardiology",
+      "specialization": "Cardiology,General Medicine,Emergency Care",
       "hospitalId": "6155",
       "consultantFee": 1800,
       "status": "Available",
@@ -715,7 +1006,37 @@ curl -X PUT http://localhost:3000/api/doctor/update-image-url \
   }'
 ```
 
-### 17. Get Available Time Slots for Doctor
+### 17. Delete Doctor with Hospital Department Cleanup
+
+**NEW: Automatic Hospital Department Cleanup**
+- Removes doctor from all hospital departments
+- Automatically cleans up empty departments
+- Maintains data consistency across the system
+
+```bash
+curl -X DELETE http://localhost:3000/api/doctor/delete/D0001 \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
+```
+
+**Expected Response:**
+```json
+{
+  "success": true,
+  "message": "Doctor deleted successfully",
+  "data": {
+    "doctorId": "D0001",
+    "name": "Dr. Sarah Johnson",
+    "specialization": "Cardiology,General Medicine,Emergency Care"
+  }
+}
+```
+
+**Hospital Department Changes:**
+- Doctor removed from all departments
+- Empty departments automatically deleted
+- Department doctor counts updated
+
+### 18. Get Available Time Slots for Doctor
 ```bash
 curl -X POST http://localhost:3000/api/doctor/available-time-slots \
   -H "Content-Type: application/json" \
@@ -1410,3 +1731,906 @@ curl -X POST "https://your-api.com/api/appointsummary" \
     "error": "ValidationError"
 }
 ```
+
+---
+
+## 🏥 **HOSPITAL MANAGEMENT APIs**
+
+### Create Hospital with Enhanced Address Fields
+
+Create a new hospital with optional Google Maps address integration.
+
+```bash
+curl -X POST "{{BASE_URL}}/api/hospital/basicDetails" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
+  -d '{
+    "name": "City General Hospital",
+    "email": "info@cityhospital.com",
+    "phoneNumber": "+91-9876543210",
+    "hospitalType": "Hospital",
+    "registrationNumber": "HOSP123456",
+    "yearEstablished": 2010,
+    "address": {
+      "street": "123 Medical Center Drive",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "zipCode": "400001",
+      "country": "India"
+    },
+    "location": {
+      "type": "Point",
+      "coordinates": [72.8777, 19.0760]
+    },
+    "googleMapLink": "https://maps.google.com/?q=123+Medical+Center+Drive",
+    "addressName": "City General Hospital Main Building",
+    "origin": {
+      "lat": 19.0760,
+      "lng": 72.8777
+    },
+    "fullAddress": "123 Medical Center Drive, Mumbai, Maharashtra 400001, India",
+    "rating": 4.5,
+    "userRatingsTotal": 234
+  }'
+```
+
+**Expected Response:**
+```json
+{
+  "message": "Hospital Data is Created Successfully",
+  "hospitalId": "H0001"
+}
+```
+
+### Update Hospital with Enhanced Address Fields
+
+Update hospital information including the new address fields.
+
+```bash
+curl -X PUT "{{BASE_URL}}/api/hospital/details/H0001" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
+  -d '{
+    "name": "City General Medical Center",
+    "addressName": "Updated Hospital Main Building",
+    "origin": {
+      "lat": 19.0760,
+      "lng": 72.8777
+    },
+    "fullAddress": "456 Healthcare Avenue, Mumbai, Maharashtra 400002, India",
+    "googleMapLink": "https://maps.google.com/?q=456+Healthcare+Avenue",
+    "rating": 4.7,
+    "userRatingsTotal": 456
+  }'
+```
+
+**Expected Response:**
+```json
+{
+  "success": true,
+  "message": "Hospital updated successfully",
+  "data": {
+    "hospitalId": "H0001",
+    "name": "City General Medical Center",
+    "addressName": "Updated Hospital Main Building",
+    "origin": {
+      "lat": 19.0760,
+      "lng": 72.8777
+    },
+    "fullAddress": "456 Healthcare Avenue, Mumbai, Maharashtra 400002, India"
+  }
+}
+```
+
+### Get Hospital Details
+
+Retrieve hospital information including the new address fields.
+
+```bash
+curl -X GET "{{BASE_URL}}/api/hospital/USER_ID/H0001" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
+```
+
+**Expected Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "hospitalId": "H0001",
+    "name": "City General Medical Center",
+    "email": "info@cityhospital.com",
+    "phoneNumber": "+91-9876543210",
+    "hospitalType": "Hospital",
+    "address": {
+      "street": "123 Medical Center Drive",
+      "city": "Mumbai",
+      "state": "Maharashtra",
+      "zipCode": "400001",
+      "country": "India"
+    },
+    "location": {
+      "type": "Point",
+      "coordinates": [72.8777, 19.0760]
+    },
+    "googleMapLink": "https://maps.google.com/?q=123+Medical+Center+Drive",
+    "addressName": "City General Hospital Main Building",
+    "origin": {
+      "lat": 19.0760,
+      "lng": 72.8777
+    },
+    "fullAddress": "123 Medical Center Drive, Mumbai, Maharashtra 400001, India",
+    "isActive": true,
+    "createdAt": "2024-01-15T10:00:00.000Z",
+    "updatedAt": "2024-01-15T10:00:00.000Z"
+  }
+}
+```
+
+### Notes on Enhanced Address Fields:
+
+- **`addressName`**: Optional field for a descriptive name of the hospital location
+- **`origin`**: Optional object containing latitude and longitude coordinates
+- **`fullAddress`**: Optional field for the complete formatted address
+- All new address fields are **optional** and won't break existing functionality
+- These fields work alongside the existing `address`, `location`, and `googleMapLink` fields
+- Use the enhanced autocomplete API (`/api/orchestrator/places/autocomplete`) to get structured address data including city, state, and pincode
+
+---
+
+## 👤 **USER ADDRESS MANAGEMENT APIs**
+
+### Add User Address with Enhanced Fields
+
+Add a new address to a user with structured address components.
+
+```bash
+curl -X POST "{{BASE_URL}}/api/user/address" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
+  -d '{
+    "userId": "P0001",
+    "addressName": "Home",
+    "origin": {
+      "lat": 11.6690603,
+      "lng": 78.13931099999999
+    },
+    "fullAddress": "123 Main Street, Salem, Tamil Nadu 636004, India",
+    "street": "123 Main Street",
+    "city": "Salem",
+    "state": "Tamil Nadu",
+    "pincode": "636004",
+    "isDefault": true
+  }'
+```
+
+**Expected Response:**
+```json
+{
+  "status": "success",
+  "message": "Address added successfully",
+  "data": {
+    "userId": "P0001",
+    "address": {
+      "addressId": "550e8400-e29b-41d4-a716-446655440000",
+      "addressName": "Home",
+      "origin": {
+        "lat": 11.6690603,
+        "lng": 78.13931099999999
+      },
+      "fullAddress": "123 Main Street, Salem, Tamil Nadu 636004, India",
+      "street": "123 Main Street",
+      "city": "Salem",
+      "state": "Tamil Nadu",
+      "pincode": "636004",
+      "isDefault": true,
+      "createdAt": "2024-01-15T10:00:00.000Z"
+    }
+  }
+}
+```
+
+### Get User Addresses
+
+Retrieve all addresses for a user.
+
+```bash
+curl -X GET "{{BASE_URL}}/api/user/address/P0001" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
+```
+
+**Expected Response:**
+```json
+{
+  "status": "success",
+  "data": {
+    "userId": "P0001",
+    "addresses": [
+      {
+        "addressId": "550e8400-e29b-41d4-a716-446655440000",
+        "addressName": "Home",
+        "origin": {
+          "lat": 11.6690603,
+          "lng": 78.13931099999999
+        },
+        "fullAddress": "123 Main Street, Salem, Tamil Nadu 636004, India",
+        "street": "123 Main Street",
+        "city": "Salem",
+        "state": "Tamil Nadu",
+        "pincode": "636004",
+        "isDefault": true,
+        "createdAt": "2024-01-15T10:00:00.000Z"
+      },
+      {
+        "addressId": "550e8400-e29b-41d4-a716-446655440001",
+        "addressName": "Office",
+        "origin": {
+          "lat": 12.9716,
+          "lng": 77.5946
+        },
+        "fullAddress": "456 Business Park, Bangalore, Karnataka 560001, India",
+        "street": "456 Business Park",
+        "city": "Bangalore",
+        "state": "Karnataka",
+        "pincode": "560001",
+        "isDefault": false,
+        "createdAt": "2024-01-15T11:00:00.000Z"
+      }
+    ]
+  }
+}
+```
+
+### Update User Address
+
+Update specific address fields for a user.
+
+```bash
+curl -X PUT "{{BASE_URL}}/api/user/address/P0001/550e8400-e29b-41d4-a716-446655440000" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
+  -d '{
+    "addressName": "Updated Home Address",
+    "street": "789 New Street",
+    "city": "Chennai",
+    "state": "Tamil Nadu",
+    "pincode": "600001",
+    "fullAddress": "789 New Street, Chennai, Tamil Nadu 600001, India"
+  }'
+```
+
+**Expected Response:**
+```json
+{
+  "status": "success",
+  "message": "Address updated successfully",
+  "data": {
+    "userId": "P0001",
+    "address": {
+      "addressId": "550e8400-e29b-41d4-a716-446655440000",
+      "addressName": "Updated Home Address",
+      "origin": {
+        "lat": 11.6690603,
+        "lng": 78.13931099999999
+      },
+      "fullAddress": "789 New Street, Chennai, Tamil Nadu 600001, India",
+      "street": "789 New Street",
+      "city": "Chennai",
+      "state": "Tamil Nadu",
+      "pincode": "600001",
+      "isDefault": true,
+      "createdAt": "2024-01-15T10:00:00.000Z"
+    }
+  }
+}
+```
+
+### Delete User Address
+
+Remove a specific address from user's address list.
+
+```bash
+curl -X DELETE "{{BASE_URL}}/api/user/address/P0001/550e8400-e29b-41d4-a716-446655440000" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
+```
+
+**Expected Response:**
+```json
+{
+  "status": "success",
+  "message": "Address deleted successfully",
+  "data": {
+    "userId": "P0001",
+    "deletedAddress": {
+      "addressId": "550e8400-e29b-41d4-a716-446655440000",
+      "addressName": "Updated Home Address"
+    }
+  }
+}
+```
+
+### Notes on Enhanced Address Fields:
+
+- **`street`**: Optional street address field (max 200 characters)
+- **`city`**: Optional city name (max 100 characters)
+- **`state`**: Optional state/province (max 100 characters)
+- **`pincode`**: Optional postal code (max 10 characters)
+- **All new fields are optional** and won't break existing functionality
+- **Use with autocomplete API** to automatically populate structured address data
+- **Flexible updates** - can update individual fields or all together
+- **Default address management** - only one address can be marked as default
+
+---
+
+## 🔍 **ENHANCED DOCTOR SEARCH EXAMPLES**
+
+### Enhanced Specialization Search
+**NEW: Advanced Search Capabilities**
+- **Partial Matching**: Search for "Medicine" finds doctors with "General Medicine,Cardiology"
+- **Case-Insensitive**: Search works regardless of case
+- **Word Boundary Matching**: Better partial matching within comma-separated values
+- **Multiple Department Support**: Returns doctors with multiple specializations
+
+#### **Example 1: Partial Search (Finds Multiple Departments)**
+```bash
+curl -X GET "http://localhost:3000/api/doctor/search?specialization=Medicine" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
+```
+**Result:** Finds doctors with "General Medicine", "General Medicine,Cardiology", "Emergency Medicine", etc.
+
+#### **Example 2: Exact Department Search**
+```bash
+curl -X GET "http://localhost:3000/api/doctor/search?specialization=Cardiology" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
+```
+**Result:** Finds doctors with "Cardiology" or "Cardiology,General Medicine" or "General Medicine,Cardiology"
+
+#### **Example 3: Case-Insensitive Search**
+```bash
+curl -X GET "http://localhost:3000/api/doctor/search?specialization=cardiology" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
+```
+**Result:** Same as Example 2, regardless of case
+
+#### **Example 4: Search by Specialization Endpoint**
+```bash
+curl -X GET "http://localhost:3000/api/doctor/specialization/General%20Medicine" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
+```
+**Result:** Returns all doctors with "General Medicine" in their specialization
+
+**Expected Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "doctors": [
+      {
+        "doctorId": "D0001",
+        "name": "Dr. Sarah Johnson",
+        "specialization": "Cardiology,General Medicine,Emergency Care",
+        "experience": 8,
+        "rating": 4.5
+      },
+      {
+        "doctorId": "D0002",
+        "name": "Dr. John Smith",
+        "specialization": "General Medicine,Pediatrics",
+        "experience": 5,
+        "rating": 4.2
+      }
+    ],
+    "specialization": "General Medicine",
+    "pagination": {
+      "currentPage": 1,
+      "totalPages": 1,
+      "totalRecords": 2,
+      "limit": 10
+    }
+  }
+}
+```
+
+### Valid Departments List:
+- General Medicine
+- General Checkup
+- Pediatrics
+- Gynecology
+- Cardiology
+- Dermatology
+- Dental
+- Diabetology
+- Eye Care
+- Orthopedics
+- Gastroenterology
+- Pulmonology
+- Neurology
+- Urology
+- Physiotherapy
+- Emergency Care
+
+## 🏥 **DOCTOR DELAY MANAGEMENT APIs**
+
+### 18. Set Doctor Delay
+
+```bash
+curl -X POST http://localhost:3000/api/doctor/delay \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
+  -d '{
+    "doctorId": "D0001",
+    "date": "2024-01-22",
+    "startTime": "11:00",
+    "durationMinutes": 45,
+    "reason": "Emergency surgery",
+    "createdBy": "A0001"
+  }'
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Delay set successfully. 3 appointments will be affected.",
+  "data": {
+    "delay": {
+      "date": "2024-01-22T00:00:00.000Z",
+      "startTime": "11:00",
+      "durationMinutes": 45,
+      "reason": "Emergency surgery",
+      "isActive": true,
+      "createdAt": "2024-01-22T10:30:00.000Z",
+      "createdBy": "A0001"
+    },
+    "affectedAppointments": 3
+  }
+}
+```
+
+**Notes:**
+- Automatically sends FCM notifications to affected patients
+- Message: "Doctor is delayed by X minutes. Reason: Y. If you wish to reschedule, you can click and reschedule."
+
+### 19. Get Doctors with Delays by Hospital
+
+```bash
+curl -X GET "http://localhost:3000/api/doctor/delays/hospital/H0002?date=2024-01-22" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Doctors with delays retrieved successfully",
+  "data": {
+    "hospitalId": "H0002",
+    "date": "2024-01-22",
+    "doctorsWithDelays": [
+      {
+        "doctorId": "D0001",
+        "name": "Dr. John Smith",
+        "email": "john.smith@hospital.com",
+        "delays": [
+          {
+            "startTime": "11:00",
+            "durationMinutes": 45,
+            "reason": "Emergency surgery",
+            "isActive": true,
+            "createdAt": "2024-01-22T10:30:00.000Z",
+            "createdBy": "A0001"
+          }
+        ]
+      },
+      {
+        "doctorId": "D0002",
+        "name": "Dr. Sarah Johnson",
+        "email": "sarah.johnson@hospital.com",
+        "delays": [
+          {
+            "startTime": "14:00",
+            "durationMinutes": 30,
+            "reason": "Traffic delay",
+            "isActive": true,
+            "createdAt": "2024-01-22T13:45:00.000Z",
+            "createdBy": "A0001"
+          }
+        ]
+      }
+    ],
+    "totalDoctorsWithDelays": 2
+  }
+}
+```
+
+**Notes:**
+- Returns all doctors in the hospital with active delays for the specified date
+- If no date provided, defaults to today
+- Only shows doctors with active delays
+
+### 20. Get Doctor Delays
+
+```bash
+curl -X GET "http://localhost:3000/api/doctor/delay/D0001" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Doctor delays retrieved successfully",
+  "data": {
+    "doctorId": "D0001",
+    "name": "Dr. John Smith",
+    "delays": [
+      {
+        "date": "2024-01-22T00:00:00.000Z",
+        "startTime": "11:00",
+        "durationMinutes": 45,
+        "reason": "Emergency surgery",
+        "isActive": true,
+        "createdAt": "2024-01-22T10:30:00.000Z",
+        "createdBy": "A0001"
+      }
+    ]
+  }
+}
+```
+
+### 21. Clear Doctor Delays
+
+```bash
+curl -X DELETE "http://localhost:3000/api/doctor/delay/D0001" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "All delays cleared for doctor D0001",
+  "data": {
+    "doctorId": "D0001",
+    "delaysCleared": 2,
+    "clearedAt": "2024-01-22T15:30:00.000Z"
+  }
+}
+```
+
+### 22. Reset Doctor Availability
+
+```bash
+curl -X POST "http://localhost:3000/api/doctor/reset-availability" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
+  -d '{
+    "doctorId": "D0001",
+    "date": "2024-01-22"
+  }'
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Doctor availability reset successfully",
+  "data": {
+    "doctorId": "D0001",
+    "date": "2024-01-22",
+    "delaysCleared": 1,
+    "resetAt": "2024-01-22T15:30:00.000Z"
+  }
+}
+```
+
+### 23. Get Adjusted Time
+
+```bash
+curl -X POST "http://localhost:3000/api/doctor/adjusted-time" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE" \
+  -d '{
+    "doctorId": "D0001",
+    "date": "2024-01-22",
+    "originalTime": "11:00"
+  }'
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Adjusted time calculated successfully",
+  "data": {
+    "doctorId": "D0001",
+    "date": "2024-01-22",
+    "originalTime": "11:00",
+    "adjustedTime": "11:45",
+    "delayMinutes": 45,
+    "reason": "Emergency surgery"
+  }
+}
+```
+
+### 24. Manual Delay Cleanup
+
+```bash
+curl -X POST "http://localhost:3000/api/doctor/delays/cleanup" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN_HERE"
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Expired delays cleaned up successfully",
+  "data": {
+    "success": true,
+    "totalDelaysCleaned": 3,
+    "doctorsAffected": 2,
+    "cleanupResults": [
+      {
+        "doctorId": "D0001",
+        "name": "Dr. John Smith",
+        "delaysCleaned": [
+          {
+            "startTime": "11:00",
+            "durationMinutes": 45,
+            "reason": "Emergency surgery",
+            "expiredAt": "2024-01-22T15:30:00.000Z"
+          }
+        ]
+      }
+    ],
+    "cleanupTime": "2024-01-22T15:30:00.000Z"
+  }
+}
+```
+
+**Notes:**
+- Manually triggers cleanup of expired delays
+- Automatically runs every hour via cron job
+- Only affects delays that have passed their end time
+
+## 📅 **FOLLOW-UP APPOINTMENT MANAGEMENT APIs**
+
+### 25. Create Follow-up Appointment
+
+```bash
+curl -X POST http://localhost:3000/api/follow-up \
+  -H "Content-Type: application/json" \
+  -d '{
+    "patientId": "P0001",
+    "doctorId": "D0001",
+    "hospitalId": "H0002",
+    "appointmentDate": "2024-01-29",
+    "appointmentTime": "10:00",
+    "followUpReason": "Blood test results review",
+    "createdBy": "doctor",
+    "createdById": "D0001",
+    "parentAppointmentId": "APT001",
+    "consultationType": "Follow-up",
+    "notes": "Follow-up for blood test results"
+  }'
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Follow-up appointment created successfully",
+  "data": {
+    "appointmentId": "APT002",
+    "patientId": "P0001",
+    "doctorId": "D0001",
+    "hospitalId": "H0002",
+    "appointmentDate": "2024-01-29T00:00:00.000Z",
+    "appointmentTime": "10:00",
+    "status": "Scheduled",
+    "tokenDisplay": "S1T002",
+    "followUp": {
+      "isFollowUp": true,
+      "parentAppointmentId": "APT001",
+      "followUpReason": "Blood test results review",
+      "createdBy": "doctor",
+      "createdById": "D0001"
+    },
+    "createdAt": "2024-01-22T10:30:00.000Z"
+  }
+}
+```
+
+**Notes:**
+- Automatically sends FCM notification to patient
+- Inherits patient address from parent appointment
+- Validates parent appointment is completed
+- Uses same notification orchestration as regular appointments
+
+### 26. Get Follow-up Appointments by Patient
+
+```bash
+curl -X GET "http://localhost:3000/api/follow-up/patient/P0001"
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Follow-up appointments retrieved successfully",
+  "data": {
+    "patientId": "P0001",
+    "followUpAppointments": [
+      {
+        "appointmentId": "APT002",
+        "patientId": "P0001",
+        "doctorId": "D0001",
+        "appointmentDate": "2024-01-29T00:00:00.000Z",
+        "appointmentTime": "10:00",
+        "status": "Scheduled",
+        "followUp": {
+          "isFollowUp": true,
+          "parentAppointmentId": "APT001",
+          "followUpReason": "Blood test results review",
+          "createdBy": "doctor",
+          "createdById": "D0001"
+        }
+      }
+    ],
+    "totalFollowUps": 1
+  }
+}
+```
+
+### 27. Get Follow-up Appointments by Doctor
+
+```bash
+curl -X GET "http://localhost:3000/api/follow-up/doctor/D0001"
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Follow-up appointments retrieved successfully",
+  "data": {
+    "doctorId": "D0001",
+    "followUpAppointments": [
+      {
+        "appointmentId": "APT002",
+        "patientId": "P0001",
+        "doctorId": "D0001",
+        "appointmentDate": "2024-01-29T00:00:00.000Z",
+        "appointmentTime": "10:00",
+        "status": "Scheduled",
+        "followUp": {
+          "isFollowUp": true,
+          "parentAppointmentId": "APT001",
+          "followUpReason": "Blood test results review",
+          "createdBy": "doctor",
+          "createdById": "D0001"
+        }
+      }
+    ],
+    "totalFollowUps": 1
+  }
+}
+```
+
+### 28. Get Follow-up Appointments by Hospital
+
+```bash
+curl -X GET "http://localhost:3000/api/follow-up/hospital/H0002"
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Follow-up appointments retrieved successfully",
+  "data": {
+    "hospitalId": "H0002",
+    "followUpAppointments": [
+      {
+        "appointmentId": "APT002",
+        "patientId": "P0001",
+        "doctorId": "D0001",
+        "appointmentDate": "2024-01-29T00:00:00.000Z",
+        "appointmentTime": "10:00",
+        "status": "Scheduled",
+        "followUp": {
+          "isFollowUp": true,
+          "parentAppointmentId": "APT001",
+          "followUpReason": "Blood test results review",
+          "createdBy": "doctor",
+          "createdById": "D0001"
+        }
+      }
+    ],
+    "totalFollowUps": 1
+  }
+}
+```
+
+### 29. Get Follow-up Appointments by Creator
+
+```bash
+curl -X GET "http://localhost:3000/api/follow-up/creator/doctor/D0001"
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "message": "Follow-up appointments retrieved successfully",
+  "data": {
+    "createdBy": "doctor",
+    "createdById": "D0001",
+    "followUpAppointments": [
+      {
+        "appointmentId": "APT002",
+        "patientId": "P0001",
+        "doctorId": "D0001",
+        "appointmentDate": "2024-01-29T00:00:00.000Z",
+        "appointmentTime": "10:00",
+        "status": "Scheduled",
+        "followUp": {
+          "isFollowUp": true,
+          "parentAppointmentId": "APT001",
+          "followUpReason": "Blood test results review",
+          "createdBy": "doctor",
+          "createdById": "D0001"
+        }
+      }
+    ],
+    "totalFollowUps": 1
+  }
+}
+```
+
+### 30. Enhanced Patient Appointments (with Follow-up Flag)
+
+```bash
+curl -X GET "http://localhost:3000/api/appointment/patient/P0001"
+```
+
+**Response:**
+```json
+{
+  "status": "success",
+  "data": {
+    "appointments": [
+      {
+        "appointmentId": "APT001",
+        "patientId": "P0001",
+        "doctorId": "D0001",
+        "appointmentDate": "2024-01-22T00:00:00.000Z",
+        "appointmentTime": "10:00",
+        "status": "Completed",
+        "followUp": {
+          "isFollowUp": false
+        }
+      },
+      {
+        "appointmentId": "APT002",
+        "patientId": "P0001",
+        "doctorId": "D0001",
+        "appointmentDate": "2024-01-29T00:00:00.000Z",
+        "appointmentTime": "10:00",
+        "status": "Scheduled",
+        "followUp": {
+          "isFollowUp": true,
+          "parentAppointmentId": "APT001",
+          "followUpReason": "Blood test results review",
+          "createdBy": "doctor",
+          "createdById": "D0001"
+        }
+      }
+    ]
+  }
+}
+```
+
+**Notes:**
+- All existing appointment APIs now include `followUp.isFollowUp` flag
+- Follow-up appointments are clearly distinguished from regular appointments
+- Same notification orchestration applies to follow-up appointments

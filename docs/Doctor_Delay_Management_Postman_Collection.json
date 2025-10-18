@@ -1,0 +1,657 @@
+{
+    "info": {
+        "_postman_id": "doctor-delay-management-2024",
+        "name": "Doctor Delay Management APIs",
+        "description": "Complete collection of Doctor Delay Management APIs including setting delays, getting hospital delays, automatic cleanup, and notifications.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "_exporter_id": "doctor-delay-apis"
+    },
+    "item": [
+        {
+            "name": "🏥 Doctor Delay Management",
+            "item": [
+                {
+                    "name": "Set Doctor Delay",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Response has success status\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.status).to.eql(\"success\");",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Response contains delay data\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.data).to.have.property(\"delay\");",
+                                    "    pm.expect(jsonData.data).to.have.property(\"affectedAppointments\");",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"doctorId\": \"D0001\",\n  \"date\": \"2024-01-22\",\n  \"startTime\": \"11:00\",\n  \"durationMinutes\": 45,\n  \"reason\": \"Emergency surgery\",\n  \"createdBy\": \"A0001\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/doctor/delay",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctor",
+                                "delay"
+                            ]
+                        },
+                        "description": "Set a delay for a doctor. Automatically sends FCM notifications to affected patients."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Doctors with Delays by Hospital",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Response has success status\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.status).to.eql(\"success\");",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Response contains hospital data\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.data).to.have.property(\"hospitalId\");",
+                                    "    pm.expect(jsonData.data).to.have.property(\"doctorsWithDelays\");",
+                                    "    pm.expect(jsonData.data).to.have.property(\"totalDoctorsWithDelays\");",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/doctor/delays/hospital/{{hospital_id}}?date={{date}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctor",
+                                "delays",
+                                "hospital",
+                                "{{hospital_id}}"
+                            ],
+                            "query": [
+                                {
+                                    "key": "date",
+                                    "value": "{{date}}",
+                                    "description": "Optional date (YYYY-MM-DD format). Defaults to today if not provided."
+                                }
+                            ]
+                        },
+                        "description": "Get all doctors with active delays in a specific hospital for a given date."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Doctor Delays",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Response has success status\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.status).to.eql(\"success\");",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Response contains doctor data\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.data).to.have.property(\"doctorId\");",
+                                    "    pm.expect(jsonData.data).to.have.property(\"delays\");",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/doctor/delay/{{doctor_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctor",
+                                "delay",
+                                "{{doctor_id}}"
+                            ]
+                        },
+                        "description": "Get all delays for a specific doctor."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Clear Doctor Delays",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Response has success status\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.status).to.eql(\"success\");",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Response contains cleared data\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.data).to.have.property(\"doctorId\");",
+                                    "    pm.expect(jsonData.data).to.have.property(\"delaysCleared\");",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "DELETE",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/doctor/delay/{{doctor_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctor",
+                                "delay",
+                                "{{doctor_id}}"
+                            ]
+                        },
+                        "description": "Clear all delays for a specific doctor."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Reset Doctor Availability",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Response has success status\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.status).to.eql(\"success\");",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Response contains reset data\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.data).to.have.property(\"doctorId\");",
+                                    "    pm.expect(jsonData.data).to.have.property(\"date\");",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"doctorId\": \"{{doctor_id}}\",\n  \"date\": \"{{date}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/doctor/reset-availability",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctor",
+                                "reset-availability"
+                            ]
+                        },
+                        "description": "Reset doctor availability by clearing delays for a specific date."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Adjusted Time",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Response has success status\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.status).to.eql(\"success\");",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Response contains adjusted time\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.data).to.have.property(\"originalTime\");",
+                                    "    pm.expect(jsonData.data).to.have.property(\"adjustedTime\");",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            },
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"doctorId\": \"{{doctor_id}}\",\n  \"date\": \"{{date}}\",\n  \"originalTime\": \"11:00\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/doctor/adjusted-time",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctor",
+                                "adjusted-time"
+                            ]
+                        },
+                        "description": "Calculate adjusted time for an appointment based on doctor delays."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Manual Delay Cleanup",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Response has success status\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.status).to.eql(\"success\");",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Response contains cleanup data\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.data).to.have.property(\"success\");",
+                                    "    pm.expect(jsonData.data).to.have.property(\"totalDelaysCleaned\");",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{jwt_token}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/doctor/delays/cleanup",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctor",
+                                "delays",
+                                "cleanup"
+                            ]
+                        },
+                        "description": "Manually trigger cleanup of expired delays. Automatically runs every hour via cron job."
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Complete set of Doctor Delay Management APIs including setting delays, retrieving hospital delays, and automatic cleanup."
+        },
+        {
+            "name": "🔔 Notification Testing",
+            "item": [
+                {
+                    "name": "Send Doctor Delay Notification",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Response has success status\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.status).to.eql(\"success\");",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Response contains notification data\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.data).to.have.property(\"notificationsSent\");",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"doctorId\": \"{{doctor_id}}\",\n  \"delayMinutes\": 45,\n  \"reason\": \"Emergency surgery\",\n  \"date\": \"{{date}}\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/orchestrator/notifications/doctor-delay",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "orchestrator",
+                                "notifications",
+                                "doctor-delay"
+                            ]
+                        },
+                        "description": "Manually send doctor delay notifications to affected patients. This is automatically triggered when setting a delay."
+                    },
+                    "response": []
+                }
+            ],
+            "description": "APIs for testing notification functionality related to doctor delays."
+        },
+        {
+            "name": "📊 Test Scenarios",
+            "item": [
+                {
+                    "name": "Complete Delay Workflow Test",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "exec": [
+                                    "// Set test variables",
+                                    "pm.environment.set(\"test_doctor_id\", \"D0001\");",
+                                    "pm.environment.set(\"test_hospital_id\", \"H0002\");",
+                                    "pm.environment.set(\"test_date\", \"2024-01-22\");",
+                                    "pm.environment.set(\"test_time\", \"11:00\");",
+                                    "",
+                                    "console.log(\"Test variables set:\");",
+                                    "console.log(\"Doctor ID:\", pm.environment.get(\"test_doctor_id\"));",
+                                    "console.log(\"Hospital ID:\", pm.environment.get(\"test_hospital_id\"));",
+                                    "console.log(\"Date:\", pm.environment.get(\"test_date\"));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Workflow test completed\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "console.log(\"Complete delay workflow test finished\");"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/doctor/delays/hospital/{{test_hospital_id}}?date={{test_date}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctor",
+                                "delays",
+                                "hospital",
+                                "{{test_hospital_id}}"
+                            ],
+                            "query": [
+                                {
+                                    "key": "date",
+                                    "value": "{{test_date}}"
+                                }
+                            ]
+                        },
+                        "description": "Test the complete delay workflow: Set delay → Check hospital delays → Cleanup"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Delay Cleanup Test",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Cleanup test completed\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "const jsonData = pm.response.json();",
+                                    "if (jsonData.data.totalDelaysCleaned > 0) {",
+                                    "    console.log(\"Cleaned up\", jsonData.data.totalDelaysCleaned, \"expired delays\");",
+                                    "} else {",
+                                    "    console.log(\"No expired delays found\");",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/doctor/delays/cleanup",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "doctor",
+                                "delays",
+                                "cleanup"
+                            ]
+                        },
+                        "description": "Test the manual delay cleanup functionality."
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Test scenarios for comprehensive delay management testing."
+        }
+    ],
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// Global pre-request script for Doctor Delay Management APIs",
+                    "",
+                    "// Set default values if not already set",
+                    "if (!pm.environment.get(\"base_url\")) {",
+                    "    pm.environment.set(\"base_url\", \"http://localhost:3000\");",
+                    "}",
+                    "",
+                    "if (!pm.environment.get(\"jwt_token\")) {",
+                    "    pm.environment.set(\"jwt_token\", \"test\");",
+                    "}",
+                    "",
+                    "if (!pm.environment.get(\"doctor_id\")) {",
+                    "    pm.environment.set(\"doctor_id\", \"D0001\");",
+                    "}",
+                    "",
+                    "if (!pm.environment.get(\"hospital_id\")) {",
+                    "    pm.environment.set(\"hospital_id\", \"H0002\");",
+                    "}",
+                    "",
+                    "if (!pm.environment.get(\"date\")) {",
+                    "    const today = new Date().toISOString().split('T')[0];",
+                    "    pm.environment.set(\"date\", today);",
+                    "}",
+                    "",
+                    "console.log(\"Environment variables set:\");",
+                    "console.log(\"Base URL:\", pm.environment.get(\"base_url\"));",
+                    "console.log(\"Doctor ID:\", pm.environment.get(\"doctor_id\"));",
+                    "console.log(\"Hospital ID:\", pm.environment.get(\"hospital_id\"));",
+                    "console.log(\"Date:\", pm.environment.get(\"date\"));"
+                ]
+            }
+        },
+        {
+            "listen": "test",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// Global test script for Doctor Delay Management APIs",
+                    "",
+                    "// Log response time",
+                    "pm.test(\"Response time is less than 5000ms\", function () {",
+                    "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+                    "});",
+                    "",
+                    "// Log response details",
+                    "console.log(\"Response Status:\", pm.response.status);",
+                    "console.log(\"Response Time:\", pm.response.responseTime + \"ms\");",
+                    "",
+                    "if (pm.response.code === 200) {",
+                    "    try {",
+                    "        const jsonData = pm.response.json();",
+                    "        console.log(\"Response Data:\", JSON.stringify(jsonData, null, 2));",
+                    "    } catch (e) {",
+                    "        console.log(\"Response is not JSON:\", pm.response.text());",
+                    "    }",
+                    "}"
+                ]
+            }
+        }
+    ],
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:3000",
+            "type": "string"
+        },
+        {
+            "key": "jwt_token",
+            "value": "test",
+            "type": "string"
+        },
+        {
+            "key": "doctor_id",
+            "value": "D0001",
+            "type": "string"
+        },
+        {
+            "key": "hospital_id",
+            "value": "H0002",
+            "type": "string"
+        },
+        {
+            "key": "date",
+            "value": "2024-01-22",
+            "type": "string"
+        }
+    ]
+}

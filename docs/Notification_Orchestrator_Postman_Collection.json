@@ -75,6 +75,35 @@
                         "description": "Get place suggestions with coordinates for address autocomplete"
                     },
                     "response": []
+                },
+                {
+                    "name": "Place Reviews & Ratings",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"origin\": {\n    \"lat\": 11.672718,\n    \"lng\": 78.1339232\n  },\n  \"description\": \"Meyyanur Main Road, Salem, Tamil Nadu, India\",\n  \"fullAddress\": \"Meyyanur Main Road, Salem, Tamil Nadu 636004, India\",\n  \"street\": \"Meyyanur Main Road\",\n  \"city\": \"Salem\",\n  \"state\": \"Tamil Nadu\",\n  \"pincode\": \"636004\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/orchestrator/place-reviews",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "orchestrator",
+                                "place-reviews"
+                            ]
+                        },
+                        "description": "Get reviews and ratings for a place using address and coordinates"
+                    },
+                    "response": []
                 }
             ]
         },
@@ -182,6 +211,27 @@
                             ]
                         },
                         "description": "Delete a specific address for a user"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get User Documents by Appointment",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/user/documents/P0001",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "user",
+                                "documents",
+                                "P0001"
+                            ]
+                        },
+                        "description": "Get all documents for a user grouped by appointment ID"
                     },
                     "response": []
                 }

@@ -76,6 +76,13 @@ export const updateOnboardingInfo = async (req, res, next) => {
             state,
             pincode,
             googleMapLink,
+            // New address fields for Google Maps integration
+            addressName,
+            origin,
+            fullAddress,
+            // Rating and review fields
+            rating,
+            userRatingsTotal,
             // Contact Details
             phoneNumber,
             alternativePhone,

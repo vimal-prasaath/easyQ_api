@@ -124,6 +124,30 @@ const userSchema = new Schema({
             trim: true,
             maxlength: [500, 'Full address cannot exceed 500 characters']
         },
+        street: {
+            type: String,
+            required: false,
+            trim: true,
+            maxlength: [200, 'Street cannot exceed 200 characters']
+        },
+        city: {
+            type: String,
+            required: false,
+            trim: true,
+            maxlength: [100, 'City cannot exceed 100 characters']
+        },
+        state: {
+            type: String,
+            required: false,
+            trim: true,
+            maxlength: [100, 'State cannot exceed 100 characters']
+        },
+        pincode: {
+            type: String,
+            required: false,
+            trim: true,
+            maxlength: [10, 'Pincode cannot exceed 10 characters']
+        },
         isDefault: {
             type: Boolean,
             default: false

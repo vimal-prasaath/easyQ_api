@@ -388,4 +388,145 @@ export class DoctorDelayService {
         const mins = minutes % 60;
         return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}`;
     }
+
+    /**
+     * Get all doctors with active delays in a hospital
+     * @param {string} hospitalId - Hospital ID
+     * @param {Date} date - Optional specific date
+     * @returns {Array} Doctors with delays
+     */
+    static async getDoctorsWithDelaysByHospital(hospitalId, date = null) {
+        try {
+            // Find all doctors in the hospital
+            const doctors = await Doctor.find({ hospitalId }).select('doctorId name email delays');
+            
+            if (!doctors || doctors.length === 0) {
+                return [];
+            }
+
+            const doctorsWithDelays = [];
+            const targetDate = date ? new Date(date) : new Date();
+
+            for (const doctor of doctors) {
+                // Filter active delays for the target date
+                const activeDelays = doctor.delays.filter(delay => {
+                    if (!delay.isActive) return false;
+                    
+                    const delayDate = new Date(delay.date);
+                    delayDate.setHours(0, 0, 0, 0);
+                    targetDate.setHours(0, 0, 0, 0);
+                    
+                    return delayDate.getTime() === targetDate.getTime();
+                });
+
+                if (activeDelays.length > 0) {
+                    doctorsWithDelays.push({
+                        doctorId: doctor.doctorId,
+                        name: doctor.name,
+                        email: doctor.email,
+                        delays: activeDelays.map(delay => ({
+                            startTime: delay.startTime,
+                            durationMinutes: delay.durationMinutes,
+                            reason: delay.reason,
+                            isActive: delay.isActive,
+                            createdAt: delay.createdAt,
+                            createdBy: delay.createdBy
+                        }))
+                    });
+                }
+            }
+
+            logInfo('Doctors with delays retrieved by hospital', {
+                hospitalId,
+                date: targetDate.toISOString().split('T')[0],
+                doctorsWithDelays: doctorsWithDelays.length
+            });
+
+            return doctorsWithDelays;
+
+        } catch (error) {
+            logError(error, { hospitalId, date });
+            throw error;
+        }
+    }
+
+    /**
+     * Clean up expired delays automatically
+     * @returns {Object} Cleanup result
+     */
+    static async cleanupExpiredDelays() {
+        try {
+            const now = new Date();
+            const currentTime = now.getHours() * 60 + now.getMinutes(); // Current time in minutes
+            const currentDate = new Date(now);
+            currentDate.setHours(0, 0, 0, 0);
+
+            // Find all doctors with active delays
+            const doctors = await Doctor.find({ 
+                'delays.isActive': true 
+            }).select('doctorId name delays');
+
+            let totalCleaned = 0;
+            const cleanupResults = [];
+
+            for (const doctor of doctors) {
+                let doctorCleaned = 0;
+                const doctorDelays = [];
+
+                for (const delay of doctor.delays) {
+                    if (!delay.isActive) continue;
+
+                    const delayDate = new Date(delay.date);
+                    delayDate.setHours(0, 0, 0, 0);
+
+                    // Check if delay is for today
+                    if (delayDate.getTime() === currentDate.getTime()) {
+                        const delayStartMinutes = this.timeToMinutes(delay.startTime);
+                        const delayEndMinutes = delayStartMinutes + delay.durationMinutes;
+
+                        // Check if delay has expired
+                        if (currentTime > delayEndMinutes) {
+                            delay.isActive = false;
+                            doctorCleaned++;
+                            totalCleaned++;
+
+                            doctorDelays.push({
+                                startTime: delay.startTime,
+                                durationMinutes: delay.durationMinutes,
+                                reason: delay.reason,
+                                expiredAt: now.toISOString()
+                            });
+                        }
+                    }
+                }
+
+                if (doctorCleaned > 0) {
+                    await doctor.save();
+                    cleanupResults.push({
+                        doctorId: doctor.doctorId,
+                        name: doctor.name,
+                        delaysCleaned: doctorDelays
+                    });
+                }
+            }
+
+            logInfo('Expired delays cleaned up', {
+                totalDelaysCleaned: totalCleaned,
+                doctorsAffected: cleanupResults.length,
+                cleanupTime: now.toISOString()
+            });
+
+            return {
+                success: true,
+                totalDelaysCleaned: totalCleaned,
+                doctorsAffected: cleanupResults.length,
+                cleanupResults,
+                cleanupTime: now.toISOString()
+            };
+
+        } catch (error) {
+            logError('Failed to cleanup expired delays', { error: error.message });
+            throw error;
+        }
+    }
 }

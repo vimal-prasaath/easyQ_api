@@ -39,7 +39,22 @@ const doctorSchema = new Schema({
     specialization: {
         type: String,
         required: [true, 'Specialization is required'],
-        trim: true
+        trim: true,
+        default: "General Medicine",
+        validate: {
+            validator: function(v) {
+                if (!v || v.trim() === '') return true; // Will be handled by default
+                const departments = v.split(',').map(d => d.trim());
+                const validDepartments = [
+                    "General Medicine", "General Checkup", "Pediatrics", "Gynecology",
+                    "Cardiology", "Dermatology", "Dental", "Diabetology", "Eye Care",
+                    "Orthopedics", "Gastroenterology", "Pulmonology", "Neurology",
+                    "Urology", "Physiotherapy", "Emergency Care"
+                ];
+                return departments.every(dept => validDepartments.includes(dept));
+            },
+            message: 'Specialization must contain only valid departments from the predefined list'
+        }
     },
     qualification: {
         type: [String],

@@ -1,0 +1,669 @@
+{
+    "info": {
+        "_postman_id": "follow-up-appointment-2024",
+        "name": "Follow-up Appointment Management APIs",
+        "description": "Complete collection of Follow-up Appointment Management APIs including creating follow-ups, retrieving follow-ups by patient/doctor/hospital, and managing follow-up appointments.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+        "_exporter_id": "follow-up-appointment-apis"
+    },
+    "item": [
+        {
+            "name": "📅 Follow-up Appointment Management",
+            "item": [
+                {
+                    "name": "Create Follow-up Appointment",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 201\", function () {",
+                                    "    pm.response.to.have.status(201);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Response has success status\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.status).to.eql(\"success\");",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Response contains follow-up appointment data\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.data).to.have.property(\"appointmentId\");",
+                                    "    pm.expect(jsonData.data).to.have.property(\"followUp\");",
+                                    "    pm.expect(jsonData.data.followUp.isFollowUp).to.be.true;",
+                                    "});",
+                                    "",
+                                    "// Store appointment ID for other tests",
+                                    "if (pm.response.code === 201) {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.environment.set(\"follow_up_appointment_id\", jsonData.data.appointmentId);",
+                                    "}"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"patientId\": \"{{patient_id}}\",\n  \"doctorId\": \"{{doctor_id}}\",\n  \"hospitalId\": \"{{hospital_id}}\",\n  \"appointmentDate\": \"{{follow_up_date}}\",\n  \"appointmentTime\": \"10:00\",\n  \"followUpReason\": \"Blood test results review\",\n  \"createdBy\": \"doctor\",\n  \"createdById\": \"{{doctor_id}}\",\n  \"parentAppointmentId\": \"{{parent_appointment_id}}\",\n  \"consultationType\": \"Follow-up\",\n  \"notes\": \"Follow-up for blood test results\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/follow-up",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "follow-up"
+                            ]
+                        },
+                        "description": "Create a follow-up appointment for a patient after checkout. Automatically sends notification to patient and inherits address from parent appointment."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Follow-up Appointments by Patient",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Response has success status\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.status).to.eql(\"success\");",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Response contains patient follow-up data\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.data).to.have.property(\"patientId\");",
+                                    "    pm.expect(jsonData.data).to.have.property(\"followUpAppointments\");",
+                                    "    pm.expect(jsonData.data).to.have.property(\"totalFollowUps\");",
+                                    "});",
+                                    "",
+                                    "pm.test(\"All appointments are follow-ups\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    if (jsonData.data.followUpAppointments.length > 0) {",
+                                    "        jsonData.data.followUpAppointments.forEach(appointment => {",
+                                    "            pm.expect(appointment.followUp.isFollowUp).to.be.true;",
+                                    "        });",
+                                    "    }",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/follow-up/patient/{{patient_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "follow-up",
+                                "patient",
+                                "{{patient_id}}"
+                            ]
+                        },
+                        "description": "Get all follow-up appointments for a specific patient."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Follow-up Appointments by Doctor",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Response has success status\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.status).to.eql(\"success\");",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Response contains doctor follow-up data\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.data).to.have.property(\"doctorId\");",
+                                    "    pm.expect(jsonData.data).to.have.property(\"followUpAppointments\");",
+                                    "    pm.expect(jsonData.data).to.have.property(\"totalFollowUps\");",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/follow-up/doctor/{{doctor_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "appointment",
+                                "follow-up",
+                                "doctor",
+                                "{{doctor_id}}"
+                            ]
+                        },
+                        "description": "Get all follow-up appointments for a specific doctor."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Follow-up Appointments by Hospital",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Response has success status\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.status).to.eql(\"success\");",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Response contains hospital follow-up data\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.data).to.have.property(\"hospitalId\");",
+                                    "    pm.expect(jsonData.data).to.have.property(\"followUpAppointments\");",
+                                    "    pm.expect(jsonData.data).to.have.property(\"totalFollowUps\");",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/follow-up/hospital/{{hospital_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "appointment",
+                                "follow-up",
+                                "hospital",
+                                "{{hospital_id}}"
+                            ]
+                        },
+                        "description": "Get all follow-up appointments for a specific hospital."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Follow-up Appointments by Creator",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Response has success status\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.status).to.eql(\"success\");",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Response contains creator follow-up data\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.data).to.have.property(\"createdBy\");",
+                                    "    pm.expect(jsonData.data).to.have.property(\"createdById\");",
+                                    "    pm.expect(jsonData.data).to.have.property(\"followUpAppointments\");",
+                                    "    pm.expect(jsonData.data).to.have.property(\"totalFollowUps\");",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/follow-up/creator/{{created_by}}/{{created_by_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "appointment",
+                                "follow-up",
+                                "creator",
+                                "{{created_by}}",
+                                "{{created_by_id}}"
+                            ]
+                        },
+                        "description": "Get all follow-up appointments created by a specific admin, doctor, or nurse."
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Complete set of Follow-up Appointment Management APIs for creating and retrieving follow-up appointments."
+        },
+        {
+            "name": "📋 Enhanced Appointment APIs",
+            "item": [
+                {
+                    "name": "Get Patient Appointments (with Follow-up Flag)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Response contains appointments with follow-up flag\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    if (jsonData.data && jsonData.data.appointments) {",
+                                    "        jsonData.data.appointments.forEach(appointment => {",
+                                    "            pm.expect(appointment).to.have.property(\"followUp\");",
+                                    "            if (appointment.followUp) {",
+                                    "                pm.expect(appointment.followUp).to.have.property(\"isFollowUp\");",
+                                    "            }",
+                                    "        });",
+                                    "    }",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/appointment/patient/{{patient_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "appointment",
+                                "patient",
+                                "{{patient_id}}"
+                            ]
+                        },
+                        "description": "Get all appointments for a patient. Now includes isFollowUp flag to distinguish regular appointments from follow-ups."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Doctor Appointments (with Follow-up Flag)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Response contains appointments with follow-up flag\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    if (jsonData.data && jsonData.data.appointments) {",
+                                    "        jsonData.data.appointments.forEach(appointment => {",
+                                    "            pm.expect(appointment).to.have.property(\"followUp\");",
+                                    "            if (appointment.followUp) {",
+                                    "                pm.expect(appointment.followUp).to.have.property(\"isFollowUp\");",
+                                    "            }",
+                                    "        });",
+                                    "    }",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/appointment/doctor/{{doctor_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "appointment",
+                                "doctor",
+                                "{{doctor_id}}"
+                            ]
+                        },
+                        "description": "Get all appointments for a doctor. Now includes isFollowUp flag to distinguish regular appointments from follow-ups."
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Enhanced existing appointment APIs that now include follow-up flags."
+        },
+        {
+            "name": "🔔 Follow-up Notification Testing",
+            "item": [
+                {
+                    "name": "Send Follow-up Notification (Manual)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Status code is 200\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Response has success status\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.status).to.eql(\"success\");",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Response contains notification data\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    pm.expect(jsonData.data).to.have.property(\"notificationsSent\");",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"patientId\": \"{{patient_id}}\",\n  \"appointmentId\": \"{{follow_up_appointment_id}}\",\n  \"followUpReason\": \"Blood test results review\",\n  \"appointmentDate\": \"{{follow_up_date}}\",\n  \"appointmentTime\": \"10:00\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/orchestrator/notifications/follow-up",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "orchestrator",
+                                "notifications",
+                                "follow-up"
+                            ]
+                        },
+                        "description": "Manually send follow-up notification to patient. This is automatically triggered when creating a follow-up appointment."
+                    },
+                    "response": []
+                }
+            ],
+            "description": "APIs for testing follow-up notification functionality."
+        },
+        {
+            "name": "🧪 Test Scenarios",
+            "item": [
+                {
+                    "name": "Complete Follow-up Workflow Test",
+                    "event": [
+                        {
+                            "listen": "prerequest",
+                            "script": {
+                                "exec": [
+                                    "// Set test variables",
+                                    "pm.environment.set(\"test_patient_id\", \"P0001\");",
+                                    "pm.environment.set(\"test_doctor_id\", \"D0001\");",
+                                    "pm.environment.set(\"test_hospital_id\", \"H0002\");",
+                                    "pm.environment.set(\"test_parent_appointment_id\", \"APT001\");",
+                                    "",
+                                    "// Set follow-up date to 7 days from now",
+                                    "const followUpDate = new Date();",
+                                    "followUpDate.setDate(followUpDate.getDate() + 7);",
+                                    "pm.environment.set(\"test_follow_up_date\", followUpDate.toISOString().split('T')[0]);",
+                                    "",
+                                    "console.log(\"Test variables set:\");",
+                                    "console.log(\"Patient ID:\", pm.environment.get(\"test_patient_id\"));",
+                                    "console.log(\"Doctor ID:\", pm.environment.get(\"test_doctor_id\"));",
+                                    "console.log(\"Hospital ID:\", pm.environment.get(\"test_hospital_id\"));",
+                                    "console.log(\"Follow-up Date:\", pm.environment.get(\"test_follow_up_date\"));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        },
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Follow-up workflow test completed\", function () {",
+                                    "    pm.response.to.have.status(200);",
+                                    "});",
+                                    "",
+                                    "console.log(\"Complete follow-up workflow test finished\");"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/follow-up/patient/{{test_patient_id}}",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "appointment",
+                                "follow-up",
+                                "patient",
+                                "{{test_patient_id}}"
+                            ]
+                        },
+                        "description": "Test the complete follow-up workflow: Create follow-up → Check patient follow-ups → Verify notifications"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Follow-up Address Inheritance Test",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test(\"Follow-up address inheritance test completed\", function () {",
+                                    "    pm.response.to.have.status(201);",
+                                    "});",
+                                    "",
+                                    "pm.test(\"Follow-up inherits parent appointment address\", function () {",
+                                    "    const jsonData = pm.response.json();",
+                                    "    if (jsonData.data.patientAddress) {",
+                                    "        pm.expect(jsonData.data.patientAddress).to.have.property(\"origin\");",
+                                    "        pm.expect(jsonData.data.patientAddress).to.have.property(\"fullAddress\");",
+                                    "    }",
+                                    "});"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"patientId\": \"{{test_patient_id}}\",\n  \"doctorId\": \"{{test_doctor_id}}\",\n  \"hospitalId\": \"{{test_hospital_id}}\",\n  \"appointmentDate\": \"{{test_follow_up_date}}\",\n  \"appointmentTime\": \"14:00\",\n  \"followUpReason\": \"Address inheritance test\",\n  \"createdBy\": \"doctor\",\n  \"createdById\": \"{{test_doctor_id}}\",\n  \"parentAppointmentId\": \"{{test_parent_appointment_id}}\",\n  \"consultationType\": \"Follow-up\",\n  \"notes\": \"Testing address inheritance from parent appointment\"\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/follow-up",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "follow-up"
+                            ]
+                        },
+                        "description": "Test that follow-up appointments inherit the patient address from the parent appointment."
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Test scenarios for comprehensive follow-up appointment testing."
+        }
+    ],
+    "event": [
+        {
+            "listen": "prerequest",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// Global pre-request script for Follow-up Appointment APIs",
+                    "",
+                    "// Set default values if not already set",
+                    "if (!pm.environment.get(\"base_url\")) {",
+                    "    pm.environment.set(\"base_url\", \"http://localhost:3000\");",
+                    "}",
+                    "",
+                    "if (!pm.environment.get(\"patient_id\")) {",
+                    "    pm.environment.set(\"patient_id\", \"P0001\");",
+                    "}",
+                    "",
+                    "if (!pm.environment.get(\"doctor_id\")) {",
+                    "    pm.environment.set(\"doctor_id\", \"D0001\");",
+                    "}",
+                    "",
+                    "if (!pm.environment.get(\"hospital_id\")) {",
+                    "    pm.environment.set(\"hospital_id\", \"H0002\");",
+                    "}",
+                    "",
+                    "if (!pm.environment.get(\"parent_appointment_id\")) {",
+                    "    pm.environment.set(\"parent_appointment_id\", \"APT001\");",
+                    "}",
+                    "",
+                    "if (!pm.environment.get(\"created_by\")) {",
+                    "    pm.environment.set(\"created_by\", \"doctor\");",
+                    "}",
+                    "",
+                    "if (!pm.environment.get(\"created_by_id\")) {",
+                    "    pm.environment.set(\"created_by_id\", \"D0001\");",
+                    "}",
+                    "",
+                    "if (!pm.environment.get(\"follow_up_date\")) {",
+                    "    const followUpDate = new Date();",
+                    "    followUpDate.setDate(followUpDate.getDate() + 7);",
+                    "    pm.environment.set(\"follow_up_date\", followUpDate.toISOString().split('T')[0]);",
+                    "}",
+                    "",
+                    "console.log(\"Environment variables set:\");",
+                    "console.log(\"Base URL:\", pm.environment.get(\"base_url\"));",
+                    "console.log(\"Patient ID:\", pm.environment.get(\"patient_id\"));",
+                    "console.log(\"Doctor ID:\", pm.environment.get(\"doctor_id\"));",
+                    "console.log(\"Hospital ID:\", pm.environment.get(\"hospital_id\"));",
+                    "console.log(\"Follow-up Date:\", pm.environment.get(\"follow_up_date\"));"
+                ]
+            }
+        },
+        {
+            "listen": "test",
+            "script": {
+                "type": "text/javascript",
+                "exec": [
+                    "// Global test script for Follow-up Appointment APIs",
+                    "",
+                    "// Log response time",
+                    "pm.test(\"Response time is less than 5000ms\", function () {",
+                    "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+                    "});",
+                    "",
+                    "// Log response details",
+                    "console.log(\"Response Status:\", pm.response.status);",
+                    "console.log(\"Response Time:\", pm.response.responseTime + \"ms\");",
+                    "",
+                    "if (pm.response.code === 200 || pm.response.code === 201) {",
+                    "    try {",
+                    "        const jsonData = pm.response.json();",
+                    "        console.log(\"Response Data:\", JSON.stringify(jsonData, null, 2));",
+                    "    } catch (e) {",
+                    "        console.log(\"Response is not JSON:\", pm.response.text());",
+                    "    }",
+                    "}"
+                ]
+            }
+        }
+    ],
+    "variable": [
+        {
+            "key": "base_url",
+            "value": "http://localhost:3000",
+            "type": "string"
+        },
+        {
+            "key": "patient_id",
+            "value": "P0001",
+            "type": "string"
+        },
+        {
+            "key": "doctor_id",
+            "value": "D0001",
+            "type": "string"
+        },
+        {
+            "key": "hospital_id",
+            "value": "H0002",
+            "type": "string"
+        },
+        {
+            "key": "parent_appointment_id",
+            "value": "APT001",
+            "type": "string"
+        },
+        {
+            "key": "created_by",
+            "value": "doctor",
+            "type": "string"
+        },
+        {
+            "key": "created_by_id",
+            "value": "D0001",
+            "type": "string"
+        },
+        {
+            "key": "follow_up_date",
+            "value": "2024-01-29",
+            "type": "string"
+        }
+    ]
+}

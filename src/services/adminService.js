@@ -195,6 +195,13 @@ class AdminService {
                         coordinates: onboardingData.location?.coordinates || [0, 0] // Use provided coordinates or default to [0, 0]
                     },
                     googleMapLink: onboardingData.googleMapLink,
+                    // New address fields for Google Maps integration
+                    addressName: onboardingData.addressName,
+                    origin: onboardingData.origin,
+                    fullAddress: onboardingData.fullAddress,
+                    // Rating and review fields
+                    rating: onboardingData.rating,
+                    userRatingsTotal: onboardingData.userRatingsTotal,
                     phoneNumber: onboardingData.phoneNumber,
                     alternativePhone: onboardingData.alternativePhone,
                     email: onboardingData.emailAddress,
@@ -233,6 +240,13 @@ class AdminService {
                     };
                 }
                 hospital.googleMapLink = onboardingData.googleMapLink;
+                // Update new address fields for Google Maps integration
+                if (onboardingData.addressName !== undefined) hospital.addressName = onboardingData.addressName;
+                if (onboardingData.origin !== undefined) hospital.origin = onboardingData.origin;
+                if (onboardingData.fullAddress !== undefined) hospital.fullAddress = onboardingData.fullAddress;
+                // Update rating and review fields
+                if (onboardingData.rating !== undefined) hospital.rating = onboardingData.rating;
+                if (onboardingData.userRatingsTotal !== undefined) hospital.userRatingsTotal = onboardingData.userRatingsTotal;
                 hospital.phoneNumber = onboardingData.phoneNumber;
                 hospital.alternativePhone = onboardingData.alternativePhone;
                 hospital.emailAddress = onboardingData.emailAddress;

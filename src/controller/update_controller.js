@@ -14,7 +14,10 @@ export const updateObjectPayload = (data) => {
         // New address fields for Google Maps integration
         'addressName',
         'origin',
-        'fullAddress'
+        'fullAddress',
+        // Rating and review fields
+        'rating',
+        'userRatingsTotal'
     ];
     return constructObject({}, allowedUpdates, data);
 

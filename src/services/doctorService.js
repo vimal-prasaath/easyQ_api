@@ -6,6 +6,105 @@ import { EasyQError } from '../config/error.js';
 import { httpStatusCode } from '../util/statusCode.js';
 import { uploadDoctorImage } from '../config/fireBaseStorage.js';
 import AdminProfile from '../model/adminProfile.js'; // Added import for AdminProfile
+import { processSpecialization, createSpecializationFilter, validateSpecialization } from '../util/specializationProcessor.js';
+
+// Helper functions for hospital department management
+const removeDoctorFromDepartments = async (hospitalId, doctorId, specializations) => {
+    const hospital = await Hospital.findOne({ hospitalId });
+    if (!hospital) return;
+
+    for (const specialization of specializations) {
+        const department = hospital.departments.find(
+            dep => dep.name.toLowerCase() === specialization.toLowerCase()
+        );
+        
+        if (department && department.doctorIds) {
+            // Remove doctor from department
+            department.doctorIds = department.doctorIds.filter(id => id !== doctorId);
+            
+            // Update doctor count
+            if (typeof department.total_number_Doctor === 'string') {
+                department.total_number_Doctor = Math.max(0, parseInt(department.total_number_Doctor || '0', 10) - 1).toString();
+            } else {
+                department.total_number_Doctor = Math.max(0, (department.total_number_Doctor || 0) - 1);
+            }
+            
+            // Clear head of department if this doctor was the head
+            if (department.departmentHeadDoctorId === doctorId) {
+                department.headOfDepartment = '';
+                department.departmentHeadDoctorId = '';
+            }
+        }
+    }
+    
+    await hospital.save();
+};
+
+const addDoctorToDepartments = async (hospitalId, doctorId, specializations, shouldBeHead = false) => {
+    const hospital = await Hospital.findOne({ hospitalId });
+    if (!hospital) return;
+
+    for (let i = 0; i < specializations.length; i++) {
+        const specialization = specializations[i];
+        const isFirstSpecialization = i === 0;
+        
+        let department = hospital.departments.find(
+            dep => dep.name.toLowerCase() === specialization.toLowerCase()
+        );
+        
+        if (department) {
+            // Department exists, add doctor to it
+            if (!department.doctorIds) {
+                department.doctorIds = [];
+            }
+            
+            if (!department.doctorIds.some(id => id === doctorId)) {
+                department.doctorIds.push(doctorId);
+                
+                if (typeof department.total_number_Doctor === 'string') {
+                    department.total_number_Doctor = (parseInt(department.total_number_Doctor || '0', 10) + 1).toString();
+                } else {
+                    department.total_number_Doctor = (department.total_number_Doctor || 0) + 1;
+                }
+            }
+            
+            // Set as head if specified (only for the first specialization if multiple)
+            if (shouldBeHead && isFirstSpecialization && !department.departmentHeadDoctorId) {
+                const doctor = await Doctor.findOne({ doctorId });
+                if (doctor) {
+                    department.headOfDepartment = doctor.name;
+                    department.departmentHeadDoctorId = doctor.doctorId;
+                }
+            }
+        } else {
+            // Create new department
+            const doctor = await Doctor.findOne({ doctorId });
+            hospital.departments.push({
+                name: specialization,
+                doctorIds: [doctorId],
+                total_number_Doctor: '1',
+                headOfDepartment: shouldBeHead && isFirstSpecialization ? (doctor?.name || '') : '',
+                departmentHeadDoctorId: shouldBeHead && isFirstSpecialization ? doctorId : '',
+                contactNumber: '',
+                description: '',
+            });
+        }
+    }
+    
+    await hospital.save();
+};
+
+const cleanupEmptyDepartments = async (hospitalId) => {
+    const hospital = await Hospital.findOne({ hospitalId });
+    if (!hospital) return;
+
+    // Remove departments with no doctors
+    hospital.departments = hospital.departments.filter(
+        dept => dept.doctorIds && dept.doctorIds.length > 0
+    );
+    
+    await hospital.save();
+};
 
 export class DoctorService {
     
@@ -50,6 +149,20 @@ export class DoctorService {
                     true,
                     'Please provide a valid 10-digit mobile number.'
                 );
+            }
+
+            // ✅ Process specialization
+            if (doctorData.specialization) {
+                const validation = validateSpecialization(doctorData.specialization);
+                if (!validation.isValid) {
+                    throw new EasyQError(
+                        'ValidationError',
+                        httpStatusCode.BAD_REQUEST,
+                        true,
+                        `Invalid departments: ${validation.invalidDepartments.join(', ')}. Valid departments are: General Medicine, General Checkup, Pediatrics, Gynecology, Cardiology, Dermatology, Dental, Diabetology, Eye Care, Orthopedics, Gastroenterology, Pulmonology, Neurology, Urology, Physiotherapy, Emergency Care`
+                    );
+                }
+                doctorData.specialization = validation.processed;
             }
 
             // ✅ Check if doctor with same email already exists
@@ -140,41 +253,11 @@ export class DoctorService {
             }
 
             const doctor = await Doctor.create(doctorData);
-            const specializationName = doctor.specialization;
             const shouldBeHead = doctorData.isHeadOfDepartment === true;
 
-             let department = hospitalData.departments.find(
-                dep => dep.name.toLowerCase() === specializationName.toLowerCase()
-            );
-            if (department) {
-                   if (!department.doctorIds) {
-                    department.doctorIds = [];
-                    }
-                    
-                if (!department.doctorIds.some(id => id === doctor.doctorId)) {
-                    department.doctorIds.push(doctor.doctorId);
-                    if (typeof department.total_number_Doctor === 'string') {
-                         department.total_number_Doctor = (parseInt(department.total_number_Doctor || '0', 10) + 1).toString();
-                    } else {
-                         department.total_number_Doctor = (department.total_number_Doctor || 0) + 1;
-                    }
-                }
-                 if (shouldBeHead) {
-                    department.headOfDepartment = doctor.name; 
-                    department.departmentHeadDoctorId = doctor.doctorId
-                }
-            } else {
-                hospitalData.departments.push({
-                    name: specializationName,
-                    doctorIds: [doctor.doctorId], 
-                    total_number_Doctor: '1', 
-                    headOfDepartment: shouldBeHead ? doctor.name : '',
-                    departmentHeadDoctorId: doctor.doctorId,
-                    contactNumber: '',    
-                    description: '',      
-                });
-            }
-            await hospitalData.save();
+            // ✅ Create separate departments for each specialization using helper function
+            const specializations = doctor.specialization.split(',').map(s => s.trim());
+            await addDoctorToDepartments(doctorData.hospitalId, doctor.doctorId, specializations, shouldBeHead);
            
             return {
                 doctor: doctor,
@@ -246,6 +329,20 @@ export class DoctorService {
                 true,
                 'No update fields provided.'
             );
+        }
+
+        // ✅ Process specialization if provided
+        if (updates.specialization) {
+            const validation = validateSpecialization(updates.specialization);
+            if (!validation.isValid) {
+                throw new EasyQError(
+                    'ValidationError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    `Invalid departments: ${validation.invalidDepartments.join(', ')}. Valid departments are: General Medicine, General Checkup, Pediatrics, Gynecology, Cardiology, Dermatology, Dental, Diabetology, Eye Care, Orthopedics, Gastroenterology, Pulmonology, Neurology, Urology, Physiotherapy, Emergency Care`
+                );
+            }
+            updates.specialization = validation.processed;
         }
 
         // ✅ Check if doctor exists
@@ -396,11 +493,30 @@ export class DoctorService {
             updates.profileImageUrl = updates.profileImage.fileUrl;
         }
 
+        // ✅ Handle hospital department sync if specialization is being updated
+        if (updates.specialization) {
+            const oldSpecializations = doctor.specialization.split(',').map(s => s.trim());
+            const newSpecializations = updates.specialization.split(',').map(s => s.trim());
+            
+            // Remove doctor from old departments
+            await removeDoctorFromDepartments(doctor.hospitalId, doctorId, oldSpecializations);
+            
+            // Clean up empty departments
+            await cleanupEmptyDepartments(doctor.hospitalId);
+        }
+
         // ✅ Apply all other general updates like name, email, status, etc.
         Object.assign(doctor, updates);
 
         // ✅ Update the doctor in database (workingHours already handled separately)
         await Doctor.findOneAndUpdate({ doctorId }, updates, { new: true });
+
+        // ✅ Add doctor to new departments if specialization was updated
+        if (updates.specialization) {
+            const newSpecializations = updates.specialization.split(',').map(s => s.trim());
+            const shouldBeHead = updates.isHeadOfDepartment === true;
+            await addDoctorToDepartments(doctor.hospitalId, doctorId, newSpecializations, shouldBeHead);
+        }
 
         // Return cleaned object
         return doctor.toObject({
@@ -436,8 +552,9 @@ export class DoctorService {
 
     static async deleteDoctor(doctorId) {
         try {
-            const deletedDoctor = await Doctor.findOneAndDelete({ doctorId: doctorId }).select('-_id -__v');
-            if (!deletedDoctor) {
+            // ✅ Get doctor info before deletion for hospital department cleanup
+            const doctor = await Doctor.findOne({ doctorId });
+            if (!doctor) {
                 throw new EasyQError(
                     'NotFoundError',
                     httpStatusCode.NOT_FOUND,
@@ -445,6 +562,16 @@ export class DoctorService {
                     'Doctor not found.'
                 );
             }
+
+            // ✅ Remove doctor from hospital departments before deletion
+            const specializations = doctor.specialization.split(',').map(s => s.trim());
+            await removeDoctorFromDepartments(doctor.hospitalId, doctorId, specializations);
+            
+            // ✅ Clean up empty departments
+            await cleanupEmptyDepartments(doctor.hospitalId);
+
+            // ✅ Delete the doctor
+            const deletedDoctor = await Doctor.findOneAndDelete({ doctorId: doctorId }).select('-_id -__v');
             return deletedDoctor;
         } catch (error) {
             if (error.name === 'CastError') {
@@ -726,9 +853,8 @@ export class DoctorService {
         try {
             const { page = 1, limit = 10, sortBy = 'experience', sortOrder = 'desc' } = options;
             
-            const filter = { 
-                specialization: new RegExp(specialization, 'i')
-            };
+            // Use enhanced search filter for better partial matching
+            const filter = createSpecializationFilter(specialization);
 
             const sort = {};
             sort[sortBy] = sortOrder === 'desc' ? -1 : 1;

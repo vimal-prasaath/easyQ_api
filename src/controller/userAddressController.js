@@ -10,7 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
  */
 export const addUserAddress = async (req, res, next) => {
     try {
-        const { userId, addressName, origin, fullAddress, isDefault } = req.body;
+        const { userId, addressName, origin, fullAddress, street, city, state, pincode, isDefault } = req.body;
 
         // Validate required fields
         if (!userId || !addressName || !origin) {
@@ -63,6 +63,10 @@ export const addUserAddress = async (req, res, next) => {
             addressName,
             origin: { lat, lng },
             fullAddress: fullAddress || null,
+            street: street || null,
+            city: city || null,
+            state: state || null,
+            pincode: pincode || null,
             isDefault: isDefault || false
         };
 
@@ -168,7 +172,7 @@ export const getUserAddresses = async (req, res, next) => {
 export const updateUserAddress = async (req, res, next) => {
     try {
         const { userId, addressId } = req.params;
-        const { addressName, origin, fullAddress, isDefault } = req.body;
+        const { addressName, origin, fullAddress, street, city, state, pincode, isDefault } = req.body;
 
         if (!userId || !addressId) {
             throw new EasyQError(
@@ -226,6 +230,10 @@ export const updateUserAddress = async (req, res, next) => {
         if (addressName) address.addressName = addressName;
         if (origin) address.origin = origin;
         if (fullAddress !== undefined) address.fullAddress = fullAddress;
+        if (street !== undefined) address.street = street;
+        if (city !== undefined) address.city = city;
+        if (state !== undefined) address.state = state;
+        if (pincode !== undefined) address.pincode = pincode;
         if (isDefault !== undefined) address.isDefault = isDefault;
 
         await user.save();

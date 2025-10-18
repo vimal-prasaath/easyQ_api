@@ -1,5 +1,5 @@
 import express from 'express';
-import { setDelay, getDelays, clearDelays, resetAvailability, getAdjustedTime } from '../../controller/doctorDelayController.js';
+import { setDelay, getDelays, clearDelays, resetAvailability, getAdjustedTime, getDoctorsWithDelaysByHospital, cleanupExpiredDelays } from '../../controller/doctorDelayController.js';
 import { orchestratorRateLimit } from '../../notificationOrchestrator/middleware/rateLimit.js';
 
 const router = express.Router();
@@ -182,5 +182,159 @@ router.post('/reset-availability', orchestratorRateLimit, resetAvailability);
  *         description: Adjusted time calculated successfully
  */
 router.post('/adjusted-time', orchestratorRateLimit, getAdjustedTime);
+
+/**
+ * @swagger
+ * /api/doctor/delays/hospital/{hospitalId}:
+ *   get:
+ *     summary: Get all doctors with active delays in a hospital
+ *     description: Retrieve all doctors in a hospital who have active delays for a specific date
+ *     tags: [Doctor Delay Management]
+ *     parameters:
+ *       - in: path
+ *         name: hospitalId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: "H0002"
+ *       - in: query
+ *         name: date
+ *         required: false
+ *         schema:
+ *           type: string
+ *           format: date
+ *         example: "2024-01-22"
+ *     responses:
+ *       200:
+ *         description: Doctors with delays retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "success"
+ *                 message:
+ *                   type: string
+ *                   example: "Doctors with delays retrieved successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     hospitalId:
+ *                       type: string
+ *                       example: "H0002"
+ *                     date:
+ *                       type: string
+ *                       example: "2024-01-22"
+ *                     doctorsWithDelays:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           doctorId:
+ *                             type: string
+ *                             example: "D0001"
+ *                           name:
+ *                             type: string
+ *                             example: "Dr. John Smith"
+ *                           email:
+ *                             type: string
+ *                             example: "john.smith@hospital.com"
+ *                           delays:
+ *                             type: array
+ *                             items:
+ *                               type: object
+ *                               properties:
+ *                                 startTime:
+ *                                   type: string
+ *                                   example: "11:00"
+ *                                 durationMinutes:
+ *                                   type: number
+ *                                   example: 45
+ *                                 reason:
+ *                                   type: string
+ *                                   example: "Emergency surgery"
+ *                                 isActive:
+ *                                   type: boolean
+ *                                   example: true
+ *                                 createdAt:
+ *                                   type: string
+ *                                   format: date-time
+ *                                 createdBy:
+ *                                   type: string
+ *                                   example: "A0001"
+ *                     totalDoctorsWithDelays:
+ *                       type: number
+ *                       example: 2
+ */
+router.get('/delays/hospital/:hospitalId', orchestratorRateLimit, getDoctorsWithDelaysByHospital);
+
+/**
+ * @swagger
+ * /api/doctor/delays/cleanup:
+ *   post:
+ *     summary: Manually cleanup expired delays
+ *     description: Manually trigger cleanup of all expired delays across all doctors
+ *     tags: [Doctor Delay Management]
+ *     responses:
+ *       200:
+ *         description: Expired delays cleaned up successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "success"
+ *                 message:
+ *                   type: string
+ *                   example: "Expired delays cleaned up successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     success:
+ *                       type: boolean
+ *                       example: true
+ *                     totalDelaysCleaned:
+ *                       type: number
+ *                       example: 5
+ *                     doctorsAffected:
+ *                       type: number
+ *                       example: 3
+ *                     cleanupResults:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           doctorId:
+ *                             type: string
+ *                             example: "D0001"
+ *                           name:
+ *                             type: string
+ *                             example: "Dr. John Smith"
+ *                           delaysCleaned:
+ *                             type: array
+ *                             items:
+ *                               type: object
+ *                               properties:
+ *                                 startTime:
+ *                                   type: string
+ *                                   example: "11:00"
+ *                                 durationMinutes:
+ *                                   type: number
+ *                                   example: 45
+ *                                 reason:
+ *                                   type: string
+ *                                   example: "Emergency surgery"
+ *                                 expiredAt:
+ *                                   type: string
+ *                                   format: date-time
+ *                     cleanupTime:
+ *                       type: string
+ *                       format: date-time
+ */
+router.post('/delays/cleanup', orchestratorRateLimit, cleanupExpiredDelays);
 
 export default router;

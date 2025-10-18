@@ -24,10 +24,13 @@ import orchestratorRoutes from "./notificationOrchestrator/routes/index.js";
 import tokenRoutes from "./routes/token/index.js";
 import doctorDelayRoutes from "./routes/doctorDelay/index.js";
 import userAddressRoutes from "./routes/userAddress/index.js";
+import userDocumentsRoutes from "./routes/userDocuments/index.js";
+import followUpAppointmentRoutes from "./routes/followUpAppointment/index.js";
 
 // Import schedulers
 import "./config/sheduler.js"; // 2-hour reminder scheduler
 import "./config/batchScheduler.js"; // Batch orchestration schedulers
+import "./config/delayCleanupScheduler.js"; // Automatic delay cleanup scheduler
 
 dotenv.config();
 
@@ -160,6 +163,8 @@ app.use("/api/orchestrator", orchestratorRoutes);
 app.use("/api/token", tokenRoutes);
 app.use("/api/doctor", doctorDelayRoutes);
 app.use("/api/user", userAddressRoutes);
+app.use("/api/user", userDocumentsRoutes);
+app.use("/api/follow-up", followUpAppointmentRoutes);
 
 // 13. API routes (authentication will be applied per route basis)
 app.use("/api", apiRoutes);

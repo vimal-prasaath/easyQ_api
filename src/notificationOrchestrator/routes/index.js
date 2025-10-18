@@ -1,6 +1,7 @@
 import express from 'express';
 import { etaController } from '../controller/etaController.js';
 import { autocompleteController } from '../controller/placesController.js';
+import { placeReviewsController } from '../controller/placeReviewsController.js';
 import { sendManual2HourReminder, sendLocationBasedNotification, sendDoctorDelayNotification } from '../../controller/notificationOrchestratorController.js';
 import { processETABatches, detectNoShows, handleCheckIn, advanceToNextBatch } from '../../controller/batchOrchestratorController.js';
 import { orchestratorRateLimit } from '../middleware/rateLimit.js';
@@ -10,6 +11,7 @@ const router = express.Router();
 // Open API: Calculate ETA/distance between origin and destination
 router.post('/eta', orchestratorRateLimit, etaController);
 router.post('/places/autocomplete', orchestratorRateLimit, autocompleteController);
+router.post('/place-reviews', orchestratorRateLimit, placeReviewsController);
 
 // Manual notification testing APIs
 router.post('/notifications/2hour-reminder', orchestratorRateLimit, sendManual2HourReminder);

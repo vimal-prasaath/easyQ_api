@@ -231,3 +231,86 @@ export const getAdjustedTime = async (req, res, next) => {
         ));
     }
 };
+
+/**
+ * Get all doctors with active delays in a hospital
+ * GET /api/doctor/delays/hospital/{hospitalId}
+ */
+export const getDoctorsWithDelaysByHospital = async (req, res, next) => {
+    try {
+        const { hospitalId } = req.params;
+        const { date } = req.query;
+
+        if (!hospitalId) {
+            throw new EasyQError(
+                'ValidationError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                'Hospital ID is required'
+            );
+        }
+
+        const doctorsWithDelays = await DoctorDelayService.getDoctorsWithDelaysByHospital(hospitalId, date);
+
+        return res.status(httpStatusCode.OK).json({
+            status: 'success',
+            message: 'Doctors with delays retrieved successfully',
+            data: {
+                hospitalId,
+                date: date || new Date().toISOString().split('T')[0],
+                doctorsWithDelays,
+                totalDoctorsWithDelays: doctorsWithDelays.length
+            }
+        });
+
+    } catch (error) {
+        logError(error, { 
+            endpoint: '/api/doctor/delays/hospital',
+            hospitalId: req.params?.hospitalId,
+            date: req.query?.date
+        });
+        
+        if (error instanceof EasyQError) {
+            return next(error);
+        }
+        
+        next(new EasyQError(
+            'InternalServerError',
+            httpStatusCode.INTERNAL_SERVER_ERROR,
+            true,
+            'Failed to get doctors with delays'
+        ));
+    }
+};
+
+/**
+ * Manually trigger cleanup of expired delays
+ * POST /api/doctor/delays/cleanup
+ */
+export const cleanupExpiredDelays = async (req, res, next) => {
+    try {
+        const result = await DoctorDelayService.cleanupExpiredDelays();
+
+        return res.status(httpStatusCode.OK).json({
+            status: 'success',
+            message: 'Expired delays cleaned up successfully',
+            data: result
+        });
+
+    } catch (error) {
+        logError(error, { 
+            endpoint: '/api/doctor/delays/cleanup'
+        });
+        
+        if (error instanceof EasyQError) {
+            return next(error);
+        }
+        
+        next(new EasyQError(
+            'InternalServerError',
+            httpStatusCode.INTERNAL_SERVER_ERROR,
+            true,
+            'Failed to cleanup expired delays'
+        ));
+    }
+};

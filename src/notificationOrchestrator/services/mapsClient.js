@@ -67,4 +67,52 @@ export const placeDetails = async ({ placeId, sessionToken }) => {
     return res.data;
 };
 
+export const placeDetailsWithReviews = async ({ placeId, sessionToken }) => {
+    const params = {
+        key: apiKey,
+        place_id: placeId,
+        fields: [
+            'name',
+            'formatted_address',
+            'rating',
+            'user_ratings_total',
+            'reviews'
+        ].join(',')
+    };
+    if (sessionToken) params.sessiontoken = sessionToken;
+    const res = await client.placeDetails({ params });
+    return res.data;
+};
+
+export const placesTextSearch = async ({ query, location, radius }) => {
+    const params = {
+        key: apiKey,
+        query
+    };
+    if (location) {
+        params.location = `${location.lat},${location.lng}`;
+        if (radius) params.radius = radius;
+    }
+    
+    console.log('🔍 Google Places Text Search request:', { 
+        query: params.query, 
+        hasLocation: !!params.location,
+        hasKey: !!params.key
+    });
+    
+    try {
+        const res = await client.textSearch({ params });
+        console.log('✅ Google Places Text Search success:', { status: res.data.status });
+        return res.data;
+    } catch (error) {
+        console.error('❌ Google Places Text Search error:', {
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            data: error.response?.data,
+            message: error.message
+        });
+        throw error;
+    }
+};
+
 

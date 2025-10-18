@@ -297,4 +297,102 @@ export class NotificationOrchestrator {
             throw error;
         }
     }
+
+    /**
+     * Send follow-up appointment notification
+     * @param {string} patientId - Patient ID
+     * @param {string} appointmentId - Follow-up appointment ID
+     * @param {string} followUpReason - Reason for follow-up
+     * @param {string} appointmentDate - Appointment date
+     * @param {string} appointmentTime - Appointment time
+     */
+    static async sendFollowUpNotification(patientId, appointmentId, followUpReason, appointmentDate, appointmentTime) {
+        try {
+            // Find user FCM tokens
+            const userTokens = await UserToken.find({ userId: patientId, isActive: true });
+
+            if (userTokens.length === 0) {
+                return {
+                    success: true,
+                    message: `No active FCM tokens found for patient ${patientId}`,
+                    notificationsSent: 0,
+                    tokensDeactivated: 0
+                };
+            }
+
+            let totalTokensSent = 0;
+            let totalTokensDeactivated = 0;
+            const tokenErrorCodes = new Set([
+                'messaging/invalid-argument',
+                'messaging/registration-token-not-registered'
+            ]);
+
+            const notificationMessage = `Follow-up appointment scheduled for ${followUpReason} on ${appointmentDate} at ${appointmentTime}`;
+
+            for (const tokenDoc of userTokens) {
+                try {
+                    await admin.messaging().send({
+                        token: tokenDoc.fcmToken,
+                        notification: {
+                            title: 'Follow-up Appointment Scheduled',
+                            body: notificationMessage
+                        },
+                        data: {
+                            appointmentId: appointmentId,
+                            type: 'follow_up_scheduled',
+                            followUpReason: followUpReason,
+                            appointmentDate: appointmentDate,
+                            appointmentTime: appointmentTime,
+                            deeplink: `app://appointment/${appointmentId}`
+                        }
+                    });
+                    totalTokensSent++;
+                } catch (tokenError) {
+                    if (tokenError.code && tokenErrorCodes.has(tokenError.code)) {
+                        // Deactivate invalid token
+                        tokenDoc.isActive = false;
+                        await tokenDoc.save();
+                        totalTokensDeactivated++;
+                        logInfo('Deactivated invalid FCM token during follow-up notification send', {
+                            tokenId: tokenDoc._id,
+                            userId: patientId,
+                            error: tokenError.message
+                        });
+                    } else {
+                        logError('Failed to send follow-up notification to token', {
+                            appointmentId,
+                            patientId,
+                            tokenId: tokenDoc._id,
+                            error: tokenError.message
+                        });
+                    }
+                }
+            }
+
+            const message = `Follow-up notification sent to ${totalTokensSent} tokens. Deactivated ${totalTokensDeactivated} invalid tokens.`;
+            logInfo('Follow-up notification summary', {
+                patientId,
+                appointmentId,
+                followUpReason,
+                totalTokensSent,
+                totalTokensDeactivated
+            });
+
+            return {
+                success: true,
+                message,
+                notificationsSent: totalTokensSent,
+                tokensDeactivated: totalTokensDeactivated
+            };
+
+        } catch (error) {
+            logError('Failed to send follow-up notification', {
+                patientId,
+                appointmentId,
+                followUpReason,
+                error: error.message
+            });
+            throw error;
+        }
+    }
 }

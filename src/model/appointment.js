@@ -149,6 +149,35 @@ const appointmentSchema = new Schema({
         type: Boolean,
         default: false
     },
+
+    // Follow-up appointment fields
+    followUp: {
+        isFollowUp: {
+            type: Boolean,
+            default: false,
+            index: true
+        },
+        parentAppointmentId: {
+            type: String,
+            ref: 'Appointment',
+            sparse: true
+        },
+        followUpReason: {
+            type: String,
+            trim: true,
+            maxlength: [500, 'Follow-up reason cannot exceed 500 characters'],
+            sparse: true
+        },
+        createdBy: {
+            type: String,
+            enum: ['admin', 'doctor', 'nurse'],
+            sparse: true
+        },
+        createdById: {
+            type: String,
+            sparse: true
+        }
+    },
     
     // Batch orchestration fields
     batchNumber: {
@@ -330,6 +359,11 @@ appointmentSchema.index({ status: 1 });
 appointmentSchema.index({ paymentStatus: 1 });
 appointmentSchema.index({ doctorId: 1, appointmentDate: 1, slotNumber: 1, tokenNumber: 1 });
 appointmentSchema.index({ tokenDisplay: 1 });
+
+// Follow-up indexes
+appointmentSchema.index({ 'followUp.isFollowUp': 1, patientId: 1 });
+appointmentSchema.index({ 'followUp.parentAppointmentId': 1 });
+appointmentSchema.index({ 'followUp.createdBy': 1, 'followUp.createdById': 1 });
 
 
 appointmentSchema.pre('save', function(next) {

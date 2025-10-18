@@ -127,6 +127,19 @@ const hospitalSchema = new Schema({
     trim: true,
     maxlength: [500, 'Full address cannot exceed 500 characters']
   },
+
+  // Rating and review fields
+  rating: {
+    type: Number,
+    min: [0, 'Rating cannot be less than 0'],
+    max: [5, 'Rating cannot be more than 5'],
+    default: null
+  },
+  userRatingsTotal: {
+    type: Number,
+    min: [0, 'Total ratings cannot be negative'],
+    default: 0
+  },
   
   // Enhanced Contact Details
   alternativePhone: {
