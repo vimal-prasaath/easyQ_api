@@ -1,5 +1,5 @@
 import express from 'express';
-import { signup, login, getAllAdmins, holdAdmin, approveAdmin, rejectAdmin, getAllUsers, getUserAppointments } from '../../controller/superAdminController.js';
+import { signup, login, getAllAdmins, holdAdmin, approveAdmin, rejectAdmin, getAllUsers, getUserAppointments, getAppointmentsByHospital, getDocumentsByHospital, getFollowupsByHospital } from '../../controller/superAdminController.js';
 import { orchestratorRateLimit } from '../../notificationOrchestrator/middleware/rateLimit.js';
 
 const router = express.Router();
@@ -267,5 +267,95 @@ router.get('/users', orchestratorRateLimit, getAllUsers);
  *         description: User appointments retrieved successfully
  */
 router.get('/users/:userId/appointments', orchestratorRateLimit, getUserAppointments);
+
+/**
+ * @swagger
+ * /api/super-admin/hospitals/{hospitalId}/appointments:
+ *   get:
+ *     summary: Get All Appointments by Hospital
+ *     description: Retrieve all appointments for a specific hospital with optional filters
+ *     tags: [Super Admin - Hospital Management]
+ *     parameters:
+ *       - in: path
+ *         name: hospitalId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: "H0001"
+ *         description: Hospital ID
+ *       - in: query
+ *         name: date
+ *         schema:
+ *           type: string
+ *           format: date
+ *         example: "2024-01-01"
+ *         description: Filter by specific date
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *         example: "Completed"
+ *         description: Filter by appointment status
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         example: "2024-01-01"
+ *         description: Start date for date range filter
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         example: "2024-01-31"
+ *         description: End date for date range filter
+ *     responses:
+ *       200:
+ *         description: Hospital appointments retrieved successfully
+ */
+router.get('/hospitals/:hospitalId/appointments', orchestratorRateLimit, getAppointmentsByHospital);
+
+/**
+ * @swagger
+ * /api/super-admin/hospitals/{hospitalId}/documents:
+ *   get:
+ *     summary: Get All Documents by Hospital
+ *     description: Retrieve all patient documents for a specific hospital
+ *     tags: [Super Admin - Hospital Management]
+ *     parameters:
+ *       - in: path
+ *         name: hospitalId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: "H0001"
+ *         description: Hospital ID
+ *     responses:
+ *       200:
+ *         description: Hospital documents retrieved successfully
+ */
+router.get('/hospitals/:hospitalId/documents', orchestratorRateLimit, getDocumentsByHospital);
+
+/**
+ * @swagger
+ * /api/super-admin/hospitals/{hospitalId}/followups:
+ *   get:
+ *     summary: Get All Followups by Hospital
+ *     description: Retrieve all followup appointments for a specific hospital
+ *     tags: [Super Admin - Hospital Management]
+ *     parameters:
+ *       - in: path
+ *         name: hospitalId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         example: "H0001"
+ *         description: Hospital ID
+ *     responses:
+ *       200:
+ *         description: Hospital followups retrieved successfully
+ */
+router.get('/hospitals/:hospitalId/followups', orchestratorRateLimit, getFollowupsByHospital);
 
 export default router;

@@ -601,6 +601,191 @@
                 }
             ],
             "description": "User appointment history endpoints for super admin"
+        },
+        {
+            "name": "🏥 Hospital Management",
+            "item": [
+                {
+                    "name": "Get All Hospitals (Public)",
+                    "request": {
+                        "method": "GET",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{base_url}}/api/hospital/public",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "hospital",
+                                "public"
+                            ]
+                        },
+                        "description": "Get all active hospitals without authentication (Open API)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Hospital Appointments",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/hospitals/H0001/appointments",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "hospitals",
+                                "H0001",
+                                "appointments"
+                            ]
+                        },
+                        "description": "Get all appointments for a specific hospital"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Hospital Appointments by Date",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/hospitals/H0001/appointments?date=2024-01-01",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "hospitals",
+                                "H0001",
+                                "appointments"
+                            ],
+                            "query": [
+                                {
+                                    "key": "date",
+                                    "value": "2024-01-01"
+                                }
+                            ]
+                        },
+                        "description": "Get hospital appointments for a specific date"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Hospital Appointments by Status",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/hospitals/H0001/appointments?status=Completed",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "hospitals",
+                                "H0001",
+                                "appointments"
+                            ],
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "Completed"
+                                }
+                            ]
+                        },
+                        "description": "Get hospital appointments by status"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Hospital Appointments by Date Range",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/hospitals/H0001/appointments?startDate=2024-01-01&endDate=2024-01-31",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "hospitals",
+                                "H0001",
+                                "appointments"
+                            ],
+                            "query": [
+                                {
+                                    "key": "startDate",
+                                    "value": "2024-01-01"
+                                },
+                                {
+                                    "key": "endDate",
+                                    "value": "2024-01-31"
+                                }
+                            ]
+                        },
+                        "description": "Get hospital appointments within a date range"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Hospital Documents",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/hospitals/H0001/documents",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "hospitals",
+                                "H0001",
+                                "documents"
+                            ]
+                        },
+                        "description": "Get all patient documents for a specific hospital"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Hospital Followups",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/hospitals/H0001/followups",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "hospitals",
+                                "H0001",
+                                "followups"
+                            ]
+                        },
+                        "description": "Get all followup appointments for a specific hospital"
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Hospital management endpoints for super admin"
         }
     ],
     "event": [

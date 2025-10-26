@@ -389,3 +389,173 @@ export const getUserAppointments = async (req, res, next) => {
         ));
     }
 };
+
+/**
+ * Get All Appointments by Hospital
+ * GET /api/super-admin/hospitals/{hospitalId}/appointments?date=2024-01-01&status=Completed&startDate=2024-01-01&endDate=2024-01-31
+ */
+export const getAppointmentsByHospital = async (req, res, next) => {
+    try {
+        const { hospitalId } = req.params;
+        const { date, status, startDate, endDate } = req.query;
+
+        if (!hospitalId) {
+            throw new EasyQError(
+                'ValidationError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                'Hospital ID is required'
+            );
+        }
+
+        const appointments = await SuperAdminService.getAppointmentsByHospital(hospitalId, {
+            date,
+            status,
+            startDate,
+            endDate
+        });
+
+        logInfo('Hospital appointments retrieved via API', {
+            hospitalId,
+            filterData: { date, status, startDate, endDate },
+            count: appointments.length
+        });
+
+        return res.status(httpStatusCode.OK).json({
+            status: 'success',
+            message: 'Hospital appointments retrieved successfully',
+            data: {
+                hospitalId,
+                appointments,
+                totalCount: appointments.length,
+                filters: { date, status, startDate, endDate }
+            }
+        });
+
+    } catch (error) {
+        logError(error, {
+            endpoint: '/api/super-admin/hospitals/appointments',
+            hospitalId: req.params?.hospitalId,
+            filters: req.query
+        });
+
+        if (error instanceof EasyQError) {
+            return next(error);
+        }
+
+        next(new EasyQError(
+            'InternalServerError',
+            httpStatusCode.INTERNAL_SERVER_ERROR,
+            true,
+            'Failed to retrieve hospital appointments'
+        ));
+    }
+};
+
+/**
+ * Get All Documents by Hospital
+ * GET /api/super-admin/hospitals/{hospitalId}/documents
+ */
+export const getDocumentsByHospital = async (req, res, next) => {
+    try {
+        const { hospitalId } = req.params;
+
+        if (!hospitalId) {
+            throw new EasyQError(
+                'ValidationError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                'Hospital ID is required'
+            );
+        }
+
+        const patientDocuments = await SuperAdminService.getDocumentsByHospital(hospitalId);
+
+        logInfo('Hospital documents retrieved via API', {
+            hospitalId,
+            patientsCount: patientDocuments.length
+        });
+
+        return res.status(httpStatusCode.OK).json({
+            status: 'success',
+            message: 'Hospital documents retrieved successfully',
+            data: {
+                hospitalId,
+                patientsWithDocuments: patientDocuments,
+                totalPatients: patientDocuments.length,
+                totalDocuments: patientDocuments.reduce((sum, patient) => sum + patient.totalDocuments, 0)
+            }
+        });
+
+    } catch (error) {
+        logError(error, {
+            endpoint: '/api/super-admin/hospitals/documents',
+            hospitalId: req.params?.hospitalId
+        });
+
+        if (error instanceof EasyQError) {
+            return next(error);
+        }
+
+        next(new EasyQError(
+            'InternalServerError',
+            httpStatusCode.INTERNAL_SERVER_ERROR,
+            true,
+            'Failed to retrieve hospital documents'
+        ));
+    }
+};
+
+/**
+ * Get All Followups by Hospital
+ * GET /api/super-admin/hospitals/{hospitalId}/followups
+ */
+export const getFollowupsByHospital = async (req, res, next) => {
+    try {
+        const { hospitalId } = req.params;
+
+        if (!hospitalId) {
+            throw new EasyQError(
+                'ValidationError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                'Hospital ID is required'
+            );
+        }
+
+        const patientFollowups = await SuperAdminService.getFollowupsByHospital(hospitalId);
+
+        logInfo('Hospital followups retrieved via API', {
+            hospitalId,
+            patientsCount: patientFollowups.length
+        });
+
+        return res.status(httpStatusCode.OK).json({
+            status: 'success',
+            message: 'Hospital followups retrieved successfully',
+            data: {
+                hospitalId,
+                patientsWithFollowups: patientFollowups,
+                totalPatients: patientFollowups.length,
+                totalFollowups: patientFollowups.reduce((sum, patient) => sum + patient.totalFollowups, 0)
+            }
+        });
+
+    } catch (error) {
+        logError(error, {
+            endpoint: '/api/super-admin/hospitals/followups',
+            hospitalId: req.params?.hospitalId
+        });
+
+        if (error instanceof EasyQError) {
+            return next(error);
+        }
+
+        next(new EasyQError(
+            'InternalServerError',
+            httpStatusCode.INTERNAL_SERVER_ERROR,
+            true,
+            'Failed to retrieve hospital followups'
+        ));
+    }
+};

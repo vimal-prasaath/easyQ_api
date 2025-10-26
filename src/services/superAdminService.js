@@ -476,4 +476,202 @@ export class SuperAdminService {
             throw error;
         }
     }
+
+    /**
+     * Get all appointments by hospital
+     * @param {string} hospitalId - Hospital ID
+     * @param {Object} filterData - Filter options
+     * @returns {Array} Appointments
+     */
+    static async getAppointmentsByHospital(hospitalId, filterData = {}) {
+        try {
+            const { date, status, startDate, endDate } = filterData;
+
+            // Build query
+            const query = { hospitalId };
+
+            // Add date filters
+            if (date) {
+                const targetDate = new Date(date);
+                const nextDay = new Date(targetDate);
+                nextDay.setDate(nextDay.getDate() + 1);
+                
+                query.appointmentDate = {
+                    $gte: targetDate,
+                    $lt: nextDay
+                };
+            } else if (startDate && endDate) {
+                query.appointmentDate = {
+                    $gte: new Date(startDate),
+                    $lte: new Date(endDate)
+                };
+            }
+
+            // Add status filter
+            if (status) {
+                query.status = status;
+            }
+
+            const appointments = await Appointment.find(query)
+                .sort({ appointmentDate: -1, appointmentTime: -1 })
+                .lean();
+
+            logInfo('Appointments retrieved by hospital', {
+                hospitalId,
+                count: appointments.length,
+                filterData
+            });
+
+            return appointments;
+
+        } catch (error) {
+            logError('Error getting appointments by hospital', {
+                error: error.message,
+                hospitalId,
+                filterData
+            });
+            throw error;
+        }
+    }
+
+    /**
+     * Get all documents by hospital (patients and their documents)
+     * @param {string} hospitalId - Hospital ID
+     * @returns {Array} Patients with their documents
+     */
+    static async getDocumentsByHospital(hospitalId) {
+        try {
+            // Get all appointments for the hospital that have documents
+            const appointments = await Appointment.find({
+                hospitalId,
+                reportUrls: { $exists: true, $not: { $size: 0 } }
+            })
+            .sort({ appointmentDate: -1, appointmentTime: -1 })
+            .lean();
+
+            if (!appointments || appointments.length === 0) {
+                return [];
+            }
+
+            // Group by patient
+            const patientDocuments = {};
+            
+            appointments.forEach(appointment => {
+                const patientId = appointment.patientId;
+                
+                if (!patientDocuments[patientId]) {
+                    patientDocuments[patientId] = {
+                        patientId,
+                        patientName: appointment.patientName || 'Unknown',
+                        totalDocuments: 0,
+                        appointments: []
+                    };
+                }
+
+                const documents = (appointment.reportUrls || []).map((url, index) => ({
+                    documentId: `${appointment.appointmentId}_${index + 1}`,
+                    documentUrl: url,
+                    appointmentId: appointment.appointmentId,
+                    appointmentDate: appointment.appointmentDate,
+                    doctorName: appointment.doctorName
+                }));
+
+                patientDocuments[patientId].appointments.push({
+                    appointmentId: appointment.appointmentId,
+                    appointmentDate: appointment.appointmentDate,
+                    appointmentTime: appointment.appointmentTime,
+                    doctorName: appointment.doctorName,
+                    status: appointment.status,
+                    documents
+                });
+
+                patientDocuments[patientId].totalDocuments += documents.length;
+            });
+
+            const result = Object.values(patientDocuments);
+
+            logInfo('Documents retrieved by hospital', {
+                hospitalId,
+                patientsCount: result.length,
+                totalAppointments: appointments.length
+            });
+
+            return result;
+
+        } catch (error) {
+            logError('Error getting documents by hospital', {
+                error: error.message,
+                hospitalId
+            });
+            throw error;
+        }
+    }
+
+    /**
+     * Get all followups by hospital (patients with followups)
+     * @param {string} hospitalId - Hospital ID
+     * @returns {Array} Patients with followup appointments
+     */
+    static async getFollowupsByHospital(hospitalId) {
+        try {
+            // Get all followup appointments for the hospital
+            const followupAppointments = await Appointment.find({
+                hospitalId,
+                'followUp.isFollowUp': true
+            })
+            .sort({ appointmentDate: -1, appointmentTime: -1 })
+            .lean();
+
+            if (!followupAppointments || followupAppointments.length === 0) {
+                return [];
+            }
+
+            // Group by patient
+            const patientFollowups = {};
+            
+            followupAppointments.forEach(appointment => {
+                const patientId = appointment.patientId;
+                
+                if (!patientFollowups[patientId]) {
+                    patientFollowups[patientId] = {
+                        patientId,
+                        patientName: appointment.patientName || 'Unknown',
+                        totalFollowups: 0,
+                        followups: []
+                    };
+                }
+
+                patientFollowups[patientId].followups.push({
+                    appointmentId: appointment.appointmentId,
+                    appointmentDate: appointment.appointmentDate,
+                    appointmentTime: appointment.appointmentTime,
+                    doctorName: appointment.doctorName,
+                    status: appointment.status,
+                    followUpReason: appointment.followUp?.followUpReason,
+                    parentAppointmentId: appointment.followUp?.parentAppointmentId,
+                    createdBy: appointment.followUp?.createdBy,
+                    createdById: appointment.followUp?.createdById
+                });
+
+                patientFollowups[patientId].totalFollowups += 1;
+            });
+
+            const result = Object.values(patientFollowups);
+
+            logInfo('Followups retrieved by hospital', {
+                hospitalId,
+                patientsCount: result.length,
+                totalFollowups: followupAppointments.length
+            });
+
+            return result;
+
+        } catch (error) {
+            logError('Error getting followups by hospital', {
+                error: error.message,
+                hospitalId
+            });
+            throw error;
+        }
+    }
 }
