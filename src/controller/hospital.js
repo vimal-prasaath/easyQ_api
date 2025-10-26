@@ -10,7 +10,7 @@ import User from "../model/userProfile.js"
 import { updateObjectPayload, updateFacilityPayload, updateComment, searchBylocation } from './update_controller.js'
 import { EasyQError } from "../config/error.js"
 import { httpStatusCode } from "../util/statusCode.js"
-import {logInfo, logError} from "../config/logger.js"
+import {logInfo, logError, logWarn} from "../config/logger.js"
 import { deleteFolderFromFirebase } from "../config/fireBaseStorage.js"
 import { calculateUserHospitalDistance, calculateApproximateTravelTime } from '../util/distanceCalculator.js'
 
@@ -639,6 +639,7 @@ export async function getHospitalDetailsBylocation(req, res, next) {
             patientId: req.body?.patientId,
             hasLocation: !!req.body?.location
         });
+        console.log(error);
         next(new EasyQError(
             'DatabaseError',
             httpStatusCode.INTERNAL_SERVER_ERROR,

@@ -8,8 +8,7 @@ const superAdminSchema = new Schema({
     // ===== SUPER ADMIN IDENTIFICATION =====
     superAdminId: {
         type: String,
-        unique: true,
-        required: true
+        unique: true
     },
 
     // ===== AUTHENTICATION =====
@@ -65,10 +64,10 @@ superAdminSchema.pre('save', async function(next) {
     // Generate superAdminId if new
     if (doc.isNew && !doc.superAdminId) {
         try {
-            const counter = await Counter.findOneAndUpdate(
-                { _id: 'superAdminId_sequence' },
+            const counter = await Counter.findByIdAndUpdate(
+                'superAdminId',
                 { $inc: { sequence_value: 1 } },
-                { upsert: true, new: true }
+                { new: true, upsert: true }
             );
             
             if (!counter) {
@@ -78,7 +77,7 @@ superAdminSchema.pre('save', async function(next) {
             const paddedSequence = String(counter.sequence_value).padStart(4, '0');
             doc.superAdminId = `SA${paddedSequence}`;
         } catch (error) {
-            next(error);
+            return next(error);
         }
     }
 
