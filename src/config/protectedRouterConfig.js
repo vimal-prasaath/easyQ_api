@@ -147,6 +147,7 @@ const protectedRoutesConfig = [
     { path: '/hospital/:userId/:hospitalId', method: 'get', resourceType: 'hospital', action: 'read', resourceIdParamName: 'hospitalId', handlers: [getHospitalDetails] },
     { path: '/hospital/location', method: 'post', resourceType: 'hospital', action: 'read_by_location', handlers: [getHospitalDetailsBylocation] },
     { path: '/hospital', method: 'get', resourceType: 'hospital', action: 'read_all', handlers: [getAllHospitalDetails] },
+    { path: '/hospital/public', method: 'get', resourceType: 'hospital', action: 'read_all_public', handlers: [getAllHospitalDetails] },
 
     // --- DOCTOR ROUTES ---
     { path: '/doctor/add', method: 'post', resourceType: 'doctor', action: 'create', handlers: [authenticateAdmin, adminVerificationCheck, createDoctor] },

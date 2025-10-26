@@ -498,20 +498,29 @@ export async function getHospitalDetails(req, res, next) {
 export async function getHospitalDetailsBylocation(req, res, next) {
     try {
         const query = searchBylocation(req.body);
+        let allHospitals;
 
-        if (Object.keys(query).length === 0) {
+        // If no search criteria provided but patientId exists, get all active hospitals
+        if (Object.keys(query).length === 0 && req.body.patientId) {
+            allHospitals = await Hospital.find({ isActive: true }).lean();
+            logInfo('No search criteria provided, fetching all active hospitals for patient', {
+                patientId: req.body.patientId,
+                hospitalCount: allHospitals.length
+            });
+        } else if (Object.keys(query).length === 0) {
             return next(new EasyQError(
                 'ValidationError',
                 httpStatusCode.BAD_REQUEST,
                 true,
-                "Please provide either address or location for the search."
+                "Please provide either address, location, or patientId for the search."
             ));
+        } else {
+            allHospitals = await Hospital.find({ ...query, isActive: true }).lean();
         }
-
-        const allHospitals = await Hospital.find({ ...query, isActive: true }).lean();
         
         // Add distance and travel time calculation
         let userForCalculation = null;
+
         
         // Priority 1: Use patientId from request body to get user's address
         if (req.body.patientId) {
@@ -520,7 +529,6 @@ export async function getHospitalDetailsBylocation(req, res, next) {
             });
             
             const user = await User.findOne({ userId: req.body.patientId });
-            
             if (user) {
                 userForCalculation = user;
                 logInfo('Using patient address for distance calculation', {
