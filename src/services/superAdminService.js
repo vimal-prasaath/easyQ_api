@@ -2,6 +2,10 @@ import SuperAdmin from '../model/superAdmin.js';
 import AdminProfile from '../model/adminProfile.js';
 import User from '../model/userProfile.js';
 import Appointment from '../model/appointment.js';
+import Hospital from '../model/hospital.js';
+import FCMToken from '../model/fcmToken.js';
+import NotificationHistory from '../model/notificationHistory.js';
+import admin from '../config/firebaseAdmin.js';
 import { EasyQError } from '../config/error.js';
 import { httpStatusCode } from '../util/statusCode.js';
 import { logInfo, logError } from '../config/logger.js';
@@ -481,11 +485,15 @@ export class SuperAdminService {
      * Get all appointments by hospital
      * @param {string} hospitalId - Hospital ID
      * @param {Object} filterData - Filter options
-     * @returns {Array} Appointments
+     * @returns {Object} Appointments with hospital info
      */
     static async getAppointmentsByHospital(hospitalId, filterData = {}) {
         try {
             const { date, status, startDate, endDate } = filterData;
+
+            // Fetch hospital to get name
+            const hospital = await Hospital.findOne({ hospitalId }).select('name').lean();
+            const hospitalName = hospital ? hospital.name : 'Unknown Hospital';
 
             // Build query
             const query = { hospitalId };
@@ -518,11 +526,16 @@ export class SuperAdminService {
 
             logInfo('Appointments retrieved by hospital', {
                 hospitalId,
+                hospitalName,
                 count: appointments.length,
                 filterData
             });
 
-            return appointments;
+            return {
+                hospitalId,
+                hospitalName,
+                appointments
+            };
 
         } catch (error) {
             logError('Error getting appointments by hospital', {
@@ -537,10 +550,14 @@ export class SuperAdminService {
     /**
      * Get all documents by hospital (patients and their documents)
      * @param {string} hospitalId - Hospital ID
-     * @returns {Array} Patients with their documents
+     * @returns {Object} Patients with their documents and hospital info
      */
     static async getDocumentsByHospital(hospitalId) {
         try {
+            // Fetch hospital to get name
+            const hospital = await Hospital.findOne({ hospitalId }).select('name').lean();
+            const hospitalName = hospital ? hospital.name : 'Unknown Hospital';
+
             // Get all appointments for the hospital that have documents
             const appointments = await Appointment.find({
                 hospitalId,
@@ -550,7 +567,11 @@ export class SuperAdminService {
             .lean();
 
             if (!appointments || appointments.length === 0) {
-                return [];
+                return {
+                    hospitalId,
+                    hospitalName,
+                    patientsWithDocuments: []
+                };
             }
 
             // Group by patient
@@ -592,11 +613,16 @@ export class SuperAdminService {
 
             logInfo('Documents retrieved by hospital', {
                 hospitalId,
+                hospitalName,
                 patientsCount: result.length,
                 totalAppointments: appointments.length
             });
 
-            return result;
+            return {
+                hospitalId,
+                hospitalName,
+                patientsWithDocuments: result
+            };
 
         } catch (error) {
             logError('Error getting documents by hospital', {
@@ -610,10 +636,14 @@ export class SuperAdminService {
     /**
      * Get all followups by hospital (patients with followups)
      * @param {string} hospitalId - Hospital ID
-     * @returns {Array} Patients with followup appointments
+     * @returns {Object} Patients with followup appointments and hospital info
      */
     static async getFollowupsByHospital(hospitalId) {
         try {
+            // Fetch hospital to get name
+            const hospital = await Hospital.findOne({ hospitalId }).select('name').lean();
+            const hospitalName = hospital ? hospital.name : 'Unknown Hospital';
+
             // Get all followup appointments for the hospital
             const followupAppointments = await Appointment.find({
                 hospitalId,
@@ -623,7 +653,11 @@ export class SuperAdminService {
             .lean();
 
             if (!followupAppointments || followupAppointments.length === 0) {
-                return [];
+                return {
+                    hospitalId,
+                    hospitalName,
+                    patientsWithFollowups: []
+                };
             }
 
             // Group by patient
@@ -660,16 +694,519 @@ export class SuperAdminService {
 
             logInfo('Followups retrieved by hospital', {
                 hospitalId,
+                hospitalName,
                 patientsCount: result.length,
                 totalFollowups: followupAppointments.length
             });
 
-            return result;
+            return {
+                hospitalId,
+                hospitalName,
+                patientsWithFollowups: result
+            };
 
         } catch (error) {
             logError('Error getting followups by hospital', {
                 error: error.message,
                 hospitalId
+            });
+            throw error;
+        }
+    }
+
+    /**
+     * Get follow-up appointments list
+     * @param {string|null} hospitalId - Hospital ID (optional, null for overall)
+     * @param {Object} filterData - Filter options (startDate, endDate)
+     * @returns {Object} Follow-up appointments with hospital info
+     */
+    static async getFollowupList(hospitalId = null, filterData = {}) {
+        try {
+            const { startDate, endDate } = filterData;
+
+            // Build query
+            const query = {
+                'followUp.isFollowUp': true
+            };
+
+            // Add hospital filter if provided
+            if (hospitalId) {
+                query.hospitalId = hospitalId;
+            }
+
+            // Add date range filter
+            if (startDate && endDate) {
+                query.appointmentDate = {
+                    $gte: new Date(startDate),
+                    $lte: new Date(endDate)
+                };
+            }
+
+            const appointments = await Appointment.find(query)
+                .sort({ appointmentDate: -1, appointmentTime: -1 })
+                .lean();
+
+            // Get hospital names if hospital level
+            let hospitalName = null;
+            if (hospitalId) {
+                const hospital = await Hospital.findOne({ hospitalId }).select('name').lean();
+                hospitalName = hospital ? hospital.name : 'Unknown Hospital';
+            }
+
+            logInfo('Follow-up appointments retrieved', {
+                hospitalId: hospitalId || 'all',
+                hospitalName,
+                count: appointments.length,
+                filterData
+            });
+
+            return {
+                level: hospitalId ? 'hospital' : 'overall',
+                hospitalId: hospitalId || null,
+                hospitalName,
+                appointments,
+                totalCount: appointments.length,
+                filters: { startDate, endDate }
+            };
+
+        } catch (error) {
+            logError('Error getting follow-up list', {
+                error: error.message,
+                hospitalId,
+                filterData
+            });
+            throw error;
+        }
+    }
+
+    /**
+     * Get check-in appointments list
+     * @param {string|null} hospitalId - Hospital ID (optional, null for overall)
+     * @param {Object} filterData - Filter options (startDate, endDate)
+     * @returns {Object} Check-in appointments with hospital info
+     */
+    static async getCheckinList(hospitalId = null, filterData = {}) {
+        try {
+            const { startDate, endDate } = filterData;
+
+            // Build query - check-in means checked in but not checked out
+            const query = {
+                $or: [
+                    { checkInStatus: 'Checked-in' },
+                    { isCheckedIn: true },
+                    { checkInTime: { $ne: null } }
+                ],
+                $and: [
+                    { checkOutTime: null },
+                    { checkInStatus: { $ne: 'Checked-out' } }
+                ]
+            };
+
+            // Add hospital filter if provided
+            if (hospitalId) {
+                query.hospitalId = hospitalId;
+            }
+
+            // Add date range filter
+            if (startDate && endDate) {
+                query.appointmentDate = {
+                    $gte: new Date(startDate),
+                    $lte: new Date(endDate)
+                };
+            }
+
+            const appointments = await Appointment.find(query)
+                .sort({ checkInTime: -1, appointmentDate: -1 })
+                .lean();
+
+            // Get hospital names if hospital level
+            let hospitalName = null;
+            if (hospitalId) {
+                const hospital = await Hospital.findOne({ hospitalId }).select('name').lean();
+                hospitalName = hospital ? hospital.name : 'Unknown Hospital';
+            }
+
+            logInfo('Check-in appointments retrieved', {
+                hospitalId: hospitalId || 'all',
+                hospitalName,
+                count: appointments.length,
+                filterData
+            });
+
+            return {
+                level: hospitalId ? 'hospital' : 'overall',
+                hospitalId: hospitalId || null,
+                hospitalName,
+                appointments,
+                totalCount: appointments.length,
+                filters: { startDate, endDate }
+            };
+
+        } catch (error) {
+            logError('Error getting check-in list', {
+                error: error.message,
+                hospitalId,
+                filterData
+            });
+            throw error;
+        }
+    }
+
+    /**
+     * Get check-out appointments list
+     * @param {string|null} hospitalId - Hospital ID (optional, null for overall)
+     * @param {Object} filterData - Filter options (startDate, endDate)
+     * @returns {Object} Check-out appointments with hospital info
+     */
+    static async getCheckoutList(hospitalId = null, filterData = {}) {
+        try {
+            const { startDate, endDate } = filterData;
+
+            // Build query - check-out means checked out
+            const query = {
+                $or: [
+                    { checkInStatus: 'Checked-out' },
+                    { checkOutTime: { $ne: null } }
+                ]
+            };
+
+            // Add hospital filter if provided
+            if (hospitalId) {
+                query.hospitalId = hospitalId;
+            }
+
+            // Add date range filter
+            if (startDate && endDate) {
+                query.appointmentDate = {
+                    $gte: new Date(startDate),
+                    $lte: new Date(endDate)
+                };
+            }
+
+            const appointments = await Appointment.find(query)
+                .sort({ checkOutTime: -1, appointmentDate: -1 })
+                .lean();
+
+            // Get hospital names if hospital level
+            let hospitalName = null;
+            if (hospitalId) {
+                const hospital = await Hospital.findOne({ hospitalId }).select('name').lean();
+                hospitalName = hospital ? hospital.name : 'Unknown Hospital';
+            }
+
+            logInfo('Check-out appointments retrieved', {
+                hospitalId: hospitalId || 'all',
+                hospitalName,
+                count: appointments.length,
+                filterData
+            });
+
+            return {
+                level: hospitalId ? 'hospital' : 'overall',
+                hospitalId: hospitalId || null,
+                hospitalName,
+                appointments,
+                totalCount: appointments.length,
+                filters: { startDate, endDate }
+            };
+
+        } catch (error) {
+            logError('Error getting check-out list', {
+                error: error.message,
+                hospitalId,
+                filterData
+            });
+            throw error;
+        }
+    }
+
+    /**
+     * Get not arrived appointments list
+     * @param {string|null} hospitalId - Hospital ID (optional, null for overall)
+     * @param {Object} filterData - Filter options (startDate, endDate)
+     * @returns {Object} Not arrived appointments with hospital info
+     */
+    static async getNotArrivedList(hospitalId = null, filterData = {}) {
+        try {
+            const { startDate, endDate } = filterData;
+            const now = new Date();
+
+            // Build query - not arrived means not checked in and appointment time has passed
+            const query = {
+                $or: [
+                    { checkInStatus: 'Not Checked-in' },
+                    { 
+                        checkInStatus: { $exists: false },
+                        checkInTime: null,
+                        isCheckedIn: { $ne: true }
+                    }
+                ],
+                $and: [
+                    { checkOutTime: null }
+                ]
+            };
+
+            // Add hospital filter if provided
+            if (hospitalId) {
+                query.hospitalId = hospitalId;
+            }
+
+            // Add date range filter
+            if (startDate && endDate) {
+                query.appointmentDate = {
+                    $gte: new Date(startDate),
+                    $lte: new Date(endDate)
+                };
+            } else {
+                // If no date range, only show appointments that have passed
+                query.appointmentDate = { $lt: now };
+            }
+
+            const appointments = await Appointment.find(query)
+                .sort({ appointmentDate: -1, appointmentTime: -1 })
+                .lean();
+
+            // Filter appointments where appointment time has passed
+            const filteredAppointments = appointments.filter(apt => {
+                if (!apt.appointmentDate || !apt.appointmentTime) return false;
+                
+                const appointmentDateTime = new Date(apt.appointmentDate);
+                const [hours, minutes] = apt.appointmentTime.split(':').map(Number);
+                appointmentDateTime.setHours(hours, minutes, 0, 0);
+                
+                return appointmentDateTime < now;
+            });
+
+            // Get hospital names if hospital level
+            let hospitalName = null;
+            if (hospitalId) {
+                const hospital = await Hospital.findOne({ hospitalId }).select('name').lean();
+                hospitalName = hospital ? hospital.name : 'Unknown Hospital';
+            }
+
+            logInfo('Not arrived appointments retrieved', {
+                hospitalId: hospitalId || 'all',
+                hospitalName,
+                count: filteredAppointments.length,
+                filterData
+            });
+
+            return {
+                level: hospitalId ? 'hospital' : 'overall',
+                hospitalId: hospitalId || null,
+                hospitalName,
+                appointments: filteredAppointments,
+                totalCount: filteredAppointments.length,
+                filters: { startDate, endDate }
+            };
+
+        } catch (error) {
+            logError('Error getting not arrived list', {
+                error: error.message,
+                hospitalId,
+                filterData
+            });
+            throw error;
+        }
+    }
+
+    /**
+     * Send notification to all patients
+     * @param {Object} notificationData - Notification data (title, body, data)
+     * @param {string} superAdminId - Super Admin ID
+     * @returns {Object} Notification result
+     */
+    static async sendNotificationToAllPatients(notificationData, superAdminId) {
+        try {
+            const { title, body, data = {} } = notificationData;
+
+            // Validate required fields
+            if (!title || !body) {
+                throw new EasyQError(
+                    'ValidationError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    'Title and body are required'
+                );
+            }
+
+            // Get super admin details
+            const superAdmin = await SuperAdmin.findOne({ superAdminId }).select('username').lean();
+            const superAdminName = superAdmin ? superAdmin.username : null;
+
+            // Create notification history record
+            const notificationHistory = new NotificationHistory({
+                title,
+                body,
+                data: data || {},
+                sentBy: {
+                    superAdminId,
+                    superAdminName
+                },
+                recipientType: 'all_patients',
+                status: 'sending'
+            });
+            await notificationHistory.save();
+
+            // Get all active patients (users with role='user')
+            const patients = await User.find({ 
+                role: 'user',
+                isActive: true 
+            }).select('userId').lean();
+
+            let successfulCount = 0;
+            let failedCount = 0;
+            const totalRecipients = patients.length;
+
+            // Get all active FCM tokens for all patients
+            const allTokens = await FCMToken.find({ 
+                userId: { $in: patients.map(p => p.userId) },
+                isActive: true 
+            }).lean();
+
+            logInfo('Sending notification to all patients', {
+                superAdminId,
+                superAdminName,
+                totalPatients: totalRecipients,
+                totalTokens: allTokens.length
+            });
+
+            // Send notifications to all tokens
+            const sendPromises = allTokens.map(async (tokenDoc) => {
+                try {
+                    const message = {
+                        token: tokenDoc.fcmToken,
+                        notification: {
+                            title,
+                            body
+                        },
+                        data: {
+                            type: 'super_admin_broadcast',
+                            ...Object.fromEntries(
+                                Object.entries(data).map(([k, v]) => [k, String(v)])
+                            )
+                        }
+                    };
+
+                    await admin.messaging().send(message);
+                    successfulCount++;
+                    
+                    // Update token last used
+                    await FCMToken.updateOne(
+                        { _id: tokenDoc._id },
+                        { lastUsed: new Date() }
+                    );
+                } catch (tokenError) {
+                    failedCount++;
+                    
+                    // Handle invalid tokens
+                    if (tokenError.code && ['messaging/invalid-registration-token', 'messaging/registration-token-not-registered'].includes(tokenError.code)) {
+                        await FCMToken.updateOne(
+                            { _id: tokenDoc._id },
+                            { isActive: false }
+                        );
+                        logInfo('Deactivated invalid FCM token', {
+                            tokenId: tokenDoc._id,
+                            userId: tokenDoc.userId
+                        });
+                    } else {
+                        logError('Failed to send notification to token', {
+                            tokenId: tokenDoc._id,
+                            userId: tokenDoc.userId,
+                            error: tokenError.message
+                        });
+                    }
+                }
+            });
+
+            await Promise.all(sendPromises);
+
+            // Update notification history
+            notificationHistory.status = 'completed';
+            notificationHistory.recipientCount = totalRecipients;
+            notificationHistory.successfulCount = successfulCount;
+            notificationHistory.failedCount = failedCount;
+            notificationHistory.completedAt = new Date();
+            await notificationHistory.save();
+
+            logInfo('Notification sent to all patients', {
+                superAdminId,
+                superAdminName,
+                totalRecipients,
+                successfulCount,
+                failedCount,
+                notificationId: notificationHistory._id
+            });
+
+            return {
+                notificationId: notificationHistory._id,
+                totalRecipients,
+                successfulCount,
+                failedCount,
+                status: 'completed'
+            };
+
+        } catch (error) {
+            logError('Error sending notification to all patients', {
+                error: error.message,
+                superAdminId,
+                notificationData
+            });
+            throw error;
+        }
+    }
+
+    /**
+     * Get all notification history
+     * @param {Object} filterData - Filter options (page, limit, superAdminId)
+     * @returns {Object} Notification history with pagination
+     */
+    static async getAllNotifications(filterData = {}) {
+        try {
+            const { page = 1, limit = 10, superAdminId } = filterData;
+            const skip = (page - 1) * limit;
+
+            // Build query
+            const query = {};
+            if (superAdminId) {
+                query['sentBy.superAdminId'] = superAdminId;
+            }
+
+            const [notifications, totalCount] = await Promise.all([
+                NotificationHistory.find(query)
+                    .sort({ sentAt: -1 })
+                    .skip(skip)
+                    .limit(parseInt(limit))
+                    .lean(),
+                NotificationHistory.countDocuments(query)
+            ]);
+
+            const totalPages = Math.ceil(totalCount / limit);
+
+            logInfo('Notification history retrieved', {
+                page,
+                limit,
+                totalCount,
+                totalPages,
+                superAdminId: superAdminId || 'all'
+            });
+
+            return {
+                notifications,
+                pagination: {
+                    currentPage: parseInt(page),
+                    totalPages,
+                    totalCount,
+                    limit: parseInt(limit),
+                    hasNextPage: page < totalPages,
+                    hasPrevPage: page > 1
+                }
+            };
+
+        } catch (error) {
+            logError('Error getting notification history', {
+                error: error.message,
+                filterData
             });
             throw error;
         }

@@ -786,6 +786,628 @@
                 }
             ],
             "description": "Hospital management endpoints for super admin"
+        },
+        {
+            "name": "📋 Appointment Lists (Open API)",
+            "item": [
+                {
+                    "name": "Follow-up List - Overall",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/appointments/followups",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "appointments",
+                                "followups"
+                            ]
+                        },
+                        "description": "Get all follow-up appointments across all hospitals (Open API)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Follow-up List - Hospital Level",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/appointments/followups?hospitalId=H0001",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "appointments",
+                                "followups"
+                            ],
+                            "query": [
+                                {
+                                    "key": "hospitalId",
+                                    "value": "H0001"
+                                }
+                            ]
+                        },
+                        "description": "Get follow-up appointments for a specific hospital (Open API)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Follow-up List - Date Range",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/appointments/followups?startDate=2024-01-01&endDate=2024-01-31",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "appointments",
+                                "followups"
+                            ],
+                            "query": [
+                                {
+                                    "key": "startDate",
+                                    "value": "2024-01-01"
+                                },
+                                {
+                                    "key": "endDate",
+                                    "value": "2024-01-31"
+                                }
+                            ]
+                        },
+                        "description": "Get follow-up appointments within a date range (Open API)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Follow-up List - Hospital & Date Range",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/appointments/followups?hospitalId=H0001&startDate=2024-01-01&endDate=2024-01-31",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "appointments",
+                                "followups"
+                            ],
+                            "query": [
+                                {
+                                    "key": "hospitalId",
+                                    "value": "H0001"
+                                },
+                                {
+                                    "key": "startDate",
+                                    "value": "2024-01-01"
+                                },
+                                {
+                                    "key": "endDate",
+                                    "value": "2024-01-31"
+                                }
+                            ]
+                        },
+                        "description": "Get follow-up appointments for a hospital within a date range (Open API)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Check-in List - Overall",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/appointments/checkins",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "appointments",
+                                "checkins"
+                            ]
+                        },
+                        "description": "Get all check-in appointments across all hospitals (Open API)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Check-in List - Hospital Level",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/appointments/checkins?hospitalId=H0001",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "appointments",
+                                "checkins"
+                            ],
+                            "query": [
+                                {
+                                    "key": "hospitalId",
+                                    "value": "H0001"
+                                }
+                            ]
+                        },
+                        "description": "Get check-in appointments for a specific hospital (Open API)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Check-in List - Date Range",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/appointments/checkins?startDate=2024-01-01&endDate=2024-01-31",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "appointments",
+                                "checkins"
+                            ],
+                            "query": [
+                                {
+                                    "key": "startDate",
+                                    "value": "2024-01-01"
+                                },
+                                {
+                                    "key": "endDate",
+                                    "value": "2024-01-31"
+                                }
+                            ]
+                        },
+                        "description": "Get check-in appointments within a date range (Open API)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Check-in List - Hospital & Date Range",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/appointments/checkins?hospitalId=H0001&startDate=2024-01-01&endDate=2024-01-31",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "appointments",
+                                "checkins"
+                            ],
+                            "query": [
+                                {
+                                    "key": "hospitalId",
+                                    "value": "H0001"
+                                },
+                                {
+                                    "key": "startDate",
+                                    "value": "2024-01-01"
+                                },
+                                {
+                                    "key": "endDate",
+                                    "value": "2024-01-31"
+                                }
+                            ]
+                        },
+                        "description": "Get check-in appointments for a hospital within a date range (Open API)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Check-out List - Overall",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/appointments/checkouts",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "appointments",
+                                "checkouts"
+                            ]
+                        },
+                        "description": "Get all check-out appointments across all hospitals (Open API)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Check-out List - Hospital Level",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/appointments/checkouts?hospitalId=H0001",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "appointments",
+                                "checkouts"
+                            ],
+                            "query": [
+                                {
+                                    "key": "hospitalId",
+                                    "value": "H0001"
+                                }
+                            ]
+                        },
+                        "description": "Get check-out appointments for a specific hospital (Open API)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Check-out List - Date Range",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/appointments/checkouts?startDate=2024-01-01&endDate=2024-01-31",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "appointments",
+                                "checkouts"
+                            ],
+                            "query": [
+                                {
+                                    "key": "startDate",
+                                    "value": "2024-01-01"
+                                },
+                                {
+                                    "key": "endDate",
+                                    "value": "2024-01-31"
+                                }
+                            ]
+                        },
+                        "description": "Get check-out appointments within a date range (Open API)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Check-out List - Hospital & Date Range",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/appointments/checkouts?hospitalId=H0001&startDate=2024-01-01&endDate=2024-01-31",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "appointments",
+                                "checkouts"
+                            ],
+                            "query": [
+                                {
+                                    "key": "hospitalId",
+                                    "value": "H0001"
+                                },
+                                {
+                                    "key": "startDate",
+                                    "value": "2024-01-01"
+                                },
+                                {
+                                    "key": "endDate",
+                                    "value": "2024-01-31"
+                                }
+                            ]
+                        },
+                        "description": "Get check-out appointments for a hospital within a date range (Open API)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Not Arrived List - Overall",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/appointments/not-arrived",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "appointments",
+                                "not-arrived"
+                            ]
+                        },
+                        "description": "Get all not arrived appointments across all hospitals (Open API)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Not Arrived List - Hospital Level",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/appointments/not-arrived?hospitalId=H0001",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "appointments",
+                                "not-arrived"
+                            ],
+                            "query": [
+                                {
+                                    "key": "hospitalId",
+                                    "value": "H0001"
+                                }
+                            ]
+                        },
+                        "description": "Get not arrived appointments for a specific hospital (Open API)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Not Arrived List - Date Range",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/appointments/not-arrived?startDate=2024-01-01&endDate=2024-01-31",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "appointments",
+                                "not-arrived"
+                            ],
+                            "query": [
+                                {
+                                    "key": "startDate",
+                                    "value": "2024-01-01"
+                                },
+                                {
+                                    "key": "endDate",
+                                    "value": "2024-01-31"
+                                }
+                            ]
+                        },
+                        "description": "Get not arrived appointments within a date range (Open API)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Not Arrived List - Hospital & Date Range",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/appointments/not-arrived?hospitalId=H0001&startDate=2024-01-01&endDate=2024-01-31",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "appointments",
+                                "not-arrived"
+                            ],
+                            "query": [
+                                {
+                                    "key": "hospitalId",
+                                    "value": "H0001"
+                                },
+                                {
+                                    "key": "startDate",
+                                    "value": "2024-01-01"
+                                },
+                                {
+                                    "key": "endDate",
+                                    "value": "2024-01-31"
+                                }
+                            ]
+                        },
+                        "description": "Get not arrived appointments for a hospital within a date range (Open API)"
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Appointment lists endpoints - Follow-up, Check-in, Check-out, and Not Arrived (Open APIs - no authentication required)"
+        },
+        {
+            "name": "🔔 Notifications (Open API)",
+            "item": [
+                {
+                    "name": "Send Notification to All Patients",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"superAdminId\": \"SA0001\",\n  \"title\": \"Important Announcement\",\n  \"body\": \"This is an important message for all patients.\",\n  \"data\": {\n    \"action\": \"view\",\n    \"url\": \"https://example.com\"\n  }\n}"
+                        },
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/notifications/send",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "notifications",
+                                "send"
+                            ]
+                        },
+                        "description": "Send a common notification to all active patients (Open API)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get All Notifications - Page 1",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/notifications?page=1&limit=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "notifications"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                }
+                            ]
+                        },
+                        "description": "Get all notifications history with pagination (Open API)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get All Notifications - Page 2",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/notifications?page=2&limit=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "notifications"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "2"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                }
+                            ]
+                        },
+                        "description": "Get notifications history - page 2 (Open API)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get Notifications by Super Admin",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/notifications?superAdminId=SA0001&page=1&limit=10",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "notifications"
+                            ],
+                            "query": [
+                                {
+                                    "key": "superAdminId",
+                                    "value": "SA0001"
+                                },
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "10"
+                                }
+                            ]
+                        },
+                        "description": "Get notifications sent by a specific super admin (Open API)"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get All Notifications - Large Page",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{base_url}}/api/super-admin/notifications?page=1&limit=50",
+                            "host": [
+                                "{{base_url}}"
+                            ],
+                            "path": [
+                                "api",
+                                "super-admin",
+                                "notifications"
+                            ],
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "50"
+                                }
+                            ]
+                        },
+                        "description": "Get notifications history with larger page size (Open API)"
+                    },
+                    "response": []
+                }
+            ],
+            "description": "Notification management endpoints - Send notifications to all patients and view notification history (Open APIs - no authentication required)"
         }
     ],
     "event": [

@@ -408,7 +408,7 @@ export const getAppointmentsByHospital = async (req, res, next) => {
             );
         }
 
-        const appointments = await SuperAdminService.getAppointmentsByHospital(hospitalId, {
+        const result = await SuperAdminService.getAppointmentsByHospital(hospitalId, {
             date,
             status,
             startDate,
@@ -416,18 +416,20 @@ export const getAppointmentsByHospital = async (req, res, next) => {
         });
 
         logInfo('Hospital appointments retrieved via API', {
-            hospitalId,
+            hospitalId: result.hospitalId,
+            hospitalName: result.hospitalName,
             filterData: { date, status, startDate, endDate },
-            count: appointments.length
+            count: result.appointments.length
         });
 
         return res.status(httpStatusCode.OK).json({
             status: 'success',
             message: 'Hospital appointments retrieved successfully',
             data: {
-                hospitalId,
-                appointments,
-                totalCount: appointments.length,
+                hospitalId: result.hospitalId,
+                hospitalName: result.hospitalName,
+                appointments: result.appointments,
+                totalCount: result.appointments.length,
                 filters: { date, status, startDate, endDate }
             }
         });
@@ -469,21 +471,23 @@ export const getDocumentsByHospital = async (req, res, next) => {
             );
         }
 
-        const patientDocuments = await SuperAdminService.getDocumentsByHospital(hospitalId);
+        const result = await SuperAdminService.getDocumentsByHospital(hospitalId);
 
         logInfo('Hospital documents retrieved via API', {
-            hospitalId,
-            patientsCount: patientDocuments.length
+            hospitalId: result.hospitalId,
+            hospitalName: result.hospitalName,
+            patientsCount: result.patientsWithDocuments.length
         });
 
         return res.status(httpStatusCode.OK).json({
             status: 'success',
             message: 'Hospital documents retrieved successfully',
             data: {
-                hospitalId,
-                patientsWithDocuments: patientDocuments,
-                totalPatients: patientDocuments.length,
-                totalDocuments: patientDocuments.reduce((sum, patient) => sum + patient.totalDocuments, 0)
+                hospitalId: result.hospitalId,
+                hospitalName: result.hospitalName,
+                patientsWithDocuments: result.patientsWithDocuments,
+                totalPatients: result.patientsWithDocuments.length,
+                totalDocuments: result.patientsWithDocuments.reduce((sum, patient) => sum + patient.totalDocuments, 0)
             }
         });
 
@@ -523,21 +527,23 @@ export const getFollowupsByHospital = async (req, res, next) => {
             );
         }
 
-        const patientFollowups = await SuperAdminService.getFollowupsByHospital(hospitalId);
+        const result = await SuperAdminService.getFollowupsByHospital(hospitalId);
 
         logInfo('Hospital followups retrieved via API', {
-            hospitalId,
-            patientsCount: patientFollowups.length
+            hospitalId: result.hospitalId,
+            hospitalName: result.hospitalName,
+            patientsCount: result.patientsWithFollowups.length
         });
 
         return res.status(httpStatusCode.OK).json({
             status: 'success',
             message: 'Hospital followups retrieved successfully',
             data: {
-                hospitalId,
-                patientsWithFollowups: patientFollowups,
-                totalPatients: patientFollowups.length,
-                totalFollowups: patientFollowups.reduce((sum, patient) => sum + patient.totalFollowups, 0)
+                hospitalId: result.hospitalId,
+                hospitalName: result.hospitalName,
+                patientsWithFollowups: result.patientsWithFollowups,
+                totalPatients: result.patientsWithFollowups.length,
+                totalFollowups: result.patientsWithFollowups.reduce((sum, patient) => sum + patient.totalFollowups, 0)
             }
         });
 
@@ -556,6 +562,291 @@ export const getFollowupsByHospital = async (req, res, next) => {
             httpStatusCode.INTERNAL_SERVER_ERROR,
             true,
             'Failed to retrieve hospital followups'
+        ));
+    }
+};
+
+/**
+ * Get Follow-up Appointments List
+ * GET /api/super-admin/appointments/followups?hospitalId=H0001&startDate=2024-01-01&endDate=2024-01-31
+ */
+export const getFollowupList = async (req, res, next) => {
+    try {
+        const { hospitalId, startDate, endDate } = req.query;
+
+        const result = await SuperAdminService.getFollowupList(hospitalId || null, {
+            startDate,
+            endDate
+        });
+
+        logInfo('Follow-up list retrieved via API', {
+            level: result.level,
+            hospitalId: result.hospitalId,
+            count: result.totalCount
+        });
+
+        return res.status(httpStatusCode.OK).json({
+            status: 'success',
+            message: 'Follow-up appointments retrieved successfully',
+            data: result
+        });
+
+    } catch (error) {
+        logError(error, {
+            endpoint: '/api/super-admin/appointments/followups',
+            query: req.query
+        });
+
+        if (error instanceof EasyQError) {
+            return next(error);
+        }
+
+        next(new EasyQError(
+            'InternalServerError',
+            httpStatusCode.INTERNAL_SERVER_ERROR,
+            true,
+            'Failed to retrieve follow-up appointments'
+        ));
+    }
+};
+
+/**
+ * Get Check-in Appointments List
+ * GET /api/super-admin/appointments/checkins?hospitalId=H0001&startDate=2024-01-01&endDate=2024-01-31
+ */
+export const getCheckinList = async (req, res, next) => {
+    try {
+        const { hospitalId, startDate, endDate } = req.query;
+
+        const result = await SuperAdminService.getCheckinList(hospitalId || null, {
+            startDate,
+            endDate
+        });
+
+        logInfo('Check-in list retrieved via API', {
+            level: result.level,
+            hospitalId: result.hospitalId,
+            count: result.totalCount
+        });
+
+        return res.status(httpStatusCode.OK).json({
+            status: 'success',
+            message: 'Check-in appointments retrieved successfully',
+            data: result
+        });
+
+    } catch (error) {
+        logError(error, {
+            endpoint: '/api/super-admin/appointments/checkins',
+            query: req.query
+        });
+
+        if (error instanceof EasyQError) {
+            return next(error);
+        }
+
+        next(new EasyQError(
+            'InternalServerError',
+            httpStatusCode.INTERNAL_SERVER_ERROR,
+            true,
+            'Failed to retrieve check-in appointments'
+        ));
+    }
+};
+
+/**
+ * Get Check-out Appointments List
+ * GET /api/super-admin/appointments/checkouts?hospitalId=H0001&startDate=2024-01-01&endDate=2024-01-31
+ */
+export const getCheckoutList = async (req, res, next) => {
+    try {
+        const { hospitalId, startDate, endDate } = req.query;
+
+        const result = await SuperAdminService.getCheckoutList(hospitalId || null, {
+            startDate,
+            endDate
+        });
+
+        logInfo('Check-out list retrieved via API', {
+            level: result.level,
+            hospitalId: result.hospitalId,
+            count: result.totalCount
+        });
+
+        return res.status(httpStatusCode.OK).json({
+            status: 'success',
+            message: 'Check-out appointments retrieved successfully',
+            data: result
+        });
+
+    } catch (error) {
+        logError(error, {
+            endpoint: '/api/super-admin/appointments/checkouts',
+            query: req.query
+        });
+
+        if (error instanceof EasyQError) {
+            return next(error);
+        }
+
+        next(new EasyQError(
+            'InternalServerError',
+            httpStatusCode.INTERNAL_SERVER_ERROR,
+            true,
+            'Failed to retrieve check-out appointments'
+        ));
+    }
+};
+
+/**
+ * Get Not Arrived Appointments List
+ * GET /api/super-admin/appointments/not-arrived?hospitalId=H0001&startDate=2024-01-01&endDate=2024-01-31
+ */
+export const getNotArrivedList = async (req, res, next) => {
+    try {
+        const { hospitalId, startDate, endDate } = req.query;
+
+        const result = await SuperAdminService.getNotArrivedList(hospitalId || null, {
+            startDate,
+            endDate
+        });
+
+        logInfo('Not arrived list retrieved via API', {
+            level: result.level,
+            hospitalId: result.hospitalId,
+            count: result.totalCount
+        });
+
+        return res.status(httpStatusCode.OK).json({
+            status: 'success',
+            message: 'Not arrived appointments retrieved successfully',
+            data: result
+        });
+
+    } catch (error) {
+        logError(error, {
+            endpoint: '/api/super-admin/appointments/not-arrived',
+            query: req.query
+        });
+
+        if (error instanceof EasyQError) {
+            return next(error);
+        }
+
+        next(new EasyQError(
+            'InternalServerError',
+            httpStatusCode.INTERNAL_SERVER_ERROR,
+            true,
+            'Failed to retrieve not arrived appointments'
+        ));
+    }
+};
+
+/**
+ * Send Notification to All Patients
+ * POST /api/super-admin/notifications/send
+ */
+export const sendNotificationToAllPatients = async (req, res, next) => {
+    try {
+        const { title, body, data, superAdminId } = req.body;
+
+        if (!superAdminId) {
+            throw new EasyQError(
+                'ValidationError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                'superAdminId is required'
+            );
+        }
+
+        if (!title || !body) {
+            throw new EasyQError(
+                'ValidationError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                'Title and body are required'
+            );
+        }
+
+        const result = await SuperAdminService.sendNotificationToAllPatients(
+            { title, body, data },
+            superAdminId
+        );
+
+        logInfo('Notification sent to all patients via API', {
+            superAdminId,
+            notificationId: result.notificationId,
+            totalRecipients: result.totalRecipients,
+            successfulCount: result.successfulCount
+        });
+
+        return res.status(httpStatusCode.OK).json({
+            status: 'success',
+            message: 'Notification sent to all patients successfully',
+            data: result
+        });
+
+    } catch (error) {
+        logError(error, {
+            endpoint: '/api/super-admin/notifications/send',
+            superAdminId: req.body?.superAdminId
+        });
+
+        if (error instanceof EasyQError) {
+            return next(error);
+        }
+
+        next(new EasyQError(
+            'InternalServerError',
+            httpStatusCode.INTERNAL_SERVER_ERROR,
+            true,
+            'Failed to send notification'
+        ));
+    }
+};
+
+/**
+ * Get All Notifications History
+ * GET /api/super-admin/notifications?page=1&limit=10&superAdminId=SA0001
+ */
+export const getAllNotifications = async (req, res, next) => {
+    try {
+        const { page, limit, superAdminId } = req.query;
+
+        const result = await SuperAdminService.getAllNotifications({
+            page,
+            limit,
+            superAdminId
+        });
+
+        logInfo('Notification history retrieved via API', {
+            page: result.pagination.currentPage,
+            limit: result.pagination.limit,
+            totalCount: result.pagination.totalCount,
+            superAdminId: superAdminId || 'all'
+        });
+
+        return res.status(httpStatusCode.OK).json({
+            status: 'success',
+            message: 'Notification history retrieved successfully',
+            data: result
+        });
+
+    } catch (error) {
+        logError(error, {
+            endpoint: '/api/super-admin/notifications',
+            query: req.query
+        });
+
+        if (error instanceof EasyQError) {
+            return next(error);
+        }
+
+        next(new EasyQError(
+            'InternalServerError',
+            httpStatusCode.INTERNAL_SERVER_ERROR,
+            true,
+            'Failed to retrieve notification history'
         ));
     }
 };

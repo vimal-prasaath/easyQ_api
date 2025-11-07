@@ -1,5 +1,5 @@
 import express from 'express';
-import { signup, login, getAllAdmins, holdAdmin, approveAdmin, rejectAdmin, getAllUsers, getUserAppointments, getAppointmentsByHospital, getDocumentsByHospital, getFollowupsByHospital } from '../../controller/superAdminController.js';
+import { signup, login, getAllAdmins, holdAdmin, approveAdmin, rejectAdmin, getAllUsers, getUserAppointments, getAppointmentsByHospital, getDocumentsByHospital, getFollowupsByHospital, getFollowupList, getCheckinList, getCheckoutList, getNotArrivedList, sendNotificationToAllPatients, getAllNotifications } from '../../controller/superAdminController.js';
 import { orchestratorRateLimit } from '../../notificationOrchestrator/middleware/rateLimit.js';
 
 const router = express.Router();
@@ -357,5 +357,215 @@ router.get('/hospitals/:hospitalId/documents', orchestratorRateLimit, getDocumen
  *         description: Hospital followups retrieved successfully
  */
 router.get('/hospitals/:hospitalId/followups', orchestratorRateLimit, getFollowupsByHospital);
+
+/**
+ * @swagger
+ * /api/super-admin/appointments/followups:
+ *   get:
+ *     summary: Get Follow-up Appointments List
+ *     description: Retrieve all follow-up appointments (Open API - no authentication required)
+ *     tags: [Super Admin - Appointment Lists]
+ *     parameters:
+ *       - in: query
+ *         name: hospitalId
+ *         schema:
+ *           type: string
+ *         example: "H0001"
+ *         description: Hospital ID (optional - omit for overall level)
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         example: "2024-01-01"
+ *         description: Start date for date range filter
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         example: "2024-01-31"
+ *         description: End date for date range filter
+ *     responses:
+ *       200:
+ *         description: Follow-up appointments retrieved successfully
+ */
+router.get('/appointments/followups', getFollowupList);
+
+/**
+ * @swagger
+ * /api/super-admin/appointments/checkins:
+ *   get:
+ *     summary: Get Check-in Appointments List
+ *     description: Retrieve all check-in appointments (Open API - no authentication required)
+ *     tags: [Super Admin - Appointment Lists]
+ *     parameters:
+ *       - in: query
+ *         name: hospitalId
+ *         schema:
+ *           type: string
+ *         example: "H0001"
+ *         description: Hospital ID (optional - omit for overall level)
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         example: "2024-01-01"
+ *         description: Start date for date range filter
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         example: "2024-01-31"
+ *         description: End date for date range filter
+ *     responses:
+ *       200:
+ *         description: Check-in appointments retrieved successfully
+ */
+router.get('/appointments/checkins', getCheckinList);
+
+/**
+ * @swagger
+ * /api/super-admin/appointments/checkouts:
+ *   get:
+ *     summary: Get Check-out Appointments List
+ *     description: Retrieve all check-out appointments (Open API - no authentication required)
+ *     tags: [Super Admin - Appointment Lists]
+ *     parameters:
+ *       - in: query
+ *         name: hospitalId
+ *         schema:
+ *           type: string
+ *         example: "H0001"
+ *         description: Hospital ID (optional - omit for overall level)
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         example: "2024-01-01"
+ *         description: Start date for date range filter
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         example: "2024-01-31"
+ *         description: End date for date range filter
+ *     responses:
+ *       200:
+ *         description: Check-out appointments retrieved successfully
+ */
+router.get('/appointments/checkouts', getCheckoutList);
+
+/**
+ * @swagger
+ * /api/super-admin/appointments/not-arrived:
+ *   get:
+ *     summary: Get Not Arrived Appointments List
+ *     description: Retrieve all not arrived appointments (Open API - no authentication required)
+ *     tags: [Super Admin - Appointment Lists]
+ *     parameters:
+ *       - in: query
+ *         name: hospitalId
+ *         schema:
+ *           type: string
+ *         example: "H0001"
+ *         description: Hospital ID (optional - omit for overall level)
+ *       - in: query
+ *         name: startDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         example: "2024-01-01"
+ *         description: Start date for date range filter
+ *       - in: query
+ *         name: endDate
+ *         schema:
+ *           type: string
+ *           format: date
+ *         example: "2024-01-31"
+ *         description: End date for date range filter
+ *     responses:
+ *       200:
+ *         description: Not arrived appointments retrieved successfully
+ */
+router.get('/appointments/not-arrived', getNotArrivedList);
+
+/**
+ * @swagger
+ * /api/super-admin/notifications/send:
+ *   post:
+ *     summary: Send Notification to All Patients
+ *     description: Send a common notification to all active patients (Open API - no authentication required)
+ *     tags: [Super Admin - Notifications]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - superAdminId
+ *               - title
+ *               - body
+ *             properties:
+ *               superAdminId:
+ *                 type: string
+ *                 example: "SA0001"
+ *                 description: Super Admin ID
+ *               title:
+ *                 type: string
+ *                 example: "Important Announcement"
+ *                 description: Notification title
+ *               body:
+ *                 type: string
+ *                 example: "This is an important message for all patients."
+ *                 description: Notification body/message
+ *               data:
+ *                 type: object
+ *                 example: { "action": "view", "url": "https://example.com" }
+ *                 description: Additional data to send with notification
+ *     responses:
+ *       200:
+ *         description: Notification sent successfully
+ */
+router.post('/notifications/send', sendNotificationToAllPatients);
+
+/**
+ * @swagger
+ * /api/super-admin/notifications:
+ *   get:
+ *     summary: Get All Notifications History
+ *     description: Retrieve all notifications sent by super admins (Open API - no authentication required)
+ *     tags: [Super Admin - Notifications]
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         example: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         example: 10
+ *         description: Number of notifications per page
+ *       - in: query
+ *         name: superAdminId
+ *         schema:
+ *           type: string
+ *         example: "SA0001"
+ *         description: Filter by super admin ID (optional)
+ *     responses:
+ *       200:
+ *         description: Notification history retrieved successfully
+ */
+router.get('/notifications', getAllNotifications);
 
 export default router;
