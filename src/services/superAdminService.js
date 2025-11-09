@@ -165,7 +165,7 @@ export class SuperAdminService {
     /**
      * Get all admins
      * @param {string} status - Optional status filter
-     * @returns {Array} List of admins
+     * @returns {Array} List of admins with hospital details
      */
     static async getAllAdmins(status = null) {
         try {
@@ -183,12 +183,34 @@ export class SuperAdminService {
                 .sort({ createdAt: -1 })
                 .lean();
 
+            // Populate hospital details for each admin
+            const adminsWithHospital = await Promise.all(
+                admins.map(async (admin) => {
+                    let hospital = null;
+                    
+                    // Try to find hospital by adminId first (direct relationship)
+                    if (admin.adminId) {
+                        hospital = await Hospital.findOne({ adminId: admin.adminId }).lean();
+                    }
+                    
+                    // If not found, try by hospitalId
+                    if (!hospital && admin.hospitalId) {
+                        hospital = await Hospital.findOne({ hospitalId: admin.hospitalId }).lean();
+                    }
+
+                    return {
+                        ...admin,
+                        hospital: hospital || null
+                    };
+                })
+            );
+
             logInfo('Admins retrieved', {
                 status: status || 'all',
-                count: admins.length
+                count: adminsWithHospital.length
             });
 
-            return admins;
+            return adminsWithHospital;
 
         } catch (error) {
             logError('Error getting admins', {

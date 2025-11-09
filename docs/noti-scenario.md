@@ -74,6 +74,11 @@ User app:
 5. User tokenDisplay instead of token number in all the places - Medium
 
 
+6. Featured and top rated UI need to be finetuned. -> include distance and timing from api
+7. All appoints need to display the stats completed , upcoming based on the backend flag
+
+
+
 
 
 Admin app:
@@ -84,19 +89,33 @@ Admin app:
 4. While adding timeline for doctors, once we enter and if we open again then show the pre selected time
 5. User tokenDisplay instead of token number in all the places - Medium
 6. Filters in today's log is not functional
-7. Add dynamic doctor id instaed of the hardcoded doctor id in the folloup
+7. Add dynamic doctor id instaed of the hardcoded doctor id in the folloup - Hign
+8. Doctor delete and Nurse delete in throwing error - High
+9. Location coordiantes to be sent to Hospitan onbarding api (Long, Lat) - High
+10. Checkout screen UI - Low
+11. Nurse Documnet screen is not needed - Low
+12. Remove the notification icon in admin app header - High
+13. Any session menitoned for admin -> app is getting logged out => fine => but need to show the popup bfore loggng out  => medium
+14. By default the Create new accout and Login in comming in dark mode after toggling the dark and light mode app theme applied correctly - Low
+
+
+15. Follow ups is not needed the Chceked in screen after checking in via scannser
+16. In Dashboard Checkin is clickable and if i click there is no data even after checkin in => Medium
+
+
 
 
 
 
 Backend:
 
-1. Support proof Driving Liscence and Voter ID
-2. Provid the location of the hosptial relative to the user defalut address with the hosptial, details, sort and send based on the km.
+1. Support proof Driving Liscence and Voter ID - Done
+2. Provid the location of the hosptial relative to the user defalut address with the hosptial, details, sort and send based on the km. - Done
 3. Need to give Doctor id in teh checkout scanner api - Done
 4. Return the token number for the appointment api - Done
 5. Block appointment booking per future slots only
 6. Block the Scanner to not scan the QR wich is past
+7. Deleting the Admin not deleteing the nurse.
 
 
 
@@ -104,10 +123,18 @@ Infra checklist:
 
 1. Enable live OTP
 2. Setup mongoDb live server
+3. IOS build
+
 
 Cleanup Checklist:
 
 1. Clean up DB
+
+
+Quesitions:
+
+1. What is the use of Hosptial timing, type and tokens in hospitals?
+2. What is the use of Doctor type?
 
 
 Test checklist:
@@ -148,3 +175,8 @@ Test checklist:
 
 Edge case checklist
 
+
+Enhancements:
+
+
+Once booked the appinement notification will come => clicking on that can we opone the appintment?

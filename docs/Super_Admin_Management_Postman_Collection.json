@@ -91,7 +91,7 @@
                                 "admins"
                             ]
                         },
-                        "description": "Retrieve all admins regardless of status"
+                        "description": "Retrieve all admins regardless of status. Response includes hospital details for each admin."
                     },
                     "response": []
                 },
@@ -117,7 +117,7 @@
                                 }
                             ]
                         },
-                        "description": "Retrieve only pending admins"
+                        "description": "Retrieve only pending admins. Response includes hospital details for each admin."
                     },
                     "response": []
                 },
@@ -143,7 +143,7 @@
                                 }
                             ]
                         },
-                        "description": "Retrieve only approved admins"
+                        "description": "Retrieve only approved admins. Response includes hospital details for each admin."
                     },
                     "response": []
                 },
@@ -169,7 +169,7 @@
                                 }
                             ]
                         },
-                        "description": "Retrieve only rejected admins"
+                        "description": "Retrieve only rejected admins. Response includes hospital details for each admin."
                     },
                     "response": []
                 },
@@ -195,7 +195,7 @@
                                 }
                             ]
                         },
-                        "description": "Retrieve only admins on hold"
+                        "description": "Retrieve only admins on hold. Response includes hospital details for each admin."
                     },
                     "response": []
                 },

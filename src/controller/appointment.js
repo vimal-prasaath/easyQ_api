@@ -251,11 +251,17 @@ export async function getAppointmentById(req, res, next) {
             // Get user data for distance calculation
             const user = await User.findOne({ userId: appointmentData.patientId });
             
-            if (user && appointmentData.hospitalInfo) {
-                const distance = calculateUserHospitalDistance(user, appointmentData.hospitalInfo);
-                const approximateTime = await calculateApproximateTravelTime(user, appointmentData.hospitalInfo);
-                appointmentData.distance = distance; // Add distance to the appointment data
-                appointmentData.approximateTime = approximateTime; // Add travel time to the appointment data
+            // Fetch hospital data separately since hospitalInfo is removed in aggregation projection
+            if (user && appointmentData.hospitalId) {
+                const Hospital = (await import('../model/hospital.js')).default;
+                const hospital = await Hospital.findOne({ hospitalId: appointmentData.hospitalId });
+                
+                if (hospital) {
+                    const distance = calculateUserHospitalDistance(user, hospital);
+                    const approximateTime = await calculateApproximateTravelTime(user, hospital);
+                    appointmentData.distance = distance; // Add distance to the appointment data
+                    appointmentData.approximateTime = approximateTime; // Add travel time to the appointment data
+                }
             }
         }
         
