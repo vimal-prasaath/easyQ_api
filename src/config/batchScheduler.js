@@ -9,10 +9,16 @@ cron.schedule('*/2 * * * *', async () => {
         logInfo('Starting ETA-based batch processing');
         const result = await BatchOrchestrator.processETABasedNotifications();
         logInfo('ETA-based batch processing completed', {
-            notificationsTriggered: result.notificationsTriggered
+            notificationsTriggered: result.notificationsTriggered,
+            skippedNoFcmTokens: result.skippedNoFcmTokens ?? 0,
         });
     } catch (error) {
-        logError('ETA-based batch processing failed', { error: error.message });
+        const err = error instanceof Error ? error : new Error(String(error));
+        logError(err, {
+            job: 'BatchScheduler',
+            step: 'cron.ETA',
+            note: 'See BatchOrchestrator logs for the same run unless failure is outside orchestrator.',
+        });
     }
 });
 
@@ -26,7 +32,11 @@ cron.schedule('*/5 * * * *', async () => {
             noShowsDetected: result.noShowsDetected
         });
     } catch (error) {
-        logError('No-show detection failed', { error: error.message });
+        const err = error instanceof Error ? error : new Error(String(error));
+        logError(err, {
+            job: 'BatchScheduler',
+            step: 'cron.noShow',
+        });
     }
 });
 

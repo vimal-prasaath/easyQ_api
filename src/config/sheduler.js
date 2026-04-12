@@ -10,7 +10,8 @@ cron.schedule('*/1 * * * *', async () => {
         const now = new Date();
         const targetTime = new Date(now.getTime() + 2 * 60 * 60 * 1000); // 2 hours ahead
         const windowEnd = new Date(targetTime.getTime() + 60000); // 1 minute window
-
+        console.log('targetTime', targetTime);
+        console.log('windowEnd', windowEnd);
         // Find appointments that need 2-hour reminders
         const appointmentsToRemind = await appointments.find({
             appointmentDate: {

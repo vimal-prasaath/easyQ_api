@@ -44,6 +44,14 @@ export class AuthService {
                 user: {
                     userId: userData.userId,
                     profileUpadate: userData.profileUpadate,
+                    location: userData.location,
+                    email: userData.email,
+                    phoneNumber: userData.phoneNumber,
+                    name: userData.name,
+                    gender: userData.gender,
+                    dateOfBirth: userData.dateOfBirth,
+                    role: userData.role,
+                    isActive: userData.isActive
                 }
             };
         } catch (error) {
@@ -106,7 +114,15 @@ export class AuthService {
                 message: 'User registered successfully!',
                 user: {
                     userId: existingUser.userId,
-                    email: existingUser.email
+                    email: existingUser.email,
+                    profileUpadate: existingUser.profileUpadate,
+                    location: existingUser.location,
+                    phoneNumber: existingUser.phoneNumber,
+                    name: existingUser.name,
+                    gender: existingUser.gender,
+                    dateOfBirth: existingUser.dateOfBirth,
+                    role: existingUser.role,
+                    isActive: existingUser.isActive
                 }
             };
         } catch (error) {

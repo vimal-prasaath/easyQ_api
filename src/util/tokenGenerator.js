@@ -26,11 +26,6 @@ export function generateToken(data) {
     }
 }
 
-export async function compareToken(token){
-    try{
-   const decoded = jwt.verify(token, process.env.JWT_SECRET || 'secret')
-     return decoded
-    }catch(e){
-     throw new Error(e)
-    }
+export async function compareToken(token) {
+    return jwt.verify(token, process.env.JWT_SECRET || 'secret');
 }

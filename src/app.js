@@ -27,6 +27,8 @@ import userAddressRoutes from "./routes/userAddress/index.js";
 import userDocumentsRoutes from "./routes/userDocuments/index.js";
 import followUpAppointmentRoutes from "./routes/followUpAppointment/index.js";
 import superAdminRoutes from "./routes/superAdmin/index.js"; // Super Admin routes
+import appointmentDocumentsRoutes from "./routes/appointmentDocuments/index.js"; // Open API for appointment documents
+import hospitalAutocompleteRoutes from "./routes/hospitalAutocomplete/index.js"; // Open API for hospital autocomplete
 
 // Import schedulers
 import "./config/sheduler.js"; // 2-hour reminder scheduler
@@ -167,6 +169,8 @@ app.use("/api/user", userAddressRoutes);
 app.use("/api/user", userDocumentsRoutes);
 app.use("/api/follow-up", followUpAppointmentRoutes);
 app.use("/api/super-admin", superAdminRoutes);
+app.use("/api/appointment", appointmentDocumentsRoutes); // Open API for user-side document upload/delete
+app.use("/api/hospital", hospitalAutocompleteRoutes); // Open API for hospital autocomplete and suggestions
 
 // 13. API routes (authentication will be applied per route basis)
 app.use("/api", apiRoutes);

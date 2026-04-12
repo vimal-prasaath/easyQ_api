@@ -52,10 +52,12 @@ const userSchema = new Schema({
     email: {
         type: String,
         unique: true,
+        sparse: true,
         lowercase: true,
         trim: true,
         validate: {
             validator: function(value) {
+                if (value == null || value === '') return true;
                 return validator.isEmail(value);
             },
             message: 'Please provide a valid email address'
@@ -208,7 +210,7 @@ userSchema.pre('save', async function(next) {
                     return next(new Error('Failed to retrieve or update counter sequence.'));
                 }
                 const paddedSequence = String(counter.sequence_value).padStart(4, '0');
-                const prefix = doc.role === 'admin' ? 'A' : 'P';
+                const prefix = doc.role === 'admin' ? 'A' : 'EQ';
                 doc.userId = `${prefix}${paddedSequence}`;
             } catch (error) {
                 next(error)
@@ -218,8 +220,7 @@ userSchema.pre('save', async function(next) {
     next();
 });
 
-// Indexes for better performance
-userSchema.index({ email: 1 });
+// Indexes for better performance (email: unique+sparse on field def — allows many users with no email)
 userSchema.index({ userId: 1 });
 userSchema.index({ googleId: 1 }, { sparse: true });
 

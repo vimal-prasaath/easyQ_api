@@ -93,7 +93,8 @@ export const updateOnboardingInfo = async (req, res, next) => {
             endTime,
             openAlways,
             maxTokenPerDay,
-            unlimitedToken
+            unlimitedToken,
+            location
         } = req.body;
 
         // Validate required fields
@@ -182,7 +183,8 @@ export const updateOnboardingInfo = async (req, res, next) => {
             endTime,
             openAlways,
             maxTokenPerDay,
-            unlimitedToken
+            unlimitedToken,
+            location
         });
 
         authLogger.info('Onboarding info updated successfully', {

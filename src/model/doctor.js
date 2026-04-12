@@ -92,6 +92,12 @@ const doctorSchema = new Schema({
         type: String,
         required: true
     },
+    adminId: {
+        type: String,
+        ref: 'AdminProfile',
+        required: false,
+        index: true
+    },
     profileImageUrl: {
         type: String,
         default: 'https://example.com/default-doctor.png',
@@ -203,6 +209,10 @@ const doctorSchema = new Schema({
         addDoctor: { enabled: { type: Boolean, default: false }, viewOnly: { type: Boolean, default: false } },
         editDoctor: { enabled: { type: Boolean, default: false }, viewOnly: { type: Boolean, default: false } },
         deleteDoctor: { enabled: { type: Boolean, default: false }, viewOnly: { type: Boolean, default: false } },
+        nursesList: { enabled: { type: Boolean, default: false }, viewOnly: { type: Boolean, default: false } },
+        addNurse: { enabled: { type: Boolean, default: false }, viewOnly: { type: Boolean, default: false } },
+        editNurse: { enabled: { type: Boolean, default: false }, viewOnly: { type: Boolean, default: false } },
+        deleteNurse: { enabled: { type: Boolean, default: false }, viewOnly: { type: Boolean, default: false } },
         todayLogs: { enabled: { type: Boolean, default: false }, viewOnly: { type: Boolean, default: false } },
         scanQr: { enabled: { type: Boolean, default: false }, viewOnly: { type: Boolean, default: false } },
         uploadDocs: { enabled: { type: Boolean, default: false }, viewOnly: { type: Boolean, default: false } }
@@ -283,6 +293,9 @@ doctorSchema.pre('save', async function (next) {
     this.updatedAt = Date.now();
     next();
 });
+
+// Indexes
+doctorSchema.index({ adminId: 1 });
 
 const Doctor = model('Doctor', doctorSchema);
 export default Doctor;

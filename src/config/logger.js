@@ -113,12 +113,26 @@ export const searchLogger = logger.child({ module: 'SEARCH' });
 export const reviewLogger = logger.child({ module: 'REVIEW' });
 
 // Enhanced logging methods
+/** @param {unknown} error Pass an Error instance for message, stack, and optional .code (e.g. Mongo). */
 export const logError = (error, context = {}) => {
-  logger.error({
-    message: error.message || error,
-    stack: error.stack,
-    ...context
-  });
+  if (error instanceof Error) {
+    const { job, step, ...rest } = context;
+    const loc =
+      job && step ? `[${job} · ${step}] ` : job ? `[${job}] ` : "";
+    logger.error({
+      message: `${loc}${error.message}`,
+      stack: error.stack,
+      errorName: error.name,
+      ...(error.code !== undefined &&
+        error.code !== null && { errorCode: error.code }),
+      ...rest,
+    });
+  } else {
+    logger.error({
+      message: typeof error === "string" ? error : String(error),
+      ...context,
+    });
+  }
 };
 
 export const logWarn = (message, context = {}) => {

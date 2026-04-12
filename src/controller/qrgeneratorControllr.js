@@ -129,10 +129,21 @@ export async function qrGeneator(req, res ,next) {
     }
 }
 
+
+
+const dateWithoutTimezone = (dateInfo) => {
+    const date = new Date(dateInfo);
+  const tzoffset = date.getTimezoneOffset() * 60000; //offset in milliseconds
+  const withoutTimezone = new Date(date.valueOf() - tzoffset)
+    .toISOString()
+    .slice(0, -1);
+  return new Date(withoutTimezone).toLocaleDateString();
+};
+
 export async function getQRCode(req,res,next){
     const { userId, appointmentId } = req.query;
     const startTime = Date.now();
-    
+
     // Log API request
     logApiRequest(req, { action: 'qr_scan_checkin_checkout' });
 
@@ -213,22 +224,22 @@ export async function getQRCode(req,res,next){
         const appointmentDate = new Date(appointmentData.appointmentDate);
         const appointmentDateOnly = new Date(appointmentDate);
         appointmentDateOnly.setHours(0, 0, 0, 0);
-
-        if (appointmentDateOnly.getTime() !== currentDate.getTime()) {
-            qrLogger.warn('QR scan failed: Appointment date mismatch', {
-                userId: req.user?.userId,
-                appointmentId: appointmentId,
-                appointmentDate: appointmentDateOnly,
-                currentDate: currentDate,
-                scannedUserId: userId
-            });
-            return next(new EasyQError(
-                'ValidationError',
-                httpStatusCode.BAD_REQUEST,
-                true,
-                `QR scan is only allowed on the appointment date (${appointmentDateOnly.toLocaleDateString()}). Today's date is ${currentDate.toLocaleDateString()}.`
-            ));
-        }
+        console.log(dateWithoutTimezone(appointmentDateOnly),'====',dateWithoutTimezone(currentDate));
+        // if (dateWithoutTimezone(appointmentDateOnly) !== dateWithoutTimezone(currentDate)) {
+        //     qrLogger.warn('QR scan failed: Appointment date mismatch', {
+        //         userId: req.user?.userId,
+        //         appointmentId: appointmentId,
+        //         appointmentDate: appointmentDateOnly,
+        //         currentDate: currentDate,
+        //         scannedUserId: userId
+        //     });
+        //     return next(new EasyQError(
+        //         'ValidationError',
+        //         httpStatusCode.BAD_REQUEST,
+        //         true,
+        //         `QR scan is only allowed on the appointment date (${appointmentDateOnly.toLocaleDateString()}). Today's date is ${currentDate.toLocaleDateString()}.`
+        //     ));
+        // }
 
         let responseMessage = '';
         let updatedAppointment;
@@ -309,8 +320,12 @@ export async function getQRCode(req,res,next){
                 appointmentId: isCompleted ? appointmentData.appointmentId : updatedAppointment.appointmentId,
                 appointmentDate: isCompleted ? appointmentData.appointmentDate : updatedAppointment.appointmentDate,
                 appointmentTime: isCompleted ? appointmentData.appointmentTime : updatedAppointment.appointmentTime,
+                doctorId: isCompleted ? appointmentData.doctorId : updatedAppointment.doctorId,
                 doctorName: isCompleted ? appointmentData.doctorName : updatedAppointment.doctorName,
                 hospitalName: isCompleted ? appointmentData.hospitalName : updatedAppointment.hospitalName,
+                slotNumber: isCompleted ? appointmentData.slotNumber : updatedAppointment.slotNumber,
+                tokenNumber: isCompleted ? appointmentData.tokenNumber : updatedAppointment.tokenNumber,
+                tokenDisplay: isCompleted ? appointmentData.tokenDisplay : updatedAppointment.tokenDisplay,
                 checkInTime: isCompleted ? appointmentData.checkInTime : updatedAppointment.checkInTime,
                 checkOutTime: isCompleted ? appointmentData.checkOutTime : updatedAppointment.checkOutTime,
                 isCheckedIn: isCompleted ? appointmentData.isCheckedIn : updatedAppointment.isCheckedIn,

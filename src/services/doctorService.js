@@ -191,8 +191,9 @@ export class DoctorService {
             if (doctorData.permissions) {
                 const validPermissions = [
                     'profile', 'tokenIssued', 'checkedIn', 'userLogs', 'documentsView',
-                    'doctorsList', 'addDoctor', 'editDoctor', 'deleteDoctor', 'todayLogs',
-                    'scanQr', 'uploadDocs'
+                    'doctorsList', 'addDoctor', 'editDoctor', 'deleteDoctor',
+                    'nursesList', 'addNurse', 'editNurse', 'deleteNurse',
+                    'todayLogs', 'scanQr', 'uploadDocs'
                 ];
                 
                 for (const [permissionKey, permissionValue] of Object.entries(doctorData.permissions)) {
@@ -415,8 +416,9 @@ export class DoctorService {
         if (updates.permissions) {
             const validPermissions = [
                 'profile', 'tokenIssued', 'checkedIn', 'userLogs', 'documentsView',
-                'doctorsList', 'addDoctor', 'editDoctor', 'deleteDoctor', 'todayLogs',
-                'scanQr', 'uploadDocs'
+                'doctorsList', 'addDoctor', 'editDoctor', 'deleteDoctor',
+                'nursesList', 'addNurse', 'editNurse', 'deleteNurse',
+                'todayLogs', 'scanQr', 'uploadDocs'
             ];
             
             for (const [permissionKey, permissionValue] of Object.entries(updates.permissions)) {

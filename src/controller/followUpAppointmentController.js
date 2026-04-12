@@ -92,7 +92,16 @@ export const getFollowUpAppointmentsByPatient = async (req, res, next) => {
                     hospitalMap[hospital.hospitalId] = hospital;
                 });
 
-                // Add distance and travel time to each follow-up appointment
+                // Get unique doctor IDs to fetch doctor data for doctorImage
+                const doctorIds = [...new Set(followUpAppointments.map(apt => apt.doctorId))];
+                const Doctor = (await import('../model/doctor.js')).default;
+                const doctors = await Doctor.find({ doctorId: { $in: doctorIds } }).select('doctorId profileImageUrl');
+                const doctorMap = {};
+                doctors.forEach(doctor => {
+                    doctorMap[doctor.doctorId] = doctor;
+                });
+
+                // Add distance, travel time, doctor image, and hospital address to each follow-up appointment
                 await Promise.all(followUpAppointments.map(async appointment => {
                     const hospital = hospitalMap[appointment.hospitalId];
                     if (hospital) {
@@ -100,6 +109,26 @@ export const getFollowUpAppointmentsByPatient = async (req, res, next) => {
                         const approximateTime = await calculateApproximateTravelTime(user, hospital);
                         appointment.distance = distance; // Add distance to the appointment data
                         appointment.approximateTime = approximateTime; // Add travel time to the appointment data
+                        
+                        // Add hospital address in the same format
+                        if (hospital.address) {
+                            appointment.hospitalAddress = {
+                                street: hospital.address.street || '',
+                                city: hospital.address.city || '',
+                                state: hospital.address.state || '',
+                                pincode: hospital.address.zipCode || ''
+                            };
+                        } else {
+                            appointment.hospitalAddress = null;
+                        }
+                    }
+
+                    // Attach doctor's profile image URL
+                    const doctor = doctorMap[appointment.doctorId];
+                    if (doctor && doctor.profileImageUrl) {
+                        appointment.doctorImage = doctor.profileImageUrl;
+                    } else {
+                        appointment.doctorImage = null;
                     }
                 }));
             }

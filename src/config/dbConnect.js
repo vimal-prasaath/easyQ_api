@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { dbLogger, logInfo, logError } from './logger.js';
+import User from '../model/userProfile.js';
 
 const MONGO_URL = process.env.MONGO_URI;
 
@@ -18,6 +19,15 @@ export const dbConnect = async () => {
             url: MONGO_URL,
             database: "easyQ_test"
         });
+
+        try {
+            await User.syncIndexes();
+            dbLogger.info("User collection indexes synced");
+        } catch (syncErr) {
+            dbLogger.warn("User.syncIndexes() failed (indexes may need manual update)", {
+                message: syncErr.message
+            });
+        }
 
         // Log database connection events
         mongoose.connection.on('disconnected', () => {

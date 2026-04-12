@@ -1,6 +1,7 @@
 import AdminProfile from "../model/adminProfile.js";
 import Hospital from "../model/hospital.js";
 import Doctor from "../model/doctor.js";
+import Nurse from "../model/nurse.js";
 import Appointment from "../model/appointment.js";
 import HospitalReview from "../model/hospitalReview.js";
 import HospitalDetails from "../model/facility.js";
@@ -501,14 +502,25 @@ class AdminService {
 
     async getAdminDashboard(adminId) {
         try {
-            const admin = await AdminProfile.findOne({ adminId });
-            if (!admin) {
+            const adminData = await AdminProfile.findOne({ adminId });
+            const doctor = await Doctor.findOne({ doctorId: adminId });
+            const nurse = await Nurse.findOne({ nurseId: adminId });
+            if (!adminData && !doctor && !nurse) {
                 throw new EasyQError(
                     'NotFoundError',
                     httpStatusCode.NOT_FOUND,
                     true,
                     'Admin not found.'
                 );
+            }
+
+            let admin = null;
+            if (adminData) {
+                admin = adminData;
+            } else if (doctor) {
+                admin = await AdminProfile.findOne({ adminId: doctor.adminId });
+            } else if (nurse) {
+                admin = await AdminProfile.findOne({ adminId: nurse.adminId });
             }
 
             // Get hospital details if exists
@@ -589,7 +601,9 @@ class AdminService {
     async getTodayStats(adminId, date) {
         try {
             const admin = await AdminProfile.findOne({ adminId });
-            if (!admin) {
+            const nurse = await Nurse.findOne({ nurseId: adminId });
+            const doctor = await Doctor.findOne({ doctorId: adminId });
+            if (!admin && !nurse && !doctor) {
                 throw new EasyQError(
                     'NotFoundError',
                     httpStatusCode.NOT_FOUND,
@@ -598,9 +612,17 @@ class AdminService {
                 );
             }
 
-            // Get hospital ID from Hospital collection using adminId
+            let hospitalId = null;
+            if(nurse || doctor) {
+                hospitalId = nurse.hospitalId || doctor.hospitalId;
+            } else {
             const hospital = await Hospital.findOne({ adminId: adminId });
-            if (!hospital) {
+
+                hospitalId = hospital.hospitalId;
+            }
+
+            // Get hospital ID from Hospital collection using adminId
+            if (!hospitalId) {
                 throw new EasyQError(
                     'ValidationError',
                     httpStatusCode.BAD_REQUEST,
@@ -609,7 +631,7 @@ class AdminService {
                 );
             }
             
-            const hospitalId = hospital.hospitalId;
+            // const hospitalId = hospital.hospitalId;
 
             // Use the provided date instead of today's date
             const targetDate = new Date(date);

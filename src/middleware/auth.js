@@ -40,52 +40,23 @@ async function authenticate(req, res, next) {
     }
     
     const token = tokenParts[1];
-    let decodedPayload = null;
 
-    // console.log("token", token)
-
-
+    let decodedFirebase;
     try {
-        // console.log("{decodedPayload}");
-
-        // --- Attempt Firebase ID Token verification first ---
-        decodedPayload = await admin.auth().verifyIdToken(token);
-        // console.log({decodedPayload});
-
-        let userFromDb = await User.findOne({ phoneNumber: decodedPayload.phone_number, });
-        if (!userFromDb) {
-             const newUser = await User.create({
-                phoneNumber: decodedPayload.phone_number,
-                isActive: true,
-                profileUpdate: false,
-                // Don't include addresses field to avoid index conflict
-            });
-            userFromDb = newUser;
-           authLogger.info('New user created from Firebase login.', { userId: newUser.userId });
-        }
-        req.user = {...decodedPayload,role:"user"};
-        req.isActive = userFromDb.isActive;
-        authLogger.info('Token verified successfully by Firebase Admin SDK', {
-            userId: decodedPayload.uid,
-            email: decodedPayload.email,
-            path: req.path
-        });
-        next()
-    } catch (firebaseError) {
-        console.log({firebaseError})
+        decodedFirebase = await admin.auth().verifyIdToken(token);
+    } catch (firebaseErr) {
         authLogger.warn('Firebase ID Token verification failed, attempting custom JWT verification.', {
-            errorName: firebaseError.name,
-            errorMessage: firebaseError.message,
-            errorCode: firebaseError.code,
+            errorName: firebaseErr.name,
+            errorMessage: firebaseErr.message,
+            errorCode: firebaseErr.code,
             path: req.path,
             tokenPreview: token.substring(0, 20) + '...'
         });
 
-        //jwt token based on password and
         try {
             const decodedPayload = await compareToken(token);
 
-            let userFromDb = await User.findOne({ userId: decodedPayload.data.userId, }).select('isActive');
+            const userFromDb = await User.findOne({ userId: decodedPayload.data.userId }).select('isActive');
             if (!userFromDb) {
                 authLogger.error('Authorization failed: Authenticated user not found in DB.', { userId: decodedPayload.data.userId, path: req.path });
                 return next(new EasyQError('AuthenticationError', httpStatusCode.UNAUTHORIZED, true, 'Authenticated user not found.'));
@@ -102,7 +73,7 @@ async function authenticate(req, res, next) {
                 method: req.method,
                 ip: req.ip
             });
-            next();
+            return next();
         } catch (error) {
             authLogger.error('Authentication failed: Token validation error', {
                 errorName: error.name,
@@ -129,8 +100,44 @@ async function authenticate(req, res, next) {
                     'Authentication failed: Invalid token.'
                 ));
             }
-            next(error);
+            return next(error);
         }
+    }
+
+    try {
+        let userFromDb = await User.findOne({ phoneNumber: decodedFirebase.phone_number });
+        if (!userFromDb) {
+            const newUser = await User.create({
+                phoneNumber: decodedFirebase.phone_number,
+                isActive: true,
+                profileUpdate: false,
+            });
+            userFromDb = newUser;
+            authLogger.info('New user created from Firebase login.', { userId: newUser.userId });
+        }
+        req.user = { ...decodedFirebase, role: 'user' };
+        req.isActive = userFromDb.isActive;
+        authLogger.info('Token verified successfully by Firebase Admin SDK', {
+            userId: decodedFirebase.uid,
+            email: decodedFirebase.email,
+            path: req.path
+        });
+        next();
+    } catch (dbErr) {
+        if (dbErr.code === 11000) {
+            authLogger.error('User persistence conflict after Firebase auth', {
+                keyPattern: dbErr.keyPattern,
+                keyValue: dbErr.keyValue,
+                path: req.path
+            });
+            return next(new EasyQError(
+                'ConflictError',
+                httpStatusCode.CONFLICT,
+                true,
+                'A user record conflict occurred. If this persists, contact support.'
+            ));
+        }
+        return next(dbErr);
     }
 }
 

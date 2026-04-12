@@ -591,6 +591,205 @@ export async function getAppointmentDocuments(req, res, next) {
     }
 }
 
+/**
+ * Open API - Upload appointment documents (User side)
+ * POST /api/appointment/:appointmentId/documents/upload
+ * No authentication required
+ */
+export async function uploadAppointmentDocumentsOpen(req, res, next) {
+    const { appointmentId } = req.params;
+    const files = req.files;
+    
+    // Log API request
+    logApiRequest(req, { action: 'upload_appointment_documents_open', appointmentId, fileCount: files?.length });
+
+    try {
+        if (!appointmentId) {
+            return next(new EasyQError(
+                'ValidationError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                'Appointment ID is required.'
+            ));
+        }
+
+        if (!files || files.length === 0) {
+            return next(new EasyQError(
+                'ValidationError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                'No files uploaded.'
+            ));
+        }
+
+        // Check if appointment exists and get patient ID
+        const appointmentResult = await AppointmentService.getAppointmentById(appointmentId);
+        if (!appointmentResult || appointmentResult.length === 0) {
+            return next(new EasyQError(
+                'NotFoundError',
+                httpStatusCode.NOT_FOUND,
+                true,
+                'Appointment not found.'
+            ));
+        }
+
+        const appointment = appointmentResult[0]; // Get first element from aggregation result
+
+        const uploadedDocuments = [];
+        const errors = [];
+
+        // Upload each file
+        for (const file of files) {
+            try {
+                const fileStorageInfo = await uploadAppointmentDocument(
+                    file.buffer,
+                    file.originalname,
+                    file.mimetype,
+                    appointmentId,
+                    appointment.patientId
+                );
+
+                uploadedDocuments.push({
+                    fileName: file.originalname,
+                    mimeType: file.mimetype,
+                    size: file.size,
+                    fileUrl: fileStorageInfo.url,
+                    filePath: fileStorageInfo.path,
+                    uploadedAt: new Date()
+                });
+            } catch (uploadError) {
+                console.error(`Failed to upload file ${file.originalname}:`, uploadError);
+                errors.push({
+                    fileName: file.originalname,
+                    error: uploadError.message
+                });
+            }
+        }
+
+        if (uploadedDocuments.length === 0) {
+            return next(new EasyQError(
+                'UploadError',
+                httpStatusCode.INTERNAL_SERVER_ERROR,
+                false,
+                'Failed to upload any documents.',
+                { errors }
+            ));
+        }
+
+        // Update appointment with new document URLs
+        const currentReportUrls = appointment.reportUrls || [];
+        const newReportUrls = uploadedDocuments.map(doc => doc.fileUrl);
+        const updatedReportUrls = [...currentReportUrls, ...newReportUrls];
+
+        const updatedAppointment = await AppointmentService.updateAppointment(appointmentId, {
+            reportUrls: updatedReportUrls
+        });
+
+        const response = constructResponse(
+            true,
+            httpStatusCode.OK,
+            `Successfully uploaded ${uploadedDocuments.length} document(s).`,
+            {
+                appointmentId,
+                uploadedDocuments,
+                totalDocuments: updatedReportUrls.length,
+                errors: errors.length > 0 ? errors : undefined
+            }
+        );
+
+        // Log API response
+        logApiResponse(req, response);
+        
+        res.status(httpStatusCode.OK).json(response);
+    } catch (error) {
+        next(error);
+    }
+}
+
+/**
+ * Open API - Delete appointment document (User side)
+ * DELETE /api/appointment/:appointmentId/documents
+ * No authentication required
+ */
+export async function deleteAppointmentDocumentOpen(req, res, next) {
+    const { appointmentId } = req.params;
+    const { documentUrl } = req.body;
+    
+    // Log API request
+    logApiRequest(req, { action: 'delete_appointment_document_open', appointmentId, documentUrl });
+
+    try {
+        if (!appointmentId || !documentUrl) {
+            return next(new EasyQError(
+                'ValidationError',
+                httpStatusCode.BAD_REQUEST,
+                true,
+                'Appointment ID and document URL are required.'
+            ));
+        }
+
+        // Check if appointment exists
+        const appointmentResult = await AppointmentService.getAppointmentById(appointmentId);
+        if (!appointmentResult || appointmentResult.length === 0) {
+            return next(new EasyQError(
+                'NotFoundError',
+                httpStatusCode.NOT_FOUND,
+                true,
+                'Appointment not found.'
+            ));
+        }
+
+        const appointment = appointmentResult[0]; // Get first element from aggregation result
+
+        // Check if document URL exists in reportUrls
+        const currentReportUrls = appointment.reportUrls || [];
+        if (!currentReportUrls.includes(documentUrl)) {
+            return next(new EasyQError(
+                'NotFoundError',
+                httpStatusCode.NOT_FOUND,
+                true,
+                'Document not found in appointment.'
+            ));
+        }
+
+        // Extract file path from URL and delete from Firebase
+        const filePath = extractFilePathFromUrl(documentUrl);
+        if (filePath) {
+            try {
+                await deleteFileFromFirebase(filePath);
+                console.log(`Successfully deleted file from Firebase: ${filePath}`);
+            } catch (firebaseError) {
+                console.error(`Failed to delete file from Firebase: ${firebaseError.message}`);
+                // Continue with database update even if Firebase deletion fails
+            }
+        }
+
+        // Remove document URL from appointment
+        const updatedReportUrls = currentReportUrls.filter(url => url !== documentUrl);
+        const updatedAppointment = await AppointmentService.updateAppointment(appointmentId, {
+            reportUrls: updatedReportUrls
+        });
+
+        const response = constructResponse(
+            true,
+            httpStatusCode.OK,
+            'Document deleted successfully.',
+            {
+                appointmentId,
+                deletedDocumentUrl: documentUrl,
+                remainingDocuments: updatedReportUrls.length
+            }
+        );
+
+        // Log API response
+        logApiResponse(req, response);
+        
+        res.status(httpStatusCode.OK).json(response);
+    } catch (error) {
+        next(error);
+    }
+}
+
 export async function getAppointmentsSummary(req, res, next) {
     console.log('🚀 getAppointmentsSummary function called');
     console.log('req.body', req.body);

@@ -57,11 +57,10 @@ async function authenticateAdmin(req, res, next) {
             path: req.path
         });
 
-        console.log({decodedPayload})
 
-        // Verify it's an admin or doctor token
-        if (!decodedPayload.data || (decodedPayload.data.role !== 'admin' && decodedPayload.data.role !== 'doctor')) {
-            authLogger.warn('Admin authentication failed: Token is not for admin or doctor user', {
+        // Verify it's an admin, doctor, or nurse token
+        if (!decodedPayload.data || (decodedPayload.data.role !== 'admin' && decodedPayload.data.role !== 'doctor' && decodedPayload.data.role !== 'nurse')) {
+            authLogger.warn('Admin authentication failed: Token is not for admin, doctor, or nurse user', {
                 role: decodedPayload.data?.role,
                 type: decodedPayload.type,
                 path: req.path
@@ -70,17 +69,20 @@ async function authenticateAdmin(req, res, next) {
                 'AuthenticationError',
                 httpStatusCode.UNAUTHORIZED,
                 true,
-                'Invalid token. Admin or doctor access required.'
+                'Invalid token. Admin, doctor, or nurse access required.'
             ));
         }
 
-        // Find admin or doctor in database
+        // Find admin, doctor, or nurse in database
         let userFromDb;
         if (decodedPayload.data.role === 'admin') {
             userFromDb = await AdminProfile.findOne({ adminId: decodedPayload.data.userId });
         } else if (decodedPayload.data.role === 'doctor') {
             const Doctor = (await import('../model/doctor.js')).default;
             userFromDb = await Doctor.findOne({ doctorId: decodedPayload.data.userId });
+        } else if (decodedPayload.data.role === 'nurse') {
+            const Nurse = (await import('../model/nurse.js')).default;
+            userFromDb = await Nurse.findOne({ nurseId: decodedPayload.data.userId });
         }
         
         if (!userFromDb) {

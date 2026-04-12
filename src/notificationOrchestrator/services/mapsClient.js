@@ -59,7 +59,8 @@ export const placeDetails = async ({ placeId, sessionToken }) => {
             'geometry/location',
             'name',
             'formatted_address',
-            'address_components'
+            'address_components',
+            'types'
         ].join(',')
     };
     if (sessionToken) params.sessiontoken = sessionToken;

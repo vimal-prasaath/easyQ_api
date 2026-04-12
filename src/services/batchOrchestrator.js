@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import appointments from '../model/appointment.js';
 import UserToken from '../model/fcmToken.js';
 import Hospital from '../model/hospital.js';
@@ -5,7 +6,22 @@ import User from '../model/userProfile.js';
 import Doctor from '../model/doctor.js';
 import admin from '../config/firebaseAdmin.js';
 import { getEta } from '../notificationOrchestrator/services/etaService.js';
-import { logInfo, logError } from '../config/logger.js';
+import { logInfo, logWarn, logError } from '../config/logger.js';
+
+const JOB = 'BatchOrchestrator';
+
+function asError(err) {
+    return err instanceof Error ? err : new Error(String(err));
+}
+
+/** Appointments store `patientId` as User.userId (e.g. P0005), not Mongo _id. */
+function resolvePatientUserId(patientIdField) {
+    if (patientIdField == null) return undefined;
+    if (typeof patientIdField === 'string') return patientIdField;
+    if (typeof patientIdField === 'object' && patientIdField.userId)
+        return patientIdField.userId;
+    return undefined;
+}
 
 export class BatchOrchestrator {
     
@@ -33,14 +49,16 @@ export class BatchOrchestrator {
             
             return batchNumber;
         } catch (error) {
-            logError('Failed to assign batch number', {
+            const e = asError(error);
+            logError(e, {
+                job: JOB,
+                step: 'assignBatchNumber',
                 doctorId,
                 appointmentDate,
                 appointmentTime,
                 tokenNumber,
-                error: error.message
             });
-            throw error;
+            throw e;
         }
     }
     
@@ -52,21 +70,56 @@ export class BatchOrchestrator {
         try {
             const now = new Date();
             const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            
-            // Find appointments that need ETA-based notifications
-            const pendingAppointments = await appointments.find({
-                appointmentDate: {
-                    $gte: today,
-                    $lt: new Date(today.getTime() + 24 * 60 * 60 * 1000)
+            const dayEnd = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+
+            logInfo('ETA batch: querying appointments', {
+                job: JOB,
+                mongoReadyState: mongoose.connection.readyState,
+                windowStart: today.toISOString(),
+                windowEndExclusive: dayEnd.toISOString(),
+                filters: {
+                    status: 'Scheduled',
+                    batchStatus: ['pending', 'sent'],
+                    patientAddress: 'exists and not null',
                 },
-                status: 'Scheduled',
-                batchStatus: { $in: ['pending', 'sent'] },
-                patientAddress: { $exists: true, $ne: null }
-            }).populate('patientId', 'addresses').populate('hospitalId', 'location name');
+            });
+
+            let pendingAppointments;
+            try {
+                pendingAppointments = await appointments
+                    .find({
+                        appointmentDate: { $gte: today, $lt: dayEnd },
+                        status: 'Scheduled',
+                        batchStatus: { $in: ['pending', 'sent'] },
+                        patientAddress: { $exists: true, $ne: null },
+                    })
+                    .populate({
+                        path: 'patientId',
+                        select: 'addresses userId',
+                        foreignField: 'userId',
+                    })
+                    .populate({
+                        path: 'hospitalId',
+                        select: 'location name hospitalId',
+                        foreignField: 'hospitalId',
+                    });
+            } catch (queryErr) {
+                const e = asError(queryErr);
+                logError(e, {
+                    job: JOB,
+                    step: 'ETA.findPopulateAppointments',
+                    mongoReadyState: mongoose.connection.readyState,
+                    hint:
+                        mongoose.connection.readyState !== 1
+                            ? 'MongoDB not connected (readyState!==1); cron may run before dbConnect completes.'
+                            : undefined,
+                });
+                throw e;
+            }
 
             logInfo('ETA batch processing started', {
                 pendingAppointments: pendingAppointments.length,
-                currentTime: now.toISOString()
+                currentTime: now.toISOString(),
             });
 
             const results = [];
@@ -80,31 +133,44 @@ export class BatchOrchestrator {
                         results.push(result);
                     }
                 } catch (error) {
-                    logError('Failed to process appointment for ETA notification', {
+                    logError(asError(error), {
+                        job: JOB,
+                        step: 'ETA.perAppointment',
                         appointmentId: appointment.appointmentId,
-                        error: error.message
                     });
                 }
             }
 
+            const sentCount = results.filter((r) => r.tokensSent > 0).length;
+            const skippedNoFcm = results.filter((r) => r.skipped).length;
+
             logInfo('ETA batch processing completed', {
-                notificationsTriggered: results.length,
-                results: results.map(r => ({
+                notificationsTriggered: sentCount,
+                skippedNoFcmTokens: skippedNoFcm,
+                results: results.map((r) => ({
                     appointmentId: r.appointmentId,
                     batchNumber: r.batchNumber,
-                    tokensSent: r.tokensSent
-                }))
+                    tokensSent: r.tokensSent,
+                    skipped: r.skipped,
+                    skipReason: r.skipReason,
+                })),
             });
 
             return {
                 success: true,
-                notificationsTriggered: results.length,
-                results
+                notificationsTriggered: sentCount,
+                skippedNoFcmTokens: skippedNoFcm,
+                results,
             };
 
         } catch (error) {
-            logError('ETA batch processing failed', { error: error.message });
-            throw error;
+            const e = asError(error);
+            logError(e, {
+                job: JOB,
+                step: 'ETA.processETABasedNotifications',
+                mongoReadyState: mongoose.connection.readyState,
+            });
+            throw e;
         }
     }
     
@@ -176,9 +242,10 @@ export class BatchOrchestrator {
             return shouldTrigger;
 
         } catch (error) {
-            logError('Failed to check if batch notification should trigger', {
+            logError(asError(error), {
+                job: JOB,
+                step: 'ETA.shouldTriggerBatchNotification',
                 appointmentId: appointment.appointmentId,
-                error: error.message
             });
             return false;
         }
@@ -216,13 +283,28 @@ export class BatchOrchestrator {
             const travelTimeMinutes = Math.ceil(etaResult.durationSeconds / 60);
 
             // Find user FCM tokens
-            const userTokens = await UserToken.find({ 
-                userId: appointment.patientId, 
-                isActive: true 
+            const patientUserId = resolvePatientUserId(appointment.patientId);
+            const userTokens = await UserToken.find({
+                userId: patientUserId,
+                isActive: true,
             });
 
             if (userTokens.length === 0) {
-                throw new Error(`No active FCM tokens found for patient ${appointment.patientId}`);
+                logWarn('ETA departure notification skipped — no active FCM tokens for patient', {
+                    job: JOB,
+                    step: 'ETA.triggerBatchNotification',
+                    appointmentId: appointment.appointmentId,
+                    patientUserId,
+                });
+                return {
+                    appointmentId: appointment.appointmentId,
+                    patientId: patientUserId,
+                    batchNumber: appointment.batchNumber,
+                    travelTimeMinutes,
+                    tokensSent: 0,
+                    skipped: true,
+                    skipReason: 'no_fcm_tokens',
+                };
             }
 
             // Send notification to all active tokens
@@ -259,26 +341,29 @@ export class BatchOrchestrator {
 
             logInfo('Batch notification sent', {
                 appointmentId: appointment.appointmentId,
-                patientId: appointment.patientId,
+                patientId: patientUserId,
                 batchNumber: appointment.batchNumber,
                 travelTimeMinutes,
-                tokensSent: userTokens.length
+                tokensSent: userTokens.length,
             });
 
             return {
                 appointmentId: appointment.appointmentId,
-                patientId: appointment.patientId,
+                patientId: patientUserId,
                 batchNumber: appointment.batchNumber,
                 travelTimeMinutes,
-                tokensSent: userTokens.length
+                tokensSent: userTokens.length,
+                skipped: false,
             };
 
         } catch (error) {
-            logError('Failed to trigger batch notification', {
+            const e = asError(error);
+            logError(e, {
+                job: JOB,
+                step: 'ETA.triggerBatchNotification',
                 appointmentId: appointment.appointmentId,
-                error: error.message
             });
-            throw error;
+            throw e;
         }
     }
     
@@ -341,11 +426,13 @@ export class BatchOrchestrator {
             };
 
         } catch (error) {
-            logError('Failed to handle check-in', {
+            const e = asError(error);
+            logError(e, {
+                job: JOB,
+                step: 'handleCheckIn',
                 appointmentId,
-                error: error.message
             });
-            throw error;
+            throw e;
         }
     }
     
@@ -368,9 +455,10 @@ export class BatchOrchestrator {
             return sameBatchAppointments.length > 0;
 
         } catch (error) {
-            logError('Failed to check if should advance to next batch', {
+            logError(asError(error), {
+                job: JOB,
+                step: 'shouldAdvanceToNextBatch',
                 appointmentId: appointment.appointmentId,
-                error: error.message
             });
             return false;
         }
@@ -424,9 +512,10 @@ export class BatchOrchestrator {
                     const result = await this.triggerBatchNotification(appointment);
                     results.push(result);
                 } catch (error) {
-                    logError('Failed to trigger next batch notification', {
+                    logError(asError(error), {
+                        job: JOB,
+                        step: 'advanceToNextBatch.perAppointment',
                         appointmentId: appointment.appointmentId,
-                        error: error.message
                     });
                 }
             }
@@ -447,13 +536,15 @@ export class BatchOrchestrator {
             };
 
         } catch (error) {
-            logError('Failed to advance to next batch', {
+            const e = asError(error);
+            logError(e, {
+                job: JOB,
+                step: 'advanceToNextBatch',
                 doctorId,
                 appointmentDate,
                 appointmentTime,
-                error: error.message
             });
-            throw error;
+            throw e;
         }
     }
     
@@ -466,16 +557,38 @@ export class BatchOrchestrator {
             const now = new Date();
             const noShowThreshold = 10; // 10 minutes after suggested arrival time
 
-            // Find appointments that are no-shows
-            const noShowAppointments = await appointments.find({
-                batchStatus: 'sent',
-                suggestedArrivalAt: { $lt: new Date(now.getTime() - noShowThreshold * 60 * 1000) },
-                isCheckedIn: { $ne: true }
+            logInfo('No-show: querying appointments', {
+                job: JOB,
+                mongoReadyState: mongoose.connection.readyState,
+                noShowThresholdMinutes: noShowThreshold,
             });
+
+            let noShowAppointments;
+            try {
+                noShowAppointments = await appointments.find({
+                    batchStatus: 'sent',
+                    suggestedArrivalAt: {
+                        $lt: new Date(now.getTime() - noShowThreshold * 60 * 1000),
+                    },
+                    isCheckedIn: { $ne: true },
+                });
+            } catch (queryErr) {
+                const e = asError(queryErr);
+                logError(e, {
+                    job: JOB,
+                    step: 'noShow.findAppointments',
+                    mongoReadyState: mongoose.connection.readyState,
+                    hint:
+                        mongoose.connection.readyState !== 1
+                            ? 'MongoDB not connected (readyState!==1).'
+                            : undefined,
+                });
+                throw e;
+            }
 
             logInfo('No-show detection started', {
                 noShowAppointments: noShowAppointments.length,
-                currentTime: now.toISOString()
+                currentTime: now.toISOString(),
             });
 
             const results = [];
@@ -503,9 +616,10 @@ export class BatchOrchestrator {
                     });
 
                 } catch (error) {
-                    logError('Failed to handle no-show', {
+                    logError(asError(error), {
+                        job: JOB,
+                        step: 'noShow.perAppointment',
                         appointmentId: appointment.appointmentId,
-                        error: error.message
                     });
                 }
             }
@@ -526,8 +640,13 @@ export class BatchOrchestrator {
             };
 
         } catch (error) {
-            logError('No-show detection failed', { error: error.message });
-            throw error;
+            const e = asError(error);
+            logError(e, {
+                job: JOB,
+                step: 'handleNoShows',
+                mongoReadyState: mongoose.connection.readyState,
+            });
+            throw e;
         }
     }
 }
