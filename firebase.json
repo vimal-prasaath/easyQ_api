@@ -1,4 +1,13 @@
 {
+  "hosting": {
+    "public": "public",
+    "rewrites": [
+      {
+        "source": "/admin/**",
+        "function": "api3"
+      }
+    ]
+  },
   "functions": [
     {
       "source": ".",
@@ -8,8 +17,12 @@
         ".git",
         "firebase-debug.log",
         "firebase-debug.*.log",
-        "*.local"
-      ]
+        "*.local",
+        "src/config/sheduler.js",
+        "src/config/batchScheduler.js",
+        "src/config/delayCleanupScheduler.js"
+      ],
+      "runtime": "nodejs22"
     }
   ]
 }

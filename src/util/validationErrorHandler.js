@@ -150,12 +150,17 @@ export class ValidationErrorHandler {
             return error;
         }
 
-        // Handle unexpected errors
+        // Always pass a string — Google API errors can be non-serializable (circular) in JSON responses
+        const safeMsg =
+            typeof error?.message === 'string' && error.message
+                ? error.message
+                : String(error?.message ?? error ?? 'An unexpected error occurred');
+
         return new EasyQError(
             'InternalServerError',
             httpStatusCode.INTERNAL_SERVER_ERROR,
             false,
-            error
+            safeMsg
         );
     }
 
@@ -163,10 +168,18 @@ export class ValidationErrorHandler {
      * Format error response for API
      */
     static formatErrorResponse(error) {
+        let message = error.description ?? error.message;
+        if (typeof message !== 'string') {
+            if (message && typeof message === 'object' && typeof message.message === 'string') {
+                message = message.message;
+            } else {
+                message = String(message ?? 'An unexpected error occurred');
+            }
+        }
         return {
             status: 'error',
             name: error.name,
-            message: error.description || error.message,
+            message,
             ...(error.details && { details: error.details }),
             ...(process.env.NODE_ENV === 'development' && error.stack && { stack: error.stack })
         };

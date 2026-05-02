@@ -13,6 +13,7 @@ import { httpStatusCode } from "../util/statusCode.js"
 import {logInfo, logError, logWarn} from "../config/logger.js"
 import { deleteFolderFromFirebase } from "../config/fireBaseStorage.js"
 import { calculateUserHospitalDistance, calculateApproximateTravelTime } from '../util/distanceCalculator.js'
+import { approvedActiveHospitalListingFilter } from '../util/approvedHospitalFilter.js'
 
 export async function createHospital(req, res, next) {
 
@@ -400,7 +401,8 @@ export async function updateReviewComment(req, res, next) {
 
 export async function getAllHospitalDetails(req, res, next) {
     try {
-        const allHospitals = await  Hospital.find({ isActive: true });
+        const hospitalFilter = await approvedActiveHospitalListingFilter();
+        const allHospitals = await Hospital.find(hospitalFilter);
 
         res.status(httpStatusCode.OK).json({
             message: 'Successfully retrieved all hospital basic details',
@@ -500,9 +502,11 @@ export async function getHospitalDetailsBylocation(req, res, next) {
         const query = searchBylocation(req.body);
         let allHospitals;
 
-        // If no search criteria provided but patientId exists, get all active hospitals
+        const approvedActiveFilter = await approvedActiveHospitalListingFilter();
+
+        // If no search criteria provided but patientId exists, get all active approved hospitals
         if (Object.keys(query).length === 0 && req.body.patientId) {
-            allHospitals = await Hospital.find({ isActive: true }).lean();
+            allHospitals = await Hospital.find(approvedActiveFilter).lean();
             logInfo('No search criteria provided, fetching all active hospitals for patient', {
                 patientId: req.body.patientId,
                 hospitalCount: allHospitals.length
@@ -515,7 +519,7 @@ export async function getHospitalDetailsBylocation(req, res, next) {
                 "Please provide either address, location, or patientId for the search."
             ));
         } else {
-            allHospitals = await Hospital.find({ ...query, isActive: true }).lean();
+            allHospitals = await Hospital.find({ ...query, ...approvedActiveFilter }).lean();
         }
         
         // Add distance and travel time calculation

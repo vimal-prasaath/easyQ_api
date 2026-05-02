@@ -1,8 +1,18 @@
 import FCMToken from '../model/fcmToken.js';
-import { logInfo, logError } from '../config/logger.js';
+import { logInfo, logError, logWarn } from '../config/logger.js';
 import { EasyQError } from '../config/error.js';
 import { httpStatusCode } from '../util/statusCode.js';
 import admin from '../config/firebaseAdmin.js';
+import { appendNotificationSentToToken } from '../util/fcmTokenNotificationLog.js';
+
+/** Safe preview for logs — never log full FCM tokens. */
+function maskFcmToken(token) {
+    if (token == null || typeof token !== 'string') return '(invalid)';
+    const s = token.trim();
+    if (s.length === 0) return '(empty)';
+    if (s.length <= 20) return `(len=${s.length})`;
+    return `${s.slice(0, 8)}...${s.slice(-6)} len=${s.length}`;
+}
 
 /**
  * Save or update FCM token for a user
@@ -282,6 +292,32 @@ export const sendTestNotification = async (req, res, next) => {
 
         const primaryToken = tokens[0];
 
+        const firebaseProjectId =
+            typeof admin.app === 'function' ? admin.app()?.options?.projectId : undefined;
+
+        logInfo('FCM test send: resolved token', {
+            userId,
+            firebaseProjectId: firebaseProjectId ?? '(unknown)',
+            activeTokenCount: tokens.length,
+            usingTokenDocId: String(primaryToken._id),
+            platform: primaryToken.deviceInfo?.platform ?? '(unset)',
+            tokenPreview: maskFcmToken(primaryToken.fcmToken),
+            lastUsed: primaryToken.lastUsed,
+            dataOnly: Boolean(dataOnly),
+        });
+
+        if (tokens.length > 1) {
+            logWarn('FCM test send: multiple active tokens — only the first (by lastUsed) is used', {
+                userId,
+                ordered: tokens.map((t) => ({
+                    id: String(t._id),
+                    platform: t.deviceInfo?.platform ?? '(unset)',
+                    lastUsed: t.lastUsed,
+                    preview: maskFcmToken(t.fcmToken),
+                })),
+            });
+        }
+
         const payloadData = Object.assign({}, data);
         if (Array.isArray(actions) && actions.length > 0) {
             // Serialize actions array for transport in data-only payloads
@@ -304,6 +340,15 @@ export const sendTestNotification = async (req, res, next) => {
         }
 
         const response = await admin.messaging().send(message);
+
+        await appendNotificationSentToToken(primaryToken._id, {
+            messageId: response,
+            notification: message.notification,
+            data: message.data,
+            kind: payloadData?.type ?? 'test_notification',
+            patientId: userId,
+            meta: { source: 'fcmToken.sendTestNotification' },
+        });
 
         logInfo('Test notification sent', {
             userId,
@@ -353,18 +398,35 @@ export const sendTestNotification = async (req, res, next) => {
             }
         }
 
-        logError(error, { userId: req.body?.userId });
+        const fbCode = error && typeof error === 'object' ? error.code : undefined;
+        const fbMessage = error && typeof error === 'object' ? error.message : String(error);
+        const fbErrorInfo = error && typeof error === 'object' && error.errorInfo ? error.errorInfo : undefined;
+        const httpStatus =
+            error && typeof error === 'object' && error.httpErrorCode?.status
+                ? error.httpErrorCode.status
+                : undefined;
+
+        logError(error, {
+            userId: req.body?.userId,
+            step: 'sendTestNotification',
+            firebaseCode: fbCode,
+            firebaseMessage: fbMessage,
+            firebaseErrorInfo: fbErrorInfo,
+            firebaseHttpStatus: httpStatus,
+        });
 
         if (error instanceof EasyQError) {
             return next(error);
         }
 
-        next(new EasyQError(
-            'InternalServerError',
-            httpStatusCode.INTERNAL_SERVER_ERROR,
-            true,
-            'Failed to send notification'
-        ));
+        next(
+            new EasyQError(
+                'InternalServerError',
+                httpStatusCode.INTERNAL_SERVER_ERROR,
+                true,
+                `Failed to send notification${fbCode ? ` (${fbCode})` : ''}`
+            )
+        );
     }
 };
 

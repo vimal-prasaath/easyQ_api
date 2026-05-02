@@ -1,59 +1,117 @@
 import cron from 'node-cron';
-import appointments from "../model/appointment.js"
-import UserToken from "../model/fcmModel.js"
+import appointments from "../model/appointment.js";
+import FCMToken from "../model/fcmToken.js";
 import admin from './firebaseAdmin.js';
 import { logInfo, logError } from './logger.js';
+import { appendNotificationSentToToken } from '../util/fcmTokenNotificationLog.js';
+import { appointmentStartUtcFromParts } from '../util/appointmentInstant.js';
 
-// Fixed 2-hour reminder scheduler
+/** Match cron minute + small clock drift */
+const REMINDER_MATCH_WINDOW_MS = 90 * 1000;
+
+/** Local: NODE_ENV != production OR DEBUG_SCHEDULERS=1. Per-row eval: DEBUG_SCHEDULERS_VERBOSE=1 */
+const schedLog = (...args) => {
+    if (process.env.NODE_ENV !== 'production' || process.env.DEBUG_SCHEDULERS === '1' || process.env.DEBUG_SCHEDULERS === 'true') {
+        console.log('[EasyQ 2h-scheduler]', new Date().toISOString(), ...args);
+    }
+};
+const schedVerbose = () =>
+    process.env.DEBUG_SCHEDULERS_VERBOSE === '1' || process.env.DEBUG_SCHEDULERS_VERBOSE === 'true';
+
+// Fixed 2-hour reminder scheduler (runs every minute)
 cron.schedule('*/1 * * * *', async () => {
     try {
         const now = new Date();
-        const targetTime = new Date(now.getTime() + 2 * 60 * 60 * 1000); // 2 hours ahead
-        const windowEnd = new Date(targetTime.getTime() + 60000); // 1 minute window
-        console.log('targetTime', targetTime);
-        console.log('windowEnd', windowEnd);
-        // Find appointments that need 2-hour reminders
-        const appointmentsToRemind = await appointments.find({
-            appointmentDate: {
-                $gte: new Date(targetTime.getFullYear(), targetTime.getMonth(), targetTime.getDate()),
-                $lt: new Date(windowEnd.getFullYear(), windowEnd.getMonth(), windowEnd.getDate() + 1)
-            },
-            appointmentTime: {
-                $gte: targetTime.getHours() * 100 + targetTime.getMinutes(),
-                $lt: windowEnd.getHours() * 100 + windowEnd.getMinutes()
-            },
+
+        // Candidates in a modest date range (avoid full collection scan)
+        const from = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        const to = new Date(now.getTime() + 8 * 24 * 60 * 60 * 1000);
+
+        schedLog('tick', { from: from.toISOString(), to: to.toISOString() });
+
+        const candidates = await appointments.find({
             reminderSent: { $ne: true },
-            status: 'Scheduled'
+            status: 'Scheduled',
+            appointmentDate: { $gte: from, $lte: to },
         });
 
-        logInfo('Scheduler check', { 
-            targetTime: targetTime.toISOString(),
-            appointmentsFound: appointmentsToRemind.length 
+        schedLog('candidates (raw count)', candidates.length);
+
+        const appointmentsToRemind = [];
+        for (const appt of candidates) {
+            const start = appointmentStartUtcFromParts(
+                appt.appointmentDate,
+                appt.appointmentTime
+            );
+            if (!start || Number.isNaN(start.getTime())) {
+                schedLog('skip — bad start', { appointmentId: appt.appointmentId, time: appt.appointmentTime });
+                continue;
+            }
+
+            const remindAt = new Date(start.getTime() - 2 * 60 * 60 * 1000);
+            const inWindow =
+                now.getTime() >= remindAt.getTime() &&
+                now.getTime() < remindAt.getTime() + REMINDER_MATCH_WINDOW_MS;
+
+            if (schedVerbose()) {
+                schedLog('eval', {
+                    appointmentId: appt.appointmentId,
+                    patientId: appt.patientId,
+                    appointmentTime: appt.appointmentTime,
+                    startUtc: start.toISOString(),
+                    remindAtUtc: remindAt.toISOString(),
+                    inWindow,
+                });
+            }
+
+            if (inWindow) {
+                appointmentsToRemind.push(appt);
+            }
+        }
+
+        logInfo('Scheduler check', {
+            mode: '2hour_reminder_IST',
+            currentTime: now.toISOString(),
+            candidatesScanned: candidates.length,
+            appointmentsToRemind: appointmentsToRemind.length,
         });
 
         for (const appt of appointmentsToRemind) {
             try {
-                // Find user FCM tokens by userId (not patientId)
-                const userTokens = await UserToken.find({ userId: appt.patientId, isActive: true });
-                
+                schedLog('sending 2h reminder', { appointmentId: appt.appointmentId, patientId: appt.patientId });
+
+                const userTokens = await FCMToken.find({
+                    userId: appt.patientId,
+                    isActive: true,
+                });
+
+                schedLog('FCM tokens for user', { patientId: appt.patientId, count: userTokens.length });
+
                 if (userTokens.length > 0) {
-                    // Send to all active tokens for the user
                     for (const tokenDoc of userTokens) {
-                        await admin.messaging().send({
+                        const fcmPayload = {
                             token: tokenDoc.fcmToken,
                             notification: {
                                 title: 'Upcoming Appointment',
-                                body: `Your appointment is in 2 hours. We'll send you updates about when to leave.`
+                                body: `Your appointment is in 2 hours. We'll send you updates about when to leave.`,
                             },
                             data: {
                                 appointmentId: appt.appointmentId,
                                 type: '2hour_reminder',
-                                deeplink: `app://appointment/${appt.appointmentId}`
-                            }
+                                deeplink: `app://appointment/${appt.appointmentId}`,
+                            },
+                        };
+                        const messageId = await admin.messaging().send(fcmPayload);
+                        await appendNotificationSentToToken(tokenDoc._id, {
+                            messageId,
+                            notification: fcmPayload.notification,
+                            data: fcmPayload.data,
+                            kind: '2hour_reminder',
+                            appointmentId: appt.appointmentId,
+                            patientId: appt.patientId,
                         });
                     }
 
-                    // Mark reminder as sent
                     await appointments.updateOne(
                         { appointmentId: appt.appointmentId },
                         { reminderSent: true }
@@ -62,17 +120,22 @@ cron.schedule('*/1 * * * *', async () => {
                     logInfo('2-hour reminder sent', {
                         appointmentId: appt.appointmentId,
                         patientId: appt.patientId,
-                        tokensSent: userTokens.length
+                        tokensSent: userTokens.length,
                     });
+                    schedLog('done', { appointmentId: appt.appointmentId, tokensSent: userTokens.length, reminderSent: true });
+                } else {
+                    schedLog('no FCM tokens — not marking reminderSent', { appointmentId: appt.appointmentId, patientId: appt.patientId });
                 }
             } catch (error) {
                 logError('Failed to send reminder', {
                     appointmentId: appt.appointmentId,
-                    error: error.message
+                    error: error.message,
                 });
+                schedLog('error in appt loop', { appointmentId: appt.appointmentId, error: error.message });
             }
         }
     } catch (error) {
         logError('Scheduler error', { error: error.message });
+        schedLog('FATAL', { error: error.message });
     }
 });

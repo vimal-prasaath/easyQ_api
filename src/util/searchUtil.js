@@ -1,7 +1,34 @@
 import SearchSuggestion from "../model/search.js";
+import { EasyQError } from "../config/error.js";
+import { httpStatusCode } from "../util/statusCode.js";
+import AdminProfile from "../model/adminProfile.js";
+
 export const buildSearchPipeline = (parms) => {
   try {
     const pipeline = [];
+    const adminCollection = AdminProfile.collection.name;
+
+    pipeline.push({ $match: { isActive: true } });
+    pipeline.push({
+      $lookup: {
+        from: adminCollection,
+        let: { hidAdminId: "$adminId" },
+        pipeline: [
+          {
+            $match: {
+              $expr: { $eq: ["$adminId", "$$hidAdminId"] },
+              verificationStatus: "Approved",
+            },
+          },
+          { $limit: 1 },
+        ],
+        as: "_approvedAdminCheck",
+      },
+    });
+    pipeline.push({
+      $match: { "_approvedAdminCheck.0": { $exists: true } },
+    });
+
     const matchCondition = {};
 
     if (!parms || typeof parms !== "object") {

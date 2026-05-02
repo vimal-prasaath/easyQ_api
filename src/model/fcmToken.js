@@ -46,7 +46,29 @@ const fcmTokenSchema = new mongoose.Schema({
     updatedAt: {
         type: Date,
         default: Date.now
-    }
+    },
+
+    /** Last outbound FCM notifications for this device (capped server-side). */
+    notificationsSent: [
+        {
+            sentAt: { type: Date, default: Date.now },
+            messageId: { type: String },
+            kind: { type: String },
+            notification: {
+                title: String,
+                body: String,
+            },
+            data: { type: mongoose.Schema.Types.Mixed },
+            appointmentId: String,
+            patientId: String,
+            hospitalId: String,
+            doctorId: String,
+            travelTimeMinutes: Number,
+            suggestedDepartureTime: String,
+            batchNumber: String,
+            meta: { type: mongoose.Schema.Types.Mixed },
+        },
+    ],
 }, {
     timestamps: true
 });

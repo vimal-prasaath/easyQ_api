@@ -7,8 +7,23 @@ import Doctor from '../model/doctor.js';
 import admin from '../config/firebaseAdmin.js';
 import { getEta } from '../notificationOrchestrator/services/etaService.js';
 import { logInfo, logWarn, logError } from '../config/logger.js';
+import NotificationDispatch from '../model/notificationDispatch.js';
+import { appendNotificationSentToToken } from '../util/fcmTokenNotificationLog.js';
 
 const JOB = 'BatchOrchestrator';
+
+/** Local: NODE_ENV !== production OR DEBUG_BATCH_ETA=1. Per-appointment lines: DEBUG_BATCH_ETA_VERBOSE=1 */
+const batchDbg = (...args) => {
+    if (process.env.NODE_ENV !== 'production' || process.env.DEBUG_BATCH_ETA === '1' || process.env.DEBUG_BATCH_ETA === 'true') {
+        console.log('[EasyQ batch-ETA]', new Date().toISOString(), ...args);
+    }
+};
+
+const batchDbgVerbose = (...args) => {
+    if (process.env.DEBUG_BATCH_ETA_VERBOSE === '1' || process.env.DEBUG_BATCH_ETA_VERBOSE === 'true') {
+        batchDbg(...args);
+    }
+};
 
 function asError(err) {
     return err instanceof Error ? err : new Error(String(err));
@@ -26,7 +41,8 @@ function resolvePatientUserId(patientIdField) {
 export class BatchOrchestrator {
     
     static BATCH_SIZE = 5; // 5 patients per batch
-    static BUFFER_MINUTES = 5; // 5 minute buffer before appointment
+    /** Extra minutes before appointment start added on top of driving ETA for “leave now” trigger */
+    static BUFFER_MINUTES = 20;
     
     /**
      * Assign batch numbers to appointments when they are created
@@ -122,13 +138,29 @@ export class BatchOrchestrator {
                 currentTime: now.toISOString(),
             });
 
+            batchDbg('cron tick', {
+                mongoReadyState: mongoose.connection.readyState,
+                pendingCount: pendingAppointments.length,
+                todayWindow: { start: today.toISOString(), endExclusive: dayEnd.toISOString() },
+            });
+
             const results = [];
             
             for (const appointment of pendingAppointments) {
                 try {
+                    batchDbgVerbose('checking appointment', {
+                        appointmentId: appointment.appointmentId,
+                        batchStatus: appointment.batchStatus,
+                        appointmentTime: appointment.appointmentTime,
+                        hasPatientAddress: !!appointment.patientAddress?.origin,
+                    });
+
                     const shouldTrigger = await this.shouldTriggerBatchNotification(appointment, now);
                     
+                    batchDbgVerbose('shouldTrigger', { appointmentId: appointment.appointmentId, shouldTrigger });
+
                     if (shouldTrigger) {
+                        batchDbg('triggering Time to Leave', { appointmentId: appointment.appointmentId });
                         const result = await this.triggerBatchNotification(appointment);
                         results.push(result);
                     }
@@ -143,6 +175,12 @@ export class BatchOrchestrator {
 
             const sentCount = results.filter((r) => r.tokensSent > 0).length;
             const skippedNoFcm = results.filter((r) => r.skipped).length;
+
+            batchDbg('cron done', {
+                notificationsTriggered: sentCount,
+                skippedNoFcmTokens: skippedNoFcm,
+                appointmentIds: results.map((r) => r.appointmentId),
+            });
 
             logInfo('ETA batch processing completed', {
                 notificationsTriggered: sentCount,
@@ -183,6 +221,10 @@ export class BatchOrchestrator {
         try {
             // Skip if already sent and not in current batch
             if (appointment.batchStatus === 'sent' && !this.isCurrentBatch(appointment, now)) {
+                batchDbgVerbose('skip — already sent, not current batch', {
+                    appointmentId: appointment.appointmentId,
+                    batchStatus: appointment.batchStatus,
+                });
                 return false;
             }
 
@@ -199,6 +241,11 @@ export class BatchOrchestrator {
             }
 
             if (!patientAddress?.origin || !appointment.hospitalId?.location?.coordinates) {
+                batchDbgVerbose('skip — missing location', {
+                    appointmentId: appointment.appointmentId,
+                    hasPatientAddress: !!patientAddress?.origin,
+                    hasHospitalLocation: !!appointment.hospitalId?.location?.coordinates,
+                });
                 logInfo('Skipping appointment - missing location data', {
                     appointmentId: appointment.appointmentId,
                     hasPatientAddress: !!patientAddress?.origin,
@@ -239,9 +286,21 @@ export class BatchOrchestrator {
                 shouldTrigger
             });
 
+            batchDbgVerbose('ETA math', {
+                appointmentId: appointment.appointmentId,
+                appointmentStoredTime: appointment.appointmentTime,
+                appointmentDateTimeUtc: appointmentDateTime.toISOString(),
+                travelTimeMinutes,
+                bufferMinutes: this.BUFFER_MINUTES,
+                suggestedDepartureTimeUtc: suggestedDepartureTime.toISOString(),
+                nowUtc: now.toISOString(),
+                shouldTrigger,
+            });
+
             return shouldTrigger;
 
         } catch (error) {
+            batchDbg('ETA error', { appointmentId: appointment?.appointmentId, message: error?.message });
             logError(asError(error), {
                 job: JOB,
                 step: 'ETA.shouldTriggerBatchNotification',
@@ -282,6 +341,20 @@ export class BatchOrchestrator {
 
             const travelTimeMinutes = Math.ceil(etaResult.durationSeconds / 60);
 
+            const coords = appointment.hospitalId.location.coordinates;
+            const destinationLat = coords[1];
+            const destinationLng = coords[0];
+            const sourceLat = patientAddress.origin.lat;
+            const sourceLng = patientAddress.origin.lng;
+
+            const appointmentDateTime = new Date(appointment.appointmentDate);
+            const [hh, mm] = appointment.appointmentTime.split(':');
+            appointmentDateTime.setHours(parseInt(hh, 10), parseInt(mm, 10), 0, 0);
+            const suggestedDepartureTime = new Date(
+                appointmentDateTime.getTime() -
+                    (travelTimeMinutes + this.BUFFER_MINUTES) * 60000
+            );
+
             // Find user FCM tokens
             const patientUserId = resolvePatientUserId(appointment.patientId);
             const userTokens = await UserToken.find({
@@ -296,6 +369,37 @@ export class BatchOrchestrator {
                     appointmentId: appointment.appointmentId,
                     patientUserId,
                 });
+
+                // Record skip in DB for auditability
+                await NotificationDispatch.updateOne(
+                    {
+                        appointmentId: appointment.appointmentId,
+                        type: 'batch_departure_notification',
+                        batchNumber: appointment.batchNumber ?? null,
+                    },
+                    {
+                        $setOnInsert: {
+                            patientId: patientUserId,
+                            hospitalId: appointment.hospitalId?.hospitalId ?? appointment.hospitalId?._id ?? undefined,
+                            doctorId: appointment.doctorId ?? undefined,
+                            travelTimeMinutes,
+                            tokensTargeted: 0,
+                            tokensSent: 0,
+                            status: 'skipped',
+                            skipReason: 'no_fcm_tokens',
+                            dispatchedAt: new Date(),
+                        },
+                    },
+                    { upsert: true }
+                ).catch((e) => {
+                    logWarn('Failed to record notification skip', {
+                        job: JOB,
+                        step: 'ETA.triggerBatchNotification.logSkip',
+                        appointmentId: appointment.appointmentId,
+                        error: e?.message || String(e),
+                    });
+                });
+
                 return {
                     appointmentId: appointment.appointmentId,
                     patientId: patientUserId,
@@ -307,13 +411,18 @@ export class BatchOrchestrator {
                 };
             }
 
+            const hospitalIdStr =
+                appointment.hospitalId?.hospitalId ??
+                appointment.hospitalId?._id?.toString?.() ??
+                undefined;
+
             // Send notification to all active tokens
             for (const tokenDoc of userTokens) {
-                await admin.messaging().send({
+                const fcmPayload = {
                     token: tokenDoc.fcmToken,
                     notification: {
                         title: 'Time to Leave!',
-                        body: `Leave now to reach ${appointment.hospitalId.name} in ~${travelTimeMinutes} minutes. Your appointment is at ${appointment.appointmentTime}.`
+                        body: `Leave now to reach ${appointment.hospitalId.name} in ~${travelTimeMinutes} minutes. Your appointment is at ${appointment.appointmentTime}.`,
                     },
                     data: {
                         appointmentId: appointment.appointmentId,
@@ -321,16 +430,33 @@ export class BatchOrchestrator {
                         travelTimeMinutes: travelTimeMinutes.toString(),
                         batchNumber: appointment.batchNumber?.toString() || '1',
                         hospitalName: appointment.hospitalId.name,
-                        deeplink: `app://appointment/${appointment.appointmentId}`
-                    }
+                        hospitalId: hospitalIdStr ?? '',
+                        appointmentTime: appointment.appointmentTime,
+                        deeplink: `app://appointment/${appointment.appointmentId}`,
+                        suggestedDepartureTime: suggestedDepartureTime.toISOString(),
+                        sourceLat: String(sourceLat),
+                        sourceLng: String(sourceLng),
+                        destinationLat: String(destinationLat),
+                        destinationLng: String(destinationLng),
+                    },
+                };
+                const messageId = await admin.messaging().send(fcmPayload);
+                await appendNotificationSentToToken(tokenDoc._id, {
+                    messageId,
+                    notification: fcmPayload.notification,
+                    data: fcmPayload.data,
+                    kind: 'batch_departure_notification',
+                    appointmentId: appointment.appointmentId,
+                    patientId: patientUserId,
+                    hospitalId: hospitalIdStr,
+                    doctorId: appointment.doctorId ?? undefined,
+                    travelTimeMinutes,
+                    batchNumber: appointment.batchNumber?.toString() || '1',
+                    suggestedDepartureTime: suggestedDepartureTime.toISOString(),
                 });
             }
 
             // Update appointment status
-            const appointmentDateTime = new Date(appointment.appointmentDate);
-            const [hours, minutes] = appointment.appointmentTime.split(':');
-            appointmentDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-            
             await appointments.updateOne(
                 { appointmentId: appointment.appointmentId },
                 { 
@@ -338,6 +464,39 @@ export class BatchOrchestrator {
                     suggestedArrivalAt: new Date(appointmentDateTime.getTime() - this.BUFFER_MINUTES * 60000)
                 }
             );
+
+            // Record dispatch in DB (idempotent)
+            await NotificationDispatch.updateOne(
+                {
+                    appointmentId: appointment.appointmentId,
+                    type: 'batch_departure_notification',
+                    batchNumber: appointment.batchNumber ?? null,
+                },
+                {
+                    $setOnInsert: {
+                        patientId: patientUserId,
+                        hospitalId: appointment.hospitalId?.hospitalId ?? appointment.hospitalId?._id ?? undefined,
+                        doctorId: appointment.doctorId ?? undefined,
+                        appointmentAt: appointmentDateTime,
+                        travelTimeMinutes,
+                        tokensTargeted: userTokens.length,
+                        tokensSent: userTokens.length,
+                        status: 'sent',
+                        dispatchedAt: new Date(),
+                        meta: {
+                            hospitalName: appointment.hospitalId?.name,
+                        },
+                    },
+                },
+                { upsert: true }
+            ).catch((e) => {
+                logWarn('Failed to record notification dispatch', {
+                    job: JOB,
+                    step: 'ETA.triggerBatchNotification.logSent',
+                    appointmentId: appointment.appointmentId,
+                    error: e?.message || String(e),
+                });
+            });
 
             logInfo('Batch notification sent', {
                 appointmentId: appointment.appointmentId,

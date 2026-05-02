@@ -18,9 +18,10 @@ export const uploadMiddleware = (req, res, next) => {
     const busboy = Busboy({ 
         headers: req.headers,
         limits: {
-            fileSize: 2 * 1024 * 1024, // 2MB limit
+            // Align with doctor/nurse image validation (5MB); iPhone HEIC often 2–5MB
+            fileSize: 5 * 1024 * 1024,
             files: 1, // Only one file
-            fields: 5 // Maximum 5 fields
+            fields: 10 // adminId, doctorId, file + multipart overhead
         }
     });
 
@@ -33,8 +34,16 @@ export const uploadMiddleware = (req, res, next) => {
         console.log('Processing file:', fieldname, fileInfo.filename);
         
         // Validate file type and fix MIME type for octet-stream
-        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf', 'application/octet-stream'];
-        const allowedExtensions = ['.jpg', '.jpeg', '.png', '.pdf'];
+        const allowedTypes = [
+            'image/jpeg',
+            'image/jpg',
+            'image/png',
+            'image/heic',
+            'image/heif',
+            'application/pdf',
+            'application/octet-stream'
+        ];
+        const allowedExtensions = ['.jpg', '.jpeg', '.png', '.pdf', '.heic', '.heif'];
         
         // Get file extension
         const fileExtension = fileInfo.filename.toLowerCase().substring(fileInfo.filename.lastIndexOf('.'));
@@ -47,7 +56,9 @@ export const uploadMiddleware = (req, res, next) => {
                     '.jpg': 'image/jpeg',
                     '.jpeg': 'image/jpeg',
                     '.png': 'image/png',
-                    '.pdf': 'application/pdf'
+                    '.pdf': 'application/pdf',
+                    '.heic': 'image/heic',
+                    '.heif': 'image/heif'
                 };
                 fileInfo.mimeType = mimeTypeMap[fileExtension];
                 console.log(`Fixed MIME type from octet-stream to: ${fileInfo.mimeType} for file: ${fileInfo.filename}`);
@@ -57,7 +68,7 @@ export const uploadMiddleware = (req, res, next) => {
                     'ValidationError',
                     httpStatusCode.UNSUPPORTED_MEDIA_TYPE,
                     true,
-                    'Invalid file type. Only JPEG, JPG, PNG, and PDF files are allowed.'
+                    'Invalid file type. Only JPEG, JPG, PNG, HEIC, HEIF, and PDF files are allowed.'
                 ));
             }
         }
@@ -69,7 +80,7 @@ export const uploadMiddleware = (req, res, next) => {
                 'ValidationError',
                 httpStatusCode.UNSUPPORTED_MEDIA_TYPE,
                 true,
-                'Invalid file type. Only JPEG, JPG, PNG, and PDF files are allowed.'
+                'Invalid file type. Only JPEG, JPG, PNG, HEIC, HEIF, and PDF files are allowed.'
             ));
         }
 

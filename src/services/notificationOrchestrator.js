@@ -5,6 +5,8 @@ import User from '../model/userProfile.js';
 import admin from '../config/firebaseAdmin.js';
 import { getEta } from '../notificationOrchestrator/services/etaService.js';
 import { logInfo, logError } from '../config/logger.js';
+import NotificationDispatch from '../model/notificationDispatch.js';
+import { appendNotificationSentToToken } from '../util/fcmTokenNotificationLog.js';
 
 export class NotificationOrchestrator {
     
@@ -37,17 +39,26 @@ export class NotificationOrchestrator {
             for (const appointment of appointmentList) {
                 // Send notification to all active tokens
                 for (const tokenDoc of userTokens) {
-                    await admin.messaging().send({
+                    const fcmPayload = {
                         token: tokenDoc.fcmToken,
                         notification: {
                             title: 'Upcoming Appointment',
-                            body: `Today in 2 hours your appointment will be ready. We'll send you updates about when to leave.`
+                            body: `Today in 2 hours your appointment will be ready. We'll send you updates about when to leave.`,
                         },
                         data: {
                             appointmentId: appointment.appointmentId,
                             type: 'manual_2hour_reminder',
-                            deeplink: `app://appointment/${appointment.appointmentId}`
-                        }
+                            deeplink: `app://appointment/${appointment.appointmentId}`,
+                        },
+                    };
+                    const messageId = await admin.messaging().send(fcmPayload);
+                    await appendNotificationSentToToken(tokenDoc._id, {
+                        messageId,
+                        notification: fcmPayload.notification,
+                        data: fcmPayload.data,
+                        kind: 'manual_2hour_reminder',
+                        appointmentId: appointment.appointmentId,
+                        patientId,
                     });
                 }
 
@@ -145,23 +156,46 @@ export class NotificationOrchestrator {
             appointmentDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
             
             const travelTimeMinutes = Math.ceil(etaResult.durationSeconds / 60);
-            const bufferMinutes = 5; // 5 minute buffer
+            const bufferMinutes = 20;
             const suggestedDepartureTime = new Date(appointmentDateTime.getTime() - (travelTimeMinutes + bufferMinutes) * 60000);
 
             // Find user FCM tokens
             const userTokens = await UserToken.find({ userId: patientId, isActive: true });
             
             if (userTokens.length === 0) {
+                await NotificationDispatch.updateOne(
+                    {
+                        appointmentId: appointment.appointmentId,
+                        type: 'location_based_departure',
+                        batchNumber: null,
+                    },
+                    {
+                        $setOnInsert: {
+                            patientId,
+                            hospitalId: appointment.hospitalId,
+                            doctorId: appointment.doctorId ?? undefined,
+                            appointmentAt: appointmentDateTime,
+                            suggestedDepartureTime,
+                            travelTimeMinutes,
+                            tokensTargeted: 0,
+                            tokensSent: 0,
+                            status: 'skipped',
+                            skipReason: 'no_fcm_tokens',
+                            dispatchedAt: new Date(),
+                        },
+                    },
+                    { upsert: true }
+                ).catch(() => {});
                 throw new Error(`No active FCM tokens found for patient ${patientId}`);
             }
 
             // Send notification to all active tokens
             for (const tokenDoc of userTokens) {
-                await admin.messaging().send({
+                const fcmPayload = {
                     token: tokenDoc.fcmToken,
                     notification: {
                         title: 'Time to Leave!',
-                        body: `Leave now to reach ${hospital.name} in ~${travelTimeMinutes} minutes. Your appointment is at ${appointment.appointmentTime}.`
+                        body: `Leave now to reach ${hospital.name} in ~${travelTimeMinutes} minutes. Your appointment is at ${appointment.appointmentTime}.`,
                     },
                     data: {
                         appointmentId: appointment.appointmentId,
@@ -169,10 +203,49 @@ export class NotificationOrchestrator {
                         travelTimeMinutes: travelTimeMinutes.toString(),
                         suggestedDepartureTime: suggestedDepartureTime.toISOString(),
                         hospitalName: hospital.name,
-                        deeplink: `app://appointment/${appointment.appointmentId}`
-                    }
+                        deeplink: `app://appointment/${appointment.appointmentId}`,
+                    },
+                };
+                const messageId = await admin.messaging().send(fcmPayload);
+                await appendNotificationSentToToken(tokenDoc._id, {
+                    messageId,
+                    notification: fcmPayload.notification,
+                    data: fcmPayload.data,
+                    kind: 'location_based_departure',
+                    appointmentId: appointment.appointmentId,
+                    patientId,
+                    hospitalId: appointment.hospitalId,
+                    doctorId: appointment.doctorId ?? undefined,
+                    travelTimeMinutes,
+                    suggestedDepartureTime: suggestedDepartureTime.toISOString(),
                 });
             }
+
+            await NotificationDispatch.updateOne(
+                {
+                    appointmentId: appointment.appointmentId,
+                    type: 'location_based_departure',
+                    batchNumber: null,
+                },
+                {
+                    $setOnInsert: {
+                        patientId,
+                        hospitalId: appointment.hospitalId,
+                        doctorId: appointment.doctorId ?? undefined,
+                        appointmentAt: appointmentDateTime,
+                        suggestedDepartureTime,
+                        travelTimeMinutes,
+                        tokensTargeted: userTokens.length,
+                        tokensSent: userTokens.length,
+                        status: 'sent',
+                        dispatchedAt: new Date(),
+                        meta: {
+                            hospitalName: hospital.name,
+                        },
+                    },
+                },
+                { upsert: true }
+            ).catch(() => {});
 
             // Update appointment with suggested arrival time
             await appointments.updateOne(
@@ -267,7 +340,7 @@ export class NotificationOrchestrator {
             appointmentDateTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
             
             const travelTimeMinutes = Math.ceil(etaResult.durationSeconds / 60);
-            const bufferMinutes = 5; // 5 minute buffer
+            const bufferMinutes = 20;
             const suggestedDepartureTime = new Date(appointmentDateTime.getTime() - (travelTimeMinutes + bufferMinutes) * 60000);
 
             // Find user FCM tokens
@@ -308,13 +381,26 @@ export class NotificationOrchestrator {
 
             // Send notification to all active tokens
             for (const tokenDoc of userTokens) {
-                await admin.messaging().send({
+                const fcmPayload = {
                     token: tokenDoc.fcmToken,
                     notification: {
                         title: 'Time to Leave!',
-                        body: `Leave now to reach ${hospital.name} in ~${travelTimeMinutes} minutes. Your appointment is at ${appointment.appointmentTime}.`
+                        body: `Leave now to reach ${hospital.name} in ~${travelTimeMinutes} minutes. Your appointment is at ${appointment.appointmentTime}.`,
                     },
-                    data: fcmData
+                    data: fcmData,
+                };
+                const messageId = await admin.messaging().send(fcmPayload);
+                await appendNotificationSentToToken(tokenDoc._id, {
+                    messageId,
+                    notification: fcmPayload.notification,
+                    data: fcmPayload.data,
+                    kind: fcmData.type,
+                    appointmentId: appointment.appointmentId,
+                    patientId: appointment.patientId,
+                    hospitalId: appointment.hospitalId,
+                    doctorId: appointment.doctorId ?? undefined,
+                    travelTimeMinutes,
+                    suggestedDepartureTime: suggestedDepartureTime.toISOString(),
                 });
             }
 
@@ -397,19 +483,31 @@ export class NotificationOrchestrator {
                 if (userTokens.length > 0) {
                     // Send notification to all active tokens
                     for (const tokenDoc of userTokens) {
-                        await admin.messaging().send({
+                        const fcmPayload = {
                             token: tokenDoc.fcmToken,
                             notification: {
                                 title: 'Appointment Delay Update',
-                                body: `Doctor is delayed by ${delayMinutes} minutes. Reason: ${reason}. If you wish to reschedule, you can click and reschedule.`
+                                body: `Doctor is delayed by ${delayMinutes} minutes. Reason: ${reason}. If you wish to reschedule, you can click and reschedule.`,
                             },
                             data: {
                                 appointmentId: appointment.appointmentId,
                                 type: 'doctor_delay',
                                 delayMinutes: delayMinutes.toString(),
                                 reason,
-                                deeplink: `app://reschedule/${appointment.appointmentId}`
-                            }
+                                deeplink: `app://reschedule/${appointment.appointmentId}`,
+                            },
+                        };
+                        const messageId = await admin.messaging().send(fcmPayload);
+                        await appendNotificationSentToToken(tokenDoc._id, {
+                            messageId,
+                            notification: fcmPayload.notification,
+                            data: fcmPayload.data,
+                            kind: 'doctor_delay',
+                            appointmentId: appointment.appointmentId,
+                            patientId: appointment.patientId,
+                            hospitalId: appointment.hospitalId,
+                            doctorId,
+                            meta: { delayMinutes },
                         });
                     }
 
@@ -487,11 +585,11 @@ export class NotificationOrchestrator {
 
             for (const tokenDoc of userTokens) {
                 try {
-                    await admin.messaging().send({
+                    const fcmPayload = {
                         token: tokenDoc.fcmToken,
                         notification: {
                             title: 'Appointment Booked Successfully',
-                            body: notificationMessage
+                            body: notificationMessage,
                         },
                         data: {
                             appointmentId: appointmentId,
@@ -501,8 +599,17 @@ export class NotificationOrchestrator {
                             appointmentTime: appointmentTime,
                             dayName: dayName,
                             formattedDate: formattedDate,
-                            deeplink: `app://appointment/${appointmentId}`
-                        }
+                            deeplink: `app://appointment/${appointmentId}`,
+                        },
+                    };
+                    const messageId = await admin.messaging().send(fcmPayload);
+                    await appendNotificationSentToToken(tokenDoc._id, {
+                        messageId,
+                        notification: fcmPayload.notification,
+                        data: fcmPayload.data,
+                        kind: 'appointment_booked',
+                        appointmentId,
+                        patientId,
                     });
                     totalTokensSent++;
                 } catch (tokenError) {
@@ -591,11 +698,11 @@ export class NotificationOrchestrator {
 
             for (const tokenDoc of userTokens) {
                 try {
-                    await admin.messaging().send({
+                    const fcmPayload = {
                         token: tokenDoc.fcmToken,
                         notification: {
                             title: 'Follow-up Appointment Scheduled',
-                            body: notificationMessage
+                            body: notificationMessage,
                         },
                         data: {
                             appointmentId: appointmentId,
@@ -603,8 +710,17 @@ export class NotificationOrchestrator {
                             followUpReason: followUpReason,
                             appointmentDate: appointmentDate,
                             appointmentTime: appointmentTime,
-                            deeplink: `app://appointment/${appointmentId}`
-                        }
+                            deeplink: `app://appointment/${appointmentId}`,
+                        },
+                    };
+                    const messageId = await admin.messaging().send(fcmPayload);
+                    await appendNotificationSentToToken(tokenDoc._id, {
+                        messageId,
+                        notification: fcmPayload.notification,
+                        data: fcmPayload.data,
+                        kind: 'follow_up_scheduled',
+                        appointmentId,
+                        patientId,
                     });
                     totalTokensSent++;
                 } catch (tokenError) {
@@ -689,11 +805,11 @@ export class NotificationOrchestrator {
 
             // Send to first token only for testing
             const tokenDoc = userTokens[0];
-            await admin.messaging().send({
+            const fcmPayload = {
                 token: tokenDoc.fcmToken,
                 notification: {
                     title: 'Test: Appointment Booked Successfully',
-                    body: notificationMessage
+                    body: notificationMessage,
                 },
                 data: {
                     appointmentId: 'TEST_APPOINTMENT_ID',
@@ -703,8 +819,16 @@ export class NotificationOrchestrator {
                     appointmentTime: appointmentTime,
                     dayName: dayName,
                     formattedDate: formattedDate,
-                    deeplink: `app://appointment/TEST_APPOINTMENT_ID`
-                }
+                    deeplink: `app://appointment/TEST_APPOINTMENT_ID`,
+                },
+            };
+            const messageId = await admin.messaging().send(fcmPayload);
+            await appendNotificationSentToToken(tokenDoc._id, {
+                messageId,
+                notification: fcmPayload.notification,
+                data: fcmPayload.data,
+                kind: 'test_appointment_booked',
+                patientId,
             });
 
             logInfo('Test appointment booking notification sent', {

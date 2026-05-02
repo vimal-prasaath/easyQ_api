@@ -6,6 +6,31 @@ dotenv.config();
 
 const bucket = getStorage().bucket(process.env.STORAGE_BUCKET_NAME);
 
+/**
+ * Per-object ACL calls fail when uniform bucket-level access (UBLA) is enabled on the bucket.
+ * Public access is then controlled by bucket IAM / Firebase rules; skip ACL errors after upload.
+ */
+async function makePublicIfPossible(file) {
+  try {
+    await file.makePublic();
+  } catch (err) {
+    const msg = err?.message || String(err);
+    const code = err?.code;
+    if (
+      code === 412 ||
+      code === 400 ||
+      msg.includes("uniform bucket-level access") ||
+      msg.includes("Cannot update access control") ||
+      msg.includes("Cannot insert legacy ACL") ||
+      msg.includes("public access prevention")
+    ) {
+      console.warn("makePublic skipped (bucket uses IAM / UBLA):", msg);
+      return;
+    }
+    throw err;
+  }
+}
+
 export const uploadFileToFirebase = async (
   fileBuffer,
   originalname,
@@ -37,8 +62,7 @@ export const uploadFileToFirebase = async (
       public: true, // Make file publicly accessible
     });
 
-    // Ensure the file is publicly accessible
-    await file.makePublic();
+    await makePublicIfPossible(file);
 
     // Generate the public URL
     const publicUrl = `https://storage.googleapis.com/${process.env.STORAGE_BUCKET_NAME}/${filePathInStorage}`;
@@ -95,7 +119,7 @@ export const uploadAdminHospitalFile = async (
       },
     });
 
-    await file.makePublic();
+    await makePublicIfPossible(file);
 
     const publicUrl = `https://storage.googleapis.com/${process.env.STORAGE_BUCKET_NAME}/${filePathInStorage}`;
 
@@ -138,7 +162,7 @@ export const uploadAdminOwnerFile = async (
       },
     });
 
-    await file.makePublic();
+    await makePublicIfPossible(file);
 
     const publicUrl = `https://storage.googleapis.com/${process.env.STORAGE_BUCKET_NAME}/${filePathInStorage}`;
 
@@ -260,8 +284,7 @@ export const uploadDoctorImage = async (
       public: true, // Make file publicly accessible
     });
 
-    // Ensure the file is publicly accessible
-    await file.makePublic();
+    await makePublicIfPossible(file);
 
     // Generate the public URL
     const publicUrl = `https://storage.googleapis.com/${process.env.STORAGE_BUCKET_NAME}/${filePathInStorage}`;
@@ -325,8 +348,7 @@ export const uploadAppointmentDocument = async (
       public: true, // Make file publicly accessible
     });
 
-    // Ensure the file is publicly accessible
-    await file.makePublic();
+    await makePublicIfPossible(file);
 
     // Generate the public URL
     const publicUrl = `https://storage.googleapis.com/${process.env.STORAGE_BUCKET_NAME}/${filePathInStorage}`;
@@ -390,8 +412,7 @@ export const uploadNurseImage = async (
       public: true, // Make file publicly accessible
     });
 
-    // Ensure the file is publicly accessible
-    await file.makePublic();
+    await makePublicIfPossible(file);
 
     // Generate the public URL
     const publicUrl = `https://storage.googleapis.com/${process.env.STORAGE_BUCKET_NAME}/${filePathInStorage}`;
