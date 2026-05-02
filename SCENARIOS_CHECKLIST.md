@@ -1,72 +1,84 @@
-# Easy Q scenarios — implementation checklist
+# Easy Q — what the product does today (business view)
 
-This checklist maps **product scenarios** (see `The Easy Q Scenarios`) to the **current `easyQ_api` codebase**. Update this file when behavior changes.
+This page says **what works**, **what works partly**, and **what we don’t have yet** in the backend. Short summaries anyone on the team can read—no engineering jargon in the main tables.
 
-Legend: **Working** = implemented end-to-end · **Partial** = exists but incomplete vs scenario · **Not working** = not implemented or only manual/policy.
+**How to read the icons**
 
----
-
-## Coverage tables (emoji + one line)
-
-### Working
-
-| Status | Scenario | One-line description |
-|:------:|----------|------------------------|
-| ✅ | Token / slot / display | Assigns `slotNumber`, `tokenNumber`, `tokenDisplay` from doctor hours + queue order. |
-| ✅ | Daily & per-slot limits | Enforces `maxAppointment` and slot capacity via limiter + token service. |
-| ✅ | Appointment CRUD / lists | Create, update, delete, fetch by patient, doctor, hospital via `/api/appoitment/*`. |
-| ✅ | Batch metadata | Stores `batchNumber` (every 5 tokens) and `batchStatus` for orchestration. |
-| ✅ | ETA “Time to leave” | Cron every 2 min; FCM when drive ETA + buffer says depart (needs address + hospital coords). |
-| ✅ | No-show cron | Cron every 5 min; marks no-show and tries advancing batch. |
-| ✅ | Check-in APIs | Orchestrator check-in + advance-to-next-batch hooks exposed via API layer. |
-| ✅ | Check-in / checkout fields | Schema supports check-in status, times, scanned-by, etc. |
-| ✅ | Doctor delay | Saves delays on doctor; sends FCM “Appointment Delay Update”. |
-| ✅ | Adjusted time API | Clients can compute delayed clock time via `POST /api/doctor/adjusted-time`. |
-| ✅ | Follow-up bookings | Create/list follow-ups under `/api/follow-up` with parent link in schema. |
-| ✅ | Booking & payment pushes | Booking confirmation FCM; `process` endpoint completes payment + status. |
-| ✅ | Cancel / reschedule fields | `cancellationReason` and `rescheduledFrom` exist on appointments. |
-
-### Partial
-
-| Status | Scenario | One-line description |
-|:------:|----------|------------------------|
-| ⚠️ | Hard calendar blocks (e.g. surgery) | Only generic `workingHours` slots — no typed non-bookable blocks or auto-reshuffle. |
-| ⚠️ | Uniform slot duration (e.g. 20 min) | Token math uses fixed 120 min reference — not configurable minutes-per-patient stagger. |
-| ⚠️ | Doctor late shifts everyone | Delay + FCM + adjusted-time API exist, but DB times & ETA cron don’t apply adjustment automatically. |
-| ⚠️ | Batch-based staggered leave | Batch number stored; leave-by still uses one `appointmentTime` per row, not token × minutes. |
-| ⚠️ | Short “sorry” delay message | Doctor-delay body exists; no separate tiny apology template for small aggregate delays. |
-| ⚠️ | Route authorization | Policy routes registered but `authenticate`/policy often commented out — verify gateway or re-enable. |
-
-### Not working
-
-| Status | Scenario | One-line description |
-|:------:|----------|------------------------|
-| ❌ | Walk-in next token | No dedicated walk-in flow; only normal booking assigns next token. |
-| ❌ | Cancel → nearby patients race | No geo-notify + first-confirm wins for freed slots. |
-| ❌ | Early arrival rules | No API enforcement — queue discipline is operational only. |
-| ❌ | Late arrival soft / hard | No automated 10/15 min reorder or queue-insert rules. |
-| ❌ | Emergency nurse push | No dedicated nurse-triggered emergency queue API in reviewed paths. |
-| ❌ | ER / expected emergency | No ward-specific flow wired in API. |
-| ❌ | Overrun consult | No handler when a consultation runs past its slot. |
-| ❌ | Follow-up Yes/No → book | No interactive notification handshake — only create/list follow-ups. |
-| ❌ | Follow-up analytics | No average follow-up duration / doctor hint aggregates. |
-| ❌ | Mandatory booking location | `patientAddress` optional — ETA can be skipped if missing. |
-| ❌ | Book on behalf | No explicit proxy-booking user/model flow. |
-| ❌ | Notification fallback | No SMS/email backup when FCM fails or is unavailable. |
+| Icon | Meaning |
+|:----:|---------|
+| ✅ | **Done** — the system supports this in normal operation. |
+| ⚠️ | **Partly there** — something exists, but it doesn’t fully match how we want the clinic to run. |
+| ❌ | **Not built** — staff or apps must handle this manually, or we need new work. |
 
 ---
 
-## Quick reference — related files
+## ✅ Working today
 
-| Area | Location |
-|------|----------|
-| Token assignment | `src/services/tokenAssignmentService.js` |
-| Create appointment | `src/services/appointmentService.js`, `src/controller/appointment.js` |
-| Batch / ETA / no-show | `src/services/batchOrchestrator.js`, `src/config/batchScheduler.js` |
-| Doctor delay | `src/services/doctorDelayService.js`, `src/routes/doctorDelay/index.js` |
-| Follow-up | `src/routes/followUpAppointment/index.js`, `src/services/followUpAppointmentService.js` |
-| Route table | `src/config/protectedRouterConfig.js`, `src/app.js` |
+What patients and clinics **can rely on** from the current backend.
+
+| Icon | Topic | In plain English |
+|:----:|-------|------------------|
+| ✅ | Queue numbers | Each booking gets a clear place in line (which part of the day, token number, and a label like “S1T003”) based on the doctor’s schedule. |
+| ✅ | Full waiting room | The system can stop new bookings when the doctor hits their daily limit or a slot is full. |
+| ✅ | Book, change, cancel, view | Patients and staff can create appointments, update them, cancel them, and pull lists by patient, doctor, or hospital. |
+| ✅ | Groups of five (“batches”) | The system remembers small groups of five for workflow and notifications—not the same as “five minutes apart.” |
+| ✅ | “Time to leave” for driving | If we know where the patient is leaving from and where the hospital is, the system can send a **leave now** push so they arrive on time (runs on a short timer in the background). |
+| ✅ | No-shows | A background job looks for people who didn’t show and can move the queue forward. |
+| ✅ | Check-in | APIs exist so front desk or kiosk can mark someone as arrived and move the queue. |
+| ✅ | Check-in / checkout tracking | The database can record arrived, scanned, checkout-style status for reporting and flows. |
+| ✅ | Doctor running late | Staff can record a delay; patients get a push that the doctor is late (minutes + reason). |
+| ✅ | “What time is my visit really?” | Apps can ask the server for an **adjusted clock time** after delays—useful to show on screen. |
+| ✅ | Follow-up visits | Follow-up appointments can be created and listed (linked to the original visit). |
+| ✅ | Booking & payment messages | After booking, a confirmation-style push can go out; payments can be marked completed when the payment step finishes. |
+| ✅ | Why cancelled / rescheduled | We can store a cancellation reason and link to a previous booking when something is rescheduled. |
 
 ---
 
-*Last reviewed against codebase discussion — regenerate sections when major features ship.*
+## ⚠️ Partly there (gap vs ideal clinic flow)
+
+| Icon | Topic | In plain English |
+|:----:|-------|------------------|
+| ⚠️ | Protected time (e.g. surgery block) | Doctors have **open hours**, but we don’t yet model **untouchable blocks** (like “surgery 1–2, never book”) or auto-move everyone around them. |
+| ⚠️ | Same length for every visit (e.g. 20 minutes) | Visit length doesn’t drive a **per-patient stagger** in the product math the way the sheet describes; rules are simpler behind the scenes. |
+| ⚠️ | Doctor late → everyone’s visit shifts | We **tell** patients and can **calculate** a new time for apps, but stored appointment times and the **leave-home reminder** don’t automatically shift for everyone unless we build more or apps handle it. |
+| ⚠️ | Different “leave home” time per person in the same window | Batches of five are stored, but **everyone in one time window might still share one clock time**—so “leave now” may match the window, not token 1 vs token 8 separately. |
+| ⚠️ | Short “sorry we’re running late” note | There’s a delay message, but not a separate tiny apology for small slips (e.g. “8 minutes behind”). |
+| ⚠️ | Locked-down API security | Some protection layers are **not fully enforced inside this service**—confirm whether another layer (gateway, app) handles login, or tighten later. |
+
+---
+
+## ❌ Not built yet (business expectation vs reality)
+
+| Icon | Topic | In plain English |
+|:----:|-------|------------------|
+| ❌ | Walk-in gets next number | No special **walk-in** path; walk-ins behave like another booking unless staff fake it in the app. |
+| ❌ | Cancel → ping nearby patients → first to say yes | No **nearest patients get offered the slot** flow. |
+| ❌ | Rules for arriving too early | Nothing automated—front desk policy only. |
+| ❌ | Late arrival rules (e.g. 10 min vs 15 min) | No automatic **where you stand in line** rules for late arrivals. |
+| ❌ | Nurse taps “emergency” and queue reacts | No dedicated **emergency bump** product flow in what we reviewed. |
+| ❌ | Emergency room–specific workflow | Not wired as its own flow. |
+| ❌ | Running long past the booked slot | No automatic **overrun** handling when one patient takes longer than planned. |
+| ❌ | Follow-up text: Yes / No then book | No **tap Yes to book** notification dance—only creating/listing follow-ups. |
+| ❌ | Stats on follow-ups for doctors | No built-in **average follow-up time** or hints dashboard. |
+| ❌ | Must save location when booking | Location can be missing—then **drive-time reminders** may not fire. |
+| ❌ | Someone books for another person | No clear **proxy booking** product built into the API. |
+| ❌ | If push fails, text or email | No automatic **SMS/email backup** when phone notifications fail. |
+
+---
+
+## For engineers (where things live in code)
+
+If you need file paths and technical names, use this table—optional for business readers.
+
+| Area | Code location |
+|------|----------------|
+| Queue / tokens | `src/services/tokenAssignmentService.js` |
+| Creating appointments | `src/services/appointmentService.js`, `src/controller/appointment.js` |
+| Leave-home ETA, no-show jobs | `src/services/batchOrchestrator.js`, `src/config/batchScheduler.js` |
+| Doctor delays | `src/services/doctorDelayService.js`, `src/routes/doctorDelay/index.js` |
+| Follow-ups | `src/routes/followUpAppointment/index.js`, `src/services/followUpAppointmentService.js` |
+| Route list | `src/config/protectedRouterConfig.js`, `src/app.js` |
+
+---
+
+*Update this document when major features ship.*
