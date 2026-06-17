@@ -1,4 +1,5 @@
 import { NurseAuthService } from '../services/nurseAuthService.js';
+import { StaffAuthTokenService } from '../util/staffAuthTokenService.js';
 import { ResponseFormatter } from '../util/responseFormatter.js';
 import { httpStatusCode } from '../util/statusCode.js';
 import { logApiRequest, logApiResponse, logError } from '../config/logger.js';
@@ -63,6 +64,67 @@ export async function nurseLogin(req, res, next) {
             error: error.message,
             stack: error.stack,
             requestData: req.body
+        });
+        next(error);
+    }
+}
+
+export async function nurseRefreshToken(req, res, next) {
+    logApiRequest(req, { action: 'nurse_refresh_token' });
+
+    try {
+        const { refreshToken } = req.body;
+
+        if (!refreshToken) {
+            return res.status(httpStatusCode.BAD_REQUEST).json(
+                ResponseFormatter.formatErrorResponse(
+                    'Refresh token is required.',
+                    'ValidationError',
+                    httpStatusCode.BAD_REQUEST,
+                    true
+                )
+            );
+        }
+
+        const result = await StaffAuthTokenService.refresh(refreshToken);
+
+        const response = ResponseFormatter.formatSuccessResponse({
+            message: 'Nurse token refreshed successfully',
+            data: result,
+            statusCode: httpStatusCode.OK
+        });
+
+        logApiResponse(req, response);
+        res.status(httpStatusCode.OK).json(response);
+    } catch (error) {
+        logError('Nurse refresh token error', {
+            error: error.message,
+            stack: error.stack
+        });
+        next(error);
+    }
+}
+
+export async function nurseLogout(req, res, next) {
+    logApiRequest(req, { action: 'nurse_logout' });
+
+    try {
+        const nurseId = req.user.nurseId || req.user.data?.userId;
+        const result = await StaffAuthTokenService.logout(nurseId, 'nurse');
+
+        const response = ResponseFormatter.formatSuccessResponse({
+            message: 'Nurse logout successful',
+            data: result,
+            statusCode: httpStatusCode.OK
+        });
+
+        logApiResponse(req, response);
+        res.status(httpStatusCode.OK).json(response);
+    } catch (error) {
+        logError('Nurse logout error', {
+            error: error.message,
+            stack: error.stack,
+            nurseId: req.user?.nurseId
         });
         next(error);
     }

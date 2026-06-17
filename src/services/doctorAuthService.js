@@ -1,10 +1,10 @@
 import Doctor from '../model/doctor.js';
 import Hospital from '../model/hospital.js';
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
 import { EasyQError } from '../config/error.js';
 import { httpStatusCode } from '../util/statusCode.js';
 import { logInfo, logError } from '../config/logger.js';
+import { StaffAuthTokenService } from '../util/staffAuthTokenService.js';
 
 export class DoctorAuthService {
     
@@ -140,27 +140,10 @@ export class DoctorAuthService {
                 );
             }
 
-            // Update last login
-            doctor.lastLogin = new Date();
-            await doctor.save();
-
-            // Get hospital adminId
             const hospital = await Hospital.findOne({ hospitalId: doctor.hospitalId }).select('adminId');
             const adminId = hospital?.adminId || null;
 
-            // Generate JWT token
-            const token = jwt.sign(
-                { 
-                    data: {
-                        userId: doctor.doctorId,
-                        email: doctor.email,
-                        role: 'doctor'
-                    },
-                    type: 'doctor'
-                },
-                process.env.JWT_SECRET,
-                { expiresIn: process.env.JWT_EXPIRES_IN || '24h' }
-            );
+            const { token, refreshToken } = await StaffAuthTokenService.issueTokens(doctor, 'doctor');
 
             // Remove password from response
             const doctorResponse = doctor.toObject();
@@ -179,6 +162,7 @@ export class DoctorAuthService {
                     doctor: doctorResponse,
                     adminId: adminId,
                     token: token,
+                    refreshToken: refreshToken,
                     loggedInAs: "doctor"
                 }
             };

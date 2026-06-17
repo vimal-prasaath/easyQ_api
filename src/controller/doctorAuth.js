@@ -1,4 +1,5 @@
 import { DoctorAuthService } from '../services/doctorAuthService.js';
+import { StaffAuthTokenService } from '../util/staffAuthTokenService.js';
 import { ResponseFormatter } from '../util/responseFormatter.js';
 import { httpStatusCode } from '../util/statusCode.js';
 import { logApiRequest, logApiResponse, logError } from '../config/logger.js';
@@ -63,6 +64,67 @@ export async function doctorLogin(req, res, next) {
             error: error.message,
             stack: error.stack,
             requestData: req.body
+        });
+        next(error);
+    }
+}
+
+export async function doctorRefreshToken(req, res, next) {
+    logApiRequest(req, { action: 'doctor_refresh_token' });
+
+    try {
+        const { refreshToken } = req.body;
+
+        if (!refreshToken) {
+            return res.status(httpStatusCode.BAD_REQUEST).json(
+                ResponseFormatter.formatErrorResponse(
+                    'Refresh token is required.',
+                    'ValidationError',
+                    httpStatusCode.BAD_REQUEST,
+                    true
+                )
+            );
+        }
+
+        const result = await StaffAuthTokenService.refresh(refreshToken);
+
+        const response = ResponseFormatter.formatSuccessResponse({
+            message: 'Doctor token refreshed successfully',
+            data: result,
+            statusCode: httpStatusCode.OK
+        });
+
+        logApiResponse(req, response);
+        res.status(httpStatusCode.OK).json(response);
+    } catch (error) {
+        logError('Doctor refresh token error', {
+            error: error.message,
+            stack: error.stack
+        });
+        next(error);
+    }
+}
+
+export async function doctorLogout(req, res, next) {
+    logApiRequest(req, { action: 'doctor_logout' });
+
+    try {
+        const doctorId = req.user.doctorId || req.user.data?.userId;
+        const result = await StaffAuthTokenService.logout(doctorId, 'doctor');
+
+        const response = ResponseFormatter.formatSuccessResponse({
+            message: 'Doctor logout successful',
+            data: result,
+            statusCode: httpStatusCode.OK
+        });
+
+        logApiResponse(req, response);
+        res.status(httpStatusCode.OK).json(response);
+    } catch (error) {
+        logError('Doctor logout error', {
+            error: error.message,
+            stack: error.stack,
+            doctorId: req.user?.doctorId
         });
         next(error);
     }

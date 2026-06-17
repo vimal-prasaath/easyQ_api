@@ -56,6 +56,43 @@ export const adminLogin = async (req, res, next) => {
     }
 };
 
+export const adminRefreshToken = async (req, res, next) => {
+    try {
+        const { refreshToken } = req.body;
+
+        if (!refreshToken) {
+            return res.status(httpStatusCode.BAD_REQUEST).json(
+                constructResponse(false, httpStatusCode.BAD_REQUEST, "Refresh token is required.")
+            );
+        }
+
+        const result = await AdminService.refreshAdminToken(refreshToken);
+
+        authLogger.info('Admin token refreshed successfully');
+
+        return res.status(httpStatusCode.OK).json(
+            constructResponse(true, httpStatusCode.OK, "Admin token refreshed successfully", result)
+        );
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const adminLogout = async (req, res, next) => {
+    try {
+        const adminId = req.user.data.userId;
+        const result = await AdminService.logoutAdmin(adminId);
+
+        authLogger.info('Admin logout successful', { adminId });
+
+        return res.status(httpStatusCode.OK).json(
+            constructResponse(true, httpStatusCode.OK, "Admin logout successful", result)
+        );
+    } catch (error) {
+        next(error);
+    }
+};
+
 export const updateOnboardingInfo = async (req, res, next) => {
     try {
         const { 

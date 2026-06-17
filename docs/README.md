@@ -15,6 +15,7 @@ Welcome to the EasyQ API documentation hub. This directory contains comprehensiv
 
 ### **🔧 Implementation & Testing**
 - **[Complete Curl Commands](./COMPLETE_CURL_COMMANDS.md)** - All API endpoints with curl examples
+- **[Admin Authentication API](./ADMIN_AUTH_API.md)** - Admin login, refresh token, and logout guide for frontend
 - **[Admin Requirements & Status](./ADMIN_REQUIREMENTS_AND_STATUS.md)** - Admin portal requirements and API status
 - **[New API Documentation](./new-api.md)** - Latest API additions and updates
 

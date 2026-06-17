@@ -30,6 +30,15 @@ export const authenticateDoctor = async (req, res, next) => {
 
         // Verify JWT token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        if (decoded.type === 'refresh') {
+            throw new EasyQError(
+                'UnauthorizedError',
+                httpStatusCode.UNAUTHORIZED,
+                true,
+                'Refresh token cannot be used for API access. Please use a valid access token.'
+            );
+        }
         
         // Check if token is for doctor type
         if (decoded.type !== 'doctor' || !decoded.data || decoded.data.role !== 'doctor') {

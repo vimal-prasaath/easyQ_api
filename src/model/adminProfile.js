@@ -152,6 +152,19 @@ const adminSchema = new Schema({
     },
     lastLoginAt: {
         type: Date
+    },
+    refreshToken: {
+        type: String,
+        select: false
+    }
+}, {
+    toJSON: {
+        transform(doc, ret) {
+            delete ret.password;
+            delete ret.refreshToken;
+            delete ret.__v;
+            return ret;
+        }
     }
 });
 

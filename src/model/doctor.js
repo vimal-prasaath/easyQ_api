@@ -198,6 +198,10 @@ const doctorSchema = new Schema({
         type: Date,
         default: null
     },
+    refreshToken: {
+        type: String,
+        select: false
+    },
     
     permissions: {
         profile: { enabled: { type: Boolean, default: false }, viewOnly: { type: Boolean, default: false } },
@@ -267,8 +271,9 @@ const doctorSchema = new Schema({
 
 doctorSchema.set('toJSON', { 
     transform: function(doc, ret) {
-        // Remove the nested profileImage object
         delete ret.profileImage;
+        delete ret.password;
+        delete ret.refreshToken;
         return ret;
     }
 });

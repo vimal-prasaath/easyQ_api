@@ -153,6 +153,10 @@ const nurseSchema = new Schema({
         type: Date,
         default: null
     },
+    refreshToken: {
+        type: String,
+        select: false
+    },
     
     permissions: {
         profile: { enabled: { type: Boolean, default: false }, viewOnly: { type: Boolean, default: false } },
@@ -185,8 +189,9 @@ const nurseSchema = new Schema({
 
 nurseSchema.set('toJSON', { 
     transform: function(doc, ret) {
-        // Remove the nested profileImage object
         delete ret.profileImage;
+        delete ret.password;
+        delete ret.refreshToken;
         return ret;
     }
 });

@@ -68,6 +68,8 @@ This document provides a comprehensive list of all API endpoints in the EasyQ sy
 |--------|----------|-------------|
 | POST | `/api/admin/signup` | Admin registration |
 | POST | `/api/admin/login` | Admin login |
+| POST | `/api/admin/refresh` | Refresh admin access token (see [Staff Auth API](./ADMIN_REFRESH_TOKEN_FE.md)) |
+| POST | `/api/admin/logout` | Admin logout (revoke refresh token) |
 | PUT | `/api/admin/user/activate/:userId` | Activate user account (public) |
 | PUT | `/api/admin/onboarding` | Update admin onboarding information |
 | PUT | `/api/admin/hospital-documents` | Upload hospital documents |
@@ -154,6 +156,8 @@ This document provides a comprehensive list of all API endpoints in the EasyQ sy
 |--------|----------|-------------|
 | POST | `/api/doctor/signup` | Doctor registration |
 | POST | `/api/doctor/login` | Doctor login |
+| POST | `/api/doctor/refresh` | Refresh doctor access token |
+| POST | `/api/doctor/logout` | Doctor logout |
 | GET | `/api/doctor/profile` | Get doctor profile (authenticated) |
 
 ---
@@ -178,6 +182,8 @@ This document provides a comprehensive list of all API endpoints in the EasyQ sy
 |--------|----------|-------------|
 | POST | `/api/nurse/signup` | Nurse registration |
 | POST | `/api/nurse/login` | Nurse login |
+| POST | `/api/nurse/refresh` | Refresh nurse access token |
+| POST | `/api/nurse/logout` | Nurse logout |
 | GET | `/api/nurse/profile` | Get nurse profile (authenticated) |
 
 ---
@@ -378,6 +384,8 @@ This document provides a comprehensive list of all API endpoints in the EasyQ sy
 |--------|----------|-------------|
 | POST | `/api/auth/signup` | Common signup for doctors/nurses |
 | POST | `/api/auth/login` | Common login for doctors/nurses |
+| POST | `/api/auth/refresh` | Refresh doctor/nurse access token |
+| POST | `/api/auth/logout` | Doctor/nurse logout |
 
 ---
 

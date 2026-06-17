@@ -48,6 +48,20 @@ async function authenticateAdmin(req, res, next) {
         // Decode and verify JWT token
         const decodedPayload = await compareToken(token);
 
+        if (decodedPayload.type === 'refresh') {
+            authLogger.warn('Admin authentication failed: Refresh token used as access token', {
+                path: req.path,
+                method: req.method,
+                ip: req.ip
+            });
+            return next(new EasyQError(
+                'AuthenticationError',
+                httpStatusCode.UNAUTHORIZED,
+                true,
+                'Refresh token cannot be used for API access. Please use a valid access token.'
+            ));
+        }
+
         // Debug: Log the token structure for troubleshooting
         authLogger.debug('Admin JWT Token structure:', {
             hasData: !!decodedPayload.data,

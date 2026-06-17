@@ -1,10 +1,10 @@
 import Nurse from '../model/nurse.js';
 import Hospital from '../model/hospital.js';
 import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
 import { EasyQError } from '../config/error.js';
 import { httpStatusCode } from '../util/statusCode.js';
 import { logInfo, logError } from '../config/logger.js';
+import { StaffAuthTokenService } from '../util/staffAuthTokenService.js';
 
 export class NurseAuthService {
     
@@ -150,29 +150,10 @@ export class NurseAuthService {
                 );
             }
 
-            // Update last login
-            nurse.lastLogin = new Date();
-            await nurse.save();
-
-            // Get hospital adminId
             const hospital = await Hospital.findOne({ hospitalId: nurse.hospitalId }).select('adminId');
             const adminId = hospital?.adminId || null;
 
-            // Generate JWT token
-            const token = jwt.sign(
-                {
-                    type: 'nurse',
-                    data: {
-                        userId: nurse.nurseId,
-                        role: 'nurse',
-                        email: nurse.email,
-                        hospitalId: nurse.hospitalId,
-                        adminId: adminId
-                    }
-                },
-                process.env.JWT_SECRET,
-                { expiresIn: '24h' }
-            );
+            const { token, refreshToken } = await StaffAuthTokenService.issueTokens(nurse, 'nurse');
 
             logInfo('Nurse login successful', {
                 nurseId: nurse.nurseId,
@@ -193,6 +174,7 @@ export class NurseAuthService {
                     },
                     adminId: adminId,
                     token: token,
+                    refreshToken: refreshToken,
                     loggedInAs: "nurse"
                 }
             };

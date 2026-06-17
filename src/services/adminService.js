@@ -7,7 +7,7 @@ import HospitalReview from "../model/hospitalReview.js";
 import HospitalDetails from "../model/facility.js";
 import Favourite from "../model/hospitalFavourite.js";
 import bcrypt from "bcrypt";
-import { generateToken } from "../util/tokenGenerator.js";
+import { generateToken, generateRefreshToken, compareToken } from "../util/tokenGenerator.js";
 import { EasyQError } from "../config/error.js";
 import { httpStatusCode } from "../util/statusCode.js";
 import { authLogger } from "../config/logger.js";
@@ -29,6 +29,30 @@ const isToday = (date) => {
 };
 
 class AdminService {
+    _buildAdminTokenData(admin) {
+        return {
+            userId: admin.adminId,
+            email: admin.email,
+            username: admin.username,
+            role: 'admin'
+        };
+    }
+
+    async _issueAdminTokens(admin) {
+        const tokenData = this._buildAdminTokenData(admin);
+        const token = generateToken(tokenData);
+        const refreshToken = generateRefreshToken({
+            userId: admin.adminId,
+            role: 'admin'
+        });
+
+        admin.refreshToken = refreshToken;
+        admin.lastLoginAt = new Date();
+        await admin.save();
+
+        return { token, refreshToken };
+    }
+
     async createAdmin(adminData) {
         try {
             // Check if admin with email already exists
@@ -57,14 +81,7 @@ class AdminService {
             const admin = new AdminProfile(adminData);
             await admin.save();
 
-            // Generate JWT token automatically after signup
-            const tokenData = {
-                userId: admin.adminId,
-                email: admin.email,
-                username: admin.username,
-                role: 'admin'
-            };
-            const token = generateToken(tokenData);
+            const { token, refreshToken } = await this._issueAdminTokens(admin);
 
             return {
                 message: "Admin account created successfully",
@@ -76,7 +93,8 @@ class AdminService {
                     isActive: admin.isActive,
                     onboardingProgress: admin.getOnboardingProgress()
                 },
-                token: token // Token is now returned here
+                token,
+                refreshToken
             };
         } catch (error) {
             if (error instanceof EasyQError) {
@@ -126,14 +144,7 @@ class AdminService {
                 );
             }
 
-            // Generate JWT token
-            const tokenData = {
-                userId: admin.adminId,
-                email: admin.email,
-                username: admin.username,
-                role: 'admin'
-            };
-            const token = generateToken(tokenData);
+            const { token, refreshToken } = await this._issueAdminTokens(admin);
 
             return {
                 message: "Admin authenticated successfully",
@@ -145,7 +156,8 @@ class AdminService {
                     isActive: admin.isActive,
                     onboardingProgress: admin.getOnboardingProgress()
                 },
-                token: token
+                token,
+                refreshToken
             };
         } catch (error) {
             if (error instanceof EasyQError) {
@@ -157,6 +169,126 @@ class AdminService {
                 httpStatusCode.INTERNAL_SERVER_ERROR,
                 true,
                 'Failed to authenticate admin.'
+            );
+        }
+    }
+
+    async refreshAdminToken(refreshToken) {
+        try {
+            if (!refreshToken) {
+                throw new EasyQError(
+                    'ValidationError',
+                    httpStatusCode.BAD_REQUEST,
+                    true,
+                    'Refresh token is required.'
+                );
+            }
+
+            let decodedPayload;
+            try {
+                decodedPayload = await compareToken(refreshToken);
+            } catch (error) {
+                throw new EasyQError(
+                    'AuthenticationError',
+                    httpStatusCode.UNAUTHORIZED,
+                    true,
+                    'Invalid or expired refresh token.'
+                );
+            }
+
+            if (
+                decodedPayload.type !== 'refresh' ||
+                !decodedPayload.data ||
+                decodedPayload.data.role !== 'admin'
+            ) {
+                throw new EasyQError(
+                    'AuthenticationError',
+                    httpStatusCode.UNAUTHORIZED,
+                    true,
+                    'Invalid refresh token.'
+                );
+            }
+
+            const admin = await AdminProfile.findOne({
+                adminId: decodedPayload.data.userId
+            }).select('+refreshToken');
+
+            if (!admin) {
+                throw new EasyQError(
+                    'AuthenticationError',
+                    httpStatusCode.UNAUTHORIZED,
+                    true,
+                    'Admin not found.'
+                );
+            }
+
+            if (!admin.isActive) {
+                throw new EasyQError(
+                    'AuthenticationError',
+                    httpStatusCode.UNAUTHORIZED,
+                    true,
+                    'Admin account is not active.'
+                );
+            }
+
+            if (!admin.refreshToken || admin.refreshToken !== refreshToken) {
+                throw new EasyQError(
+                    'AuthenticationError',
+                    httpStatusCode.UNAUTHORIZED,
+                    true,
+                    'Refresh token has been revoked. Please login again.'
+                );
+            }
+
+            const tokens = await this._issueAdminTokens(admin);
+
+            return {
+                message: 'Token refreshed successfully',
+                token: tokens.token,
+                refreshToken: tokens.refreshToken
+            };
+        } catch (error) {
+            if (error instanceof EasyQError) {
+                throw error;
+            }
+            authLogger.error('Error during admin token refresh:', error);
+            throw new EasyQError(
+                'AuthenticationError',
+                httpStatusCode.INTERNAL_SERVER_ERROR,
+                true,
+                'Failed to refresh admin token.'
+            );
+        }
+    }
+
+    async logoutAdmin(adminId) {
+        try {
+            const admin = await AdminProfile.findOne({ adminId }).select('+refreshToken');
+            if (!admin) {
+                throw new EasyQError(
+                    'NotFoundError',
+                    httpStatusCode.NOT_FOUND,
+                    true,
+                    'Admin not found.'
+                );
+            }
+
+            admin.refreshToken = null;
+            await admin.save();
+
+            return {
+                message: 'Admin logged out successfully'
+            };
+        } catch (error) {
+            if (error instanceof EasyQError) {
+                throw error;
+            }
+            authLogger.error('Error during admin logout:', error);
+            throw new EasyQError(
+                'DatabaseError',
+                httpStatusCode.INTERNAL_SERVER_ERROR,
+                true,
+                'Failed to logout admin.'
             );
         }
     }

@@ -101,10 +101,11 @@ import authenticateAdmin from '../middleware/adminAuth.js';
 import adminVerificationCheck from '../middleware/adminVerificationCheck.js';
 
 import { updateDoctorImageUrl } from '../controller/doctor.js';
-import { doctorSignup, doctorLogin, getDoctorProfile } from '../controller/doctorAuth.js';
+import { doctorSignup, doctorLogin, doctorRefreshToken, doctorLogout, getDoctorProfile } from '../controller/doctorAuth.js';
 import { authenticateDoctor } from '../middleware/doctorAuth.js';
-import { signup as commonSignup, login as commonLogin } from '../controller/commonAuth.js';
-import { nurseSignup, nurseLogin, getNurseProfile } from '../controller/nurseAuth.js';
+import { signup as commonSignup, login as commonLogin, refresh as commonRefresh, logout as commonLogout } from '../controller/commonAuth.js';
+import { authenticateStaff } from '../middleware/staffAuth.js';
+import { nurseSignup, nurseLogin, nurseRefreshToken, nurseLogout, getNurseProfile } from '../controller/nurseAuth.js';
 import { authenticateNurse } from '../middleware/nurseAuth.js';
 
 const protectedRoutesConfig = [
@@ -163,11 +164,15 @@ const protectedRoutesConfig = [
     // --- DOCTOR AUTHENTICATION ROUTES ---
     { path: '/doctor/signup', method: 'post', resourceType: 'doctor_auth', action: 'signup', handlers: [doctorSignup] },
     { path: '/doctor/login', method: 'post', resourceType: 'doctor_auth', action: 'login', handlers: [doctorLogin] },
+    { path: '/doctor/refresh', method: 'post', resourceType: 'doctor_auth', action: 'refresh', handlers: [doctorRefreshToken] },
+    { path: '/doctor/logout', method: 'post', resourceType: 'doctor_auth', action: 'logout', handlers: [authenticateDoctor, doctorLogout] },
     { path: '/doctor/profile', method: 'get', resourceType: 'doctor_auth', action: 'get_profile', handlers: [authenticateDoctor, getDoctorProfile] },
     
     // --- COMMON AUTHENTICATION ROUTES ---
     { path: '/auth/signup', method: 'post', resourceType: 'common_auth', action: 'signup', handlers: [commonSignup] },
     { path: '/auth/login', method: 'post', resourceType: 'common_auth', action: 'login', handlers: [commonLogin] },
+    { path: '/auth/refresh', method: 'post', resourceType: 'common_auth', action: 'refresh', handlers: [commonRefresh] },
+    { path: '/auth/logout', method: 'post', resourceType: 'common_auth', action: 'logout', handlers: [authenticateStaff, commonLogout] },
     
     // --- NURSE ROUTES ---
     { path: '/nurse/add', method: 'post', resourceType: 'nurse', action: 'create', handlers: [authenticateAdmin, adminVerificationCheck, createNurse] },
@@ -181,6 +186,8 @@ const protectedRoutesConfig = [
     // --- NURSE AUTHENTICATION ROUTES ---
     { path: '/nurse/signup', method: 'post', resourceType: 'nurse_auth', action: 'signup', handlers: [nurseSignup] },
     { path: '/nurse/login', method: 'post', resourceType: 'nurse_auth', action: 'login', handlers: [nurseLogin] },
+    { path: '/nurse/refresh', method: 'post', resourceType: 'nurse_auth', action: 'refresh', handlers: [nurseRefreshToken] },
+    { path: '/nurse/logout', method: 'post', resourceType: 'nurse_auth', action: 'logout', handlers: [authenticateNurse, nurseLogout] },
     { path: '/nurse/profile', method: 'get', resourceType: 'nurse_auth', action: 'get_profile', handlers: [authenticateNurse, getNurseProfile] },
     
     // --- Appoitment ROUTES ---

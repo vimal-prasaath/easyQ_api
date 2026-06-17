@@ -2,6 +2,8 @@ import express from 'express';
 import {
     adminSignup,
     adminLogin,
+    adminRefreshToken,
+    adminLogout,
     updateOnboardingInfo,
     updateHospitalDocuments,
     updateOwnerDocuments,
@@ -26,6 +28,10 @@ const router = express.Router();
 router.post('/signup', adminSignup);
 
 router.post('/login', adminLogin);
+
+router.post('/refresh', adminRefreshToken);
+
+router.post('/logout', authenticateAdmin, adminLogout);
 
 // Public route - no authentication required
 router.put('/user/activate/:userId', activateUser);
